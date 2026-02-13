@@ -1,0 +1,17 @@
+name: "6. Пояснительная записка"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check_reports:
+    name: "Проверка наличия пояснительной записки (report.doc / report.docx / report.odt + report.pdf в корне репо)"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        name: Check out current commit
+
+      - name: check
+        run: .github/workflows/scripts/6_report.sh

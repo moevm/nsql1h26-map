@@ -1,0 +1,177 @@
+#!/bin/bash
+
+check_dockerfiles() {
+    if ! find ./ | grep -q 'Dockerfile$'
+    then
+        echo "::error:: Не найдены файлы с названием Dockerfile." 
+        exit 1
+    fi
+}
+
+check_docker_compose() {
+    set -e
+    
+    dc_file=${1:-"./docker-compose.yml"}
+
+    if [[ ! -f "${dc_file}" ]]; 
+    then
+        echo "::error:: Ошибка - нет файла docker-compose.yml"
+        exit 1
+    fi
+
+    services_count=`yq '.services | length' ${dc_file}`
+    if [[ "${services_count}" -lt "2" ]];
+    then
+        echo "::error:: Ошибка - слишком мало сервисов в конфигурации. У вас должно быть минимум два сервиса - приложение и СУБД."
+        exit 1
+    fi
+
+    if [[ "`yq '.services.db.ports' ${dc_file}`" != "null"  ]]; 
+    then
+        echo "::error:: Ошибка - в сервисе db открыты сетевые порты через ports. Для работы приложения они не нужны, если вам требуется доступ для СУБД в отладочных целях, то можно или поднять веб-интерфейс (и ему открыть порты), или получать доступ по внутренней сети докера. "
+        exit 1
+    fi
+
+    if [[ "`yq '.services.db.volumes' ${dc_file}`" == "null"  ]];
+    then
+        echo "::error:: Ошибка - в сервисе db не организованы volumes. По заданию они требуются для того, чтобы сохранять данные БД между запусками вашей конфигурации"
+        exit 1
+    fi
+
+    if yq '.services.db.volumes' ${dc_file} | grep -q '^[^/a-zA-Z]*/'
+    then
+        echo "::error:: Ошибка - в сервисе db  volumes использует монтирование каталогов. Используйте вместо этого именно volumes ( https://docs.docker.com/storage/volumes/#use-a-volume-with-docker-compose) - это гораздо удобнее и позволяет управлять таким хранилищем через докер."
+        exit 1
+    fi
+
+    if yq '.network' ${dc_file} | grep -q 'host' ; 
+    then
+        echo "::error:: Ошибка - сеть типа host. Пожалуйста, не используйте данный тип сети: он максимально небезопасен (так как неглядя мапит все порты вашей конфигурации на адаптер хоста) и неудобен. Укажите вместо этого конкретные маппинги портов в соответствующих директивах ports"
+        exit 1
+    fi
+
+    # Проверка volumes
+    echo "::info:: Ниже будут все volumes всех сервисов"
+    yq '.services.*.volumes' ${dc_file}
+    if yq '.services.*.volumes' ${dc_file} | grep -v ':ro$' | grep -q '^[^/a-zA-Z]*/'
+    then
+        echo "::error:: Ошибка - у вас есть смонтированные в volumes файлы и/или каталоги без метки ro (read-only, https://docs.docker.com/compose/compose-file/05-services/#short-syntax-5). Монтируемый каталог или файл нужно или копировать на этапе сборки контейнера (если там данные, которые не предполагают изменение), или ставить опцию :ro ."
+        exit 1
+    fi
+
+    # Проверка всех сервисов на общие ошибки
+    for i in $(seq 0 $(( services_count - 1 )) );
+    do
+        service=`yq '.services | keys ['$i']' ${dc_file}`
+        echo "::info:: Проверка сервиса: ${service}"
+        yq '.services.'$service ${dc_file}
+
+        image=`yq '.services.'$service'.image' ${dc_file}`
+        if [[ "${image}" != "null" ]];
+        then
+            if echo ${image} | grep -qE ':latest|^[^:]*$';
+            then
+                echo "::error:: Ошибка - отсутствие тега или использование тега latest. Обе эти ситуации означают, что вы не привязаны к опредлеленной версии образа и в случае его обновления работа приложения может нарушится (а вы об этом узнаете только постфактум). Укажите явно тег."
+                exit 1
+            fi
+        fi
+
+        ports=`yq '.services.'$service'.ports' ${dc_file}`
+        if [[ "${ports}" != "null" ]];
+        then
+            if echo ${ports} | grep -qv '^[^0-9]*127.0.0.1:';
+            then
+                echo "::error:: Ошибка - явно не указан интерфейс при маппинге портов. По умолчанию (если не указывать вот так 127.0.0.1:3000:80), докер мапит на все доступные интерфейсы и это нарушает безопасность. Добавьте 127.0.0.1: к содержимому директивы ports "
+                exit 1
+            fi
+        fi
+
+        external_ports=`echo $ports | grep -o ':[0-9]\+:' | tr -d ':'`
+        for ext_port in $external_ports;
+        do 
+            if [[ "$ext_port" -lt 1025 ]];
+            then
+                echo "::error:: Ошибка - использование внешних портов хоста <=1024. Данные порты зарезервированы под системные нужды, лучше использовать порты с номерами выше 8000 (чтобы не было коллизий). "
+                exit 1
+            fi
+        done
+    done
+}
+
+build_docker_compose() {
+    docker compose build --no-cache
+}
+
+run_docker_compose() {
+    docker compose up -d
+    sleep 30
+}
+
+check_containers_alive() {
+    echo "::notice:: docker ps --filter status=exited"
+    docker ps --filter status=exited
+    exited_count=`docker ps --filter status=exited |  tail -n +2 | wc -l`
+
+    echo "::notice:: docker ps --filter status=dead" 
+    docker ps --filter status=dead
+    dead_count=`docker ps --filter status=dead |  tail -n +2 | wc -l`
+
+    echo "::notice:: docker ps --filter status=restarting" 
+    docker ps --filter status=restarting
+    restarting_count=`docker ps --filter status=restarting |  tail -n +2 | wc -l`
+
+    echo "::notice:: docker ps --filter status=paused" 
+    docker ps --filter status=paused
+    paused_count=`docker ps --filter status=paused |  tail -n +2 | wc -l`
+
+    echo "::notice:: docker ps --filter status=created" 
+    docker ps --filter status=created
+    created_count=`docker ps --filter status=created |  tail -n +2 | wc -l`
+
+    if [[ "${exited_count}" != "0" ]] || [[ "${restarting_count}" != "0" ]] || [[ "${paused_count}" != "0" ]] || [[ "${created_count}" != "0" ]] || [[ "${created_count}" != "0" ]]; then
+        echo "::error::Часть контейнеров не находится в состоянии running (завершили или не начали свою работу корректно) "
+        exit 1
+    fi
+}
+
+check_tag() {
+    TAG="0.8"
+    if [ $(git tag -l "${TAG}") ]; then
+        echo "::notice::Тег ${TAG} найден"
+    else
+        echo "::error::Тег ${TAG} не найден"
+        exit 1
+    fi
+}
+
+ACTION=${1:-"all"}
+
+case $ACTION in
+    "check-dockerfiles")
+        check_dockerfiles
+        ;;
+    "check-compose")
+        check_docker_compose
+        ;;
+    "build")
+        build_docker_compose
+        ;;
+    "run")
+        run_docker_compose
+        ;;
+    "check-containers")
+        check_containers_alive
+        ;;
+    "check-tag")
+        check_tag
+        ;;
+    # Для ручного запуска
+    "all")
+        check_dockerfiles
+        check_docker_compose
+        build_docker_compose
+        run_docker_compose
+        check_containers_alive
+        check_tag
+        ;;
+esac

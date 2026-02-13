@@ -1,0 +1,28 @@
+name: "4. Прототип хранение и представление"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check_prototype_store_and_view:
+    name: "Проверка наличия тега 0.5, работоспособности docker compose и наличия сервиса db"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        name: Check out current commit
+        with:
+          fetch-depth: 0
+
+      - name: Check docker-compose.yml
+        run: .github/workflows/scripts/4_prototype_store_and_view.sh check-compose
+
+      - name: Build docker-compose
+        run: .github/workflows/scripts/4_prototype_store_and_view.sh build
+
+      - name: Run docker-compose
+        run: .github/workflows/scripts/4_prototype_store_and_view.sh run
+
+      - name: check
+        run: .github/workflows/scripts/4_prototype_store_and_view.sh check-tag

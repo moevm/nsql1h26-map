@@ -1,0 +1,42 @@
+name: "5. Прототип анализ"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check_tag_08_docker_compose:
+    name: "Проверка наличия тега 0.8 и работоспособности docker compose"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        name: Check out current commit
+        with:
+          fetch-depth: 0
+
+      - name: There are at least one Dockerfile
+        run: .github/workflows/scripts/5_prototype_analysis.sh check-dockerfiles
+
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          recursive: true
+          failure-threshold: error
+          override-error: DL3006, DL3000, DL3007, DL3008, DL3009, DL3013, DL3016, DL3018, DL3020, DL3028, DL3037, DL3047, DL4001, DL4003, DL4004
+
+      - name: Check docker-compose.yml
+        run: .github/workflows/scripts/5_prototype_analysis.sh check-compose
+
+      - name: Build docker-compose
+        run: .github/workflows/scripts/5_prototype_analysis.sh build
+
+      - name: Run docker-compose
+        run: .github/workflows/scripts/5_prototype_analysis.sh run
+
+      - name: Check containers are alive
+        run: .github/workflows/scripts/5_prototype_analysis.sh check-containers
+
+      - name: check_tag
+        run: .github/workflows/scripts/5_prototype_analysis.sh check-tag
