@@ -35,7 +35,7 @@ check_tag() {
     fi
 }
 
-local ACTION=${1:-"all"}
+ACTION=${1:-"all"}
 
 case $ACTION in
     "check-compose")
