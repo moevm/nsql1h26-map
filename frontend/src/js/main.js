@@ -1,0 +1,1 @@
+document.querySelector('#app').innerHTML = `<h1>HELLO WORLD</h1>`;
