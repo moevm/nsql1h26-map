@@ -1,0 +1,60 @@
+{
+  "nodes": [
+    {
+      "labels": ["User"],
+      "props": {
+        "id": "user_1",
+        "name": "John Doe",
+        "email": "john@example.com"
+      }
+    },
+    {
+      "labels": ["User"],
+      "props": {
+        "id": "user_2",
+        "name": "Jane Smith",
+        "email": "jane@example.com"
+      }
+    },
+    {
+      "labels": ["Walk"],
+      "props": {
+        "id": "walk_1",
+        "distance": 5.2,
+        "duration": 45,
+        "date": "2024-01-15"
+      }
+    },
+    {
+      "labels": ["Walk"],
+      "props": {
+        "id": "walk_2",
+        "distance": 3.8,
+        "duration": 32,
+        "date": "2024-01-16"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "relType": "PERFORMED",
+      "fromProps": {
+        "id": "user_1"
+      },
+      "toProps": {
+        "id": "walk_1"
+      },
+      "relProps": {}
+    },
+    {
+      "relType": "PERFORMED",
+      "fromProps": {
+        "id": "user_2"
+      },
+      "toProps": {
+        "id": "walk_2"
+      },
+      "relProps": {}
+    }
+  ]
+}
