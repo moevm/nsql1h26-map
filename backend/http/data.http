@@ -1,0 +1,19 @@
+@baseUrl = http://localhost:8000
+@dataPrefix = /data
+
+### Export all data
+GET {{baseUrl}}{{dataPrefix}}/export
+Accept: application/json
+
+###
+
+### Import dump from file
+POST {{baseUrl}}{{dataPrefix}}/import
+Content-Type: multipart/form-data; boundary=----FormBoundary
+
+------FormBoundary
+Content-Disposition: form-data; name="file"; filename="dump.json"
+Content-Type: application/json
+
+< ./dump.json
+------FormBoundary--
