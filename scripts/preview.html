@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OSM Preview</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { margin: 0; }
+    #map { height: 100vh; }
+    #info { position: absolute; top: 10px; right: 10px; z-index: 1000; background: white; padding: 8px 12px; border-radius: 6px; font: 13px monospace; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="info">Loading...</div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    const ZOOM = 19;
+    const N = Math.pow(2, ZOOM);
+
+    function tileToLatLng(tx, ty) {
+      const lon_w = tx / N * 360 - 180;
+      const lon_e = (tx + 1) / N * 360 - 180;
+      const lat_n = Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / N))) * 180 / Math.PI;
+      const lat_s = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 1) / N))) * 180 / Math.PI;
+      return [[lat_s, lon_w], [lat_n, lon_e]];
+    }
+
+    fetch('../data/osm_seed.json')
+      .then(r => r.json())
+      .then(data => {
+        const { nodes, edges, pois, meta } = data;
+        const nodeMap = {};
+
+        // edges
+        edges.forEach(e => {
+          const a = nodeMap[e.fromOsmId];
+          const b = nodeMap[e.toOsmId];
+          if (a && b) L.polyline([[a.lat, a.lon], [b.lat, b.lon]], { color: '#888', weight: 1, opacity: 0.6 }).addTo(map);
+        });
+
+        // tiles
+        const seen = new Set();
+        nodes.forEach(n => {
+          nodeMap[n.osmId] = n;
+          const key = `${n.tileX},${n.tileY}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            const bounds = tileToLatLng(n.tileX, n.tileY);
+            L.rectangle(bounds, { color: '#3388ff', weight: 0.5, fillOpacity: 0.15 })
+              .bindPopup(`<b>Tile</b><br>tileX: ${n.tileX}<br>tileY: ${n.tileY}`)
+              .addTo(map);
+          }
+        });
+
+        // edges (after nodeMap built)
+        edges.forEach(e => {
+          const a = nodeMap[e.fromOsmId];
+          const b = nodeMap[e.toOsmId];
+          if (a && b) L.polyline([[a.lat, a.lon], [b.lat, b.lon]], { color: '#555', weight: 1, opacity: 0.5 }).addTo(map);
+        });
+
+        // nodes
+        nodes.forEach(n => {
+          L.circleMarker([n.lat, n.lon], { radius: 2, color: '#e33', fillOpacity: 1, weight: 0 })
+            .bindPopup(`<b>Node</b><br>osmId: ${n.osmId}<br>lat: ${n.lat}<br>lon: ${n.lon}<br>tileX: ${n.tileX}<br>tileY: ${n.tileY}`)
+            .addTo(map);
+        });
+
+        // pois
+        pois.forEach(p => {
+          L.circleMarker([p.lat, p.lon], { radius: 5, color: '#f80', fillOpacity: 0.9, weight: 1 })
+            .bindPopup(`<b>${p.name || '—'}</b><br>${p.category}`)
+            .addTo(map);
+        });
+
+        const [minLat, minLon, maxLat, maxLon] = meta.bbox;
+        map.fitBounds([[minLat, minLon], [maxLat, maxLon]]);
+
+        document.getElementById('info').innerHTML =
+          `nodes: ${nodes.length}<br>edges: ${edges.length}<br>pois: ${pois.length}<br>tiles: ${seen.size}`;
+      });
+  </script>
+</body>
+</html>

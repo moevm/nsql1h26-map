@@ -1,5 +1,33 @@
 # nosql_template
 
+## Запуск приложения
+
+```bash
+docker compose build --no-cache && docker compose up -d
+```
+
+- Backend API: http://127.0.0.1:10001/docs
+- Frontend: http://127.0.0.1:10002
+
+## Утилита получения OSM-данных
+
+Скрипт `scripts/fetch_osm.py` скачивает данные дорожной сети из Overpass API и сохраняет в `data/osm_seed.json`.
+
+```bash
+# Петроградка (по умолчанию)
+python3 scripts/fetch_osm.py
+
+# Произвольный bbox: min_lat,min_lon,max_lat,max_lon
+python3 scripts/fetch_osm.py --bbox "59.95,30.28,59.98,30.34"
+```
+
+Для визуализации результата — запустить локальный сервер и открыть карту:
+
+```bash
+python3 -m http.server 8080
+# открыть http://localhost:8080/scripts/preview.html
+```
+
 
 ## Предварительная проверка заданий
 
