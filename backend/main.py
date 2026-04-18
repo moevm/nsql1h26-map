@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from database import driver
-from routers import data
+from routers import data, map
 from seed import run_seed
 
 
