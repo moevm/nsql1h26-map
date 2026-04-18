@@ -11,11 +11,11 @@ docker compose build --no-cache && docker compose up -d
 
 ## Утилита получения OSM-данных
 
-Скрипт `scripts/fetch_osm.py` скачивает данные дорожной сети из Overpass API и сохраняет в `data/osm_seed.json`.
+Скрипт `backend/scripts/fetch_osm.py` скачивает данные дорожной сети из Overpass API и сохраняет в `backend/data/osm_seed.json`.
 
 ```bash
 # Петроградка (по умолчанию)
-python3 scripts/fetch_osm.py
+python3 backend/scripts/fetch_osm.py
 
 # Произвольный bbox: min_lat,min_lon,max_lat,max_lon
 python3 scripts/fetch_osm.py --bbox "59.95,30.28,59.98,30.34"
@@ -25,7 +25,7 @@ python3 scripts/fetch_osm.py --bbox "59.95,30.28,59.98,30.34"
 
 ```bash
 python3 -m http.server 8080
-# открыть http://localhost:8080/scripts/preview.html
+# открыть http://localhost:8080/backend/scripts/preview.html
 ```
 
 
