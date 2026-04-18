@@ -3,6 +3,7 @@ import json
 import math
 import urllib.parse
 import urllib.request
+from pathlib import Path
 from datetime import datetime, timezone
 
 
@@ -134,7 +135,7 @@ def main():
     raw = fetch_overpass(bbox)
     result = process(raw, bbox)
 
-    output_path = "data/osm_seed.json"
+    output_path = Path(__file__).parent.parent / "data" / "osm_seed.json"
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
 
