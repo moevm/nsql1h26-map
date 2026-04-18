@@ -50,25 +50,31 @@ async def run_seed(driver):
         print(f"[seed] Created {len(edges)} edges.")
 
         pois = data["pois"]
+        node_coords = [(n["osmId"], n["lat"], n["lon"]) for n in nodes]
         for poi in pois:
+            nearest = min(node_coords, key=lambda n: (n[1] - poi["lat"]) ** 2 + (n[2] - poi["lon"]) ** 2)
+            poi["nearestOsmId"] = nearest[0]
+
+        for i in range(0, len(pois), BATCH_SIZE):
             await session.run(
                 """
-                CREATE (p:POI {osmId: $osmId, name: $name, category: $category, lat: $lat, lon: $lon})
-                WITH p
-                MATCH (n:MapNode)
-                WITH p, n,
-                     point.distance(
-                       point({latitude: p.lat, longitude: p.lon}),
-                       point({latitude: n.lat, longitude: n.lon})
-                     ) AS dist
-                ORDER BY dist ASC LIMIT 1
-                CREATE (n)-[:HAS_POI]->(p)
+                UNWIND $batch AS p
+                CREATE (poi:POI {osmId: p.osmId, name: p.name, category: p.category, lat: p.lat, lon: p.lon})
+                WITH poi, p
+                MATCH (n:MapNode {osmId: p.nearestOsmId})
+                CREATE (n)-[:HAS_POI]->(poi)
                 """,
-                osmId=poi["osmId"],
-                name=poi.get("name", ""),
-                category=poi.get("category", ""),
-                lat=poi["lat"],
-                lon=poi["lon"],
+                batch=[
+                    {
+                        "osmId": p["osmId"],
+                        "name": p.get("name", ""),
+                        "category": p.get("category", ""),
+                        "lat": p["lat"],
+                        "lon": p["lon"],
+                        "nearestOsmId": p["nearestOsmId"],
+                    }
+                    for p in pois[i:i + BATCH_SIZE]
+                ],
             )
         print(f"[seed] Created {len(pois)} POIs.")
 
