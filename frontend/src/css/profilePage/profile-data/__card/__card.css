@@ -1,0 +1,11 @@
+.profile-data__card {
+  width: 127px;
+  height: 73px;
+  background-color: rgba(0, 230, 195, 0.2);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 5px;
+  border: 1px solid var(--accent-color);
+}

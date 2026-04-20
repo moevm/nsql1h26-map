@@ -6,8 +6,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CityTrace</title>
     
+    <link rel="stylesheet" href="/src/css/profilePage/main.css">
+
   </head>
   <body>
+
+      <header class="header">
+      <div class="header__logo">
+        <img class="header__image" src="/src/svg/logo.svg" alt="CityTrace logo">
+        <span class="header__logo-text">CityTrace</span>
+      </div>
+      <nav class="header__navigation">
+        <ul class="header__menu">
+          <li class="header__menu-item">
+            <a class="header__link" href="#">Карта</a>
+          </li>
+          <li class="header__menu-item">
+            <a class="header__link" href="#">Маршруты</a>
+          </li>
+          <li class="header__menu-item">
+            <a class="header__link" href="#">Точки карты</a>
+          </li>
+          <li class="header__menu-item">
+            <a class="header__link header__link--active" href="#">Профиль</a>
+          </li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="profile-main">
+
+      <section class="profile-data">
+
+        <div class="profile-data__logo">
+          <img class="profile-data__image profile-data__image--logo" src="/src/img/user-logo.png" alt="user logo">
+        </div>
+        
+        <div class="profile-data__user-info">
+          <h3 class="profile-data__nickname">Сергей Минаев</h3>
+
+          <div class="profile-data__location">
+            <img class="profile-data__image profile-data__image--geopoint" src="/src/svg/geopoint.svg" alt="svg location">
+            <span class="profile-data__text">Санкт-Петербург</span>
+          </div>
+        </div>
+
+        <ul class="profile-data__cards">
+          
+          <li class="profile-data__card">
+            <h4 class="profile-data__card-header">Расстояние</h4>
+            <h5 class="profile-data__card-data">1.248 км</h5>
+          </li>
+
+          <li class="profile-data__card">
+            <h4 class="profile-data__card-header">Охват</h4>
+            <h5 class="profile-data__card-data">8.2%</h5>
+          </li>
+
+          <li class="profile-data__card">
+            <h4 class="profile-data__card-header">Прогулки</h4>
+            <h5 class="profile-data__card-data">242</h5>
+          </li>
+
+          <li class="profile-data__card">
+            <h4 class="profile-data__card-header">Дни</h4>
+            <h5 class="profile-data__card-data">14</h5>
+          </li>
+
+        </ul>
+
+        <div class="profile-data__achievments">
+          <h3 class="profile-data__header">Достижения</h3>
+          <ul class="profile-data__list">
+
+            <li class="profile-data__achievment">
+              <img class="profile-data__image profile-data__image--achievment" src="/src/svg/achievment--profi.svg" alt="achievment image">
+              <h4 class="profile-data__achievment-name">Профи</h4>
+            </li>
+
+            <li class="profile-data__achievment">
+              <img class="profile-data__image profile-data__image--achievment" src="/src/svg/achievment--walk.svg" alt="achievment image">
+              <h4 class="profile-data__achievment-name">Марафон</h4>
+            </li>
+
+            <li class="profile-data__achievment">
+              <img class="profile-data__image profile-data__image--achievment" src="/src/svg/achievment--scout.svg" alt="achievment image">
+              <h4 class="profile-data__achievment-name">Скаут</h4>
+            </li>
+
+            <li class="profile-data__achievment">
+              <img class="profile-data__image profile-data__image--achievment" src="/src/svg/achievment--legend.svg" alt="achievment image">
+              <h4 class="profile-data__achievment-name">Легенда</h4>
+            </li>
+
+          </ul>
+        </div>
+
+      </section>
+
+      <section class="profile-stats"></section>
+    </main>
+
     <script type="module" src="/src/js/pages/profilePage.js"></script>
   </body>
 </html>

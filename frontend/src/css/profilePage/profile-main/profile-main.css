@@ -1,0 +1,5 @@
+.profile-main {
+  display: flex;
+  margin-top: 32px;
+  padding: 0 var(--block-padding);
+}
