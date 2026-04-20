@@ -24,6 +24,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+  
+  frontend:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:5678:5678"
 
 volumes:
   neo4j_data:
