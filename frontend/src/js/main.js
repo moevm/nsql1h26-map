@@ -1,1 +1,5 @@
-document.querySelector('#app').innerHTML = `<h1>HELLO WORLD</h1>`;
+import { relocateToLogin } from "./auth";
+
+document.addEventListener('DOMContentLoaded', () => {
+  relocateToLogin();
+})
