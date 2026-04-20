@@ -1,0 +1,7 @@
+.sign-in__checkbox-input:checked{
+  background: rgba(0, 240, 232, 0.3);
+}
+
+.sign-in__checkbox-input:not([disabled]) ~ *{
+  cursor: pointer;
+}

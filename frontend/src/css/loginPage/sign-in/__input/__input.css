@@ -1,0 +1,16 @@
+.sign-in__input {
+  width: 100%;
+  background: #173635;
+  border: 1px solid #2E6B69;
+  border-radius: 12px;
+  padding: 14px 14px 14px 44px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #fff;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s, background-image .2s;
+  caret-color: #fff;
+  background-repeat: no-repeat;
+  background-position: 14px center;
+  background-size: 18px 18px;
+}

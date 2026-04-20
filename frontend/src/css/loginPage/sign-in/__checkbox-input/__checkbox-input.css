@@ -1,0 +1,10 @@
+@import url(__checkbox-input--pseudoclass.css);
+
+.sign-in__checkbox-input {
+  appearance: none;
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 240, 232, 0.3);
+}

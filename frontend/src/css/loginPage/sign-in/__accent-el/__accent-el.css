@@ -1,0 +1,10 @@
+.sign-in__accent-el {
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(0, 240, 232, 0.3);
+  font-weight: bold;
+  font-size: 14px;
+  letter-spacing: 1.2px;
+}

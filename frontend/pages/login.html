@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CityTrace</title>
+
+    <link rel="stylesheet" href="/src/css/loginPage/main.css">
+    
+  </head>
+  <body>
+
+    <header class="header">
+      <div class="header__logo">
+        <img class="header__image" src="/src/svg/logo.svg" alt="CityTrace logo">
+        <span class="header__logo-text">CityTrace</span>
+      </div>
+      <nav class="header__navigation">
+        <ul class="header__menu">
+          <li class="header__menu-item">
+            <img src="/src/svg/header__deco.svg" alt="deco image">
+          </li>
+
+        </ul>
+      </nav>
+    </header>
+
+    <main class="login-main">
+      <section class="sign-in">
+        <h2 class="sign-in__header">Вход в систему</h2>
+        <p class="sign-in__text">Добро пожаловать обратно в CityTrace</p>
+        <form class="sign-in__form">
+          <input class="sign-in__input sign-in__input--email" type="email" placeholder="example@example.com">
+          <input class="sign-in__input sign-in__input--password" type="password" placeholder="Введите ваш пароль">
+          
+          <label class="sign-in__checkbox">
+            <input class="sign-in__checkbox-input" type="checkbox" id="checkbox3">
+            <span class="sign-in__checkbox-label">Запомнить меня</span>
+          </label>
+
+          <input class="sign-in__input sign-in__input--submit" type="submit" value="Войти в CityTrace">
+        </form>
+
+        <span class="sign-in__accent-el">
+          или
+        </span>
+
+        <div class="sign-in__goto">
+          <span class="sign-in__tip">Нет аккаунта?</span>
+          <a class="sign-in__link" href="/pages/registration.html">Зарегистрироваться</a>
+        </div>
+      </section>
+
+    </main>
+
+    <script type="module" src="/src/js/pages/loginPage.js"></script>
+  </body>
+</html>

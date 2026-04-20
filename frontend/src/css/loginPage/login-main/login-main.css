@@ -1,0 +1,21 @@
+.login-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 50px;
+  height: calc(100vh - 75px);
+  padding: 0 var(--block-padding);
+  background-image: 
+    url(/src/svg/overlay_login.svg), 
+    url(/src/img/overlay.png);
+  background-position: 
+    right 40px bottom 40px, 
+    center;
+  background-repeat: 
+    no-repeat, 
+    no-repeat;
+  background-size: 
+    auto, 
+    cover;
+}

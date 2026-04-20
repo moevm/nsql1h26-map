@@ -1,0 +1,8 @@
+.sign-in {
+  width: 100%;
+  max-width: 476px;
+  background: rgba(23, 54, 53, 0.2);
+  border-radius: 16px;
+  padding: 32px;
+  border: 1px solid rgba(46, 107, 105, 0.4);
+}
