@@ -1,0 +1,7 @@
+.sign-in__accent-el::before,
+.sign-in__accent-el::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(0, 240, 232, 0.1);
+}

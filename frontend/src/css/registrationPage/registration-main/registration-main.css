@@ -1,0 +1,11 @@
+.registration-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 50px;
+  height: calc(100vh - 75px);
+  background-image: url(/src/img/overlay.png);
+  background-size: cover;
+  padding: 0 var(--block-padding);
+}
