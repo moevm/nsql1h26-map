@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CityTrace</title>
+
+    <!-- <link rel="stylesheet" href="/src/css/registrationPage/header.css"> -->
+    <link rel="stylesheet" href="/src/css/registrationPage/main.css">
+  </head>
+  <body>
+    
+    <header class="header">
+      <div class="header__logo">
+        <img class="header__image" src="/src/svg/logo.svg" alt="CityTrace logo">
+        <span class="header__logo-text">CityTrace</span>
+      </div>
+      <nav class="header__navigation">
+        <ul class="header__menu">
+          <li class="header__menu-item">
+            <span class="header__tip">
+              Уже есть аккаунт ?
+            </span>
+          </li>
+          <li class="header__menu-item">
+            <a class="header__link header__link--sign-in" href="/pages/login.html">
+              Войти
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="registration-main">
+      <section class="description">
+        <h1 class="description__text">
+          Отслеживайте <span class="description__text--accent">ритм</span> своего города.
+        </h1>
+        <p class="description__sub-text">Присоединяйтесь к сообществу CityTrace.</p>
+      </section>
+      <section class="sign-up">
+        <h2 class="sign-up__header">Регистрация</h2>
+        <p class="sign-up__text">Создайте аккаунт, чтобы начать пользоваться CityTrace</p>
+        <form class="sign-up__form">
+          <input class="sign-up__input sign-up__input--nickname" type="text" placeholder="Придумайте никнейм">
+          <input class="sign-up__input sign-up__input--email" type="email" placeholder="example@example.com">
+          <input class="sign-up__input sign-up__input--password" type="password" placeholder="Минимум 8 символов">
+          <input class="sign-up__input sign-up__input--submit" type="submit" value="Зарегистрироваться">
+        </form>
+      </section>
+    </main>
+    
+    <script type="module" src="/src/js/pages/registrationPage.js"></script>
+  </body>
+</html>

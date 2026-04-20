@@ -1,0 +1,9 @@
+@import url(/src/css/total.css);
+
+@import url(header/header.css);
+
+@import url(registration-main/registration-main.css);
+
+@import url(description/description--total.css);
+
+@import url(sign-up/__sign-up--total.css);

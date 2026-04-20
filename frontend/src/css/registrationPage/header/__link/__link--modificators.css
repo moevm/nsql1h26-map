@@ -1,0 +1,13 @@
+.header__link--sign-in {
+  color: #00F0E8;
+  font-weight: bold;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 40px;
+  background-color: rgba(0, 240, 232, 0.1);
+  border: 1px solid rgba(0, 240, 232, 0.2);
+  border-radius: 8px;
+}
