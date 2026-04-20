@@ -1,0 +1,10 @@
+:root {
+  --main-bg-color: #0F2323;
+  --main-text-color: #FFFFFF;
+
+  --main-font-family: 'Inter';
+
+  --block-padding: 40px;
+
+  --accent-color: #2E6B69;
+}

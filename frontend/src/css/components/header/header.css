@@ -1,0 +1,37 @@
+.header {
+  height: 75px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--block-padding);
+  border-bottom: 1px solid var(--accent-color);
+}
+
+.header__logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header__logo-text {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.header__navigation {
+  display: flex;
+}
+
+.header__menu {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header__menu-item {
+  list-style: none;
+}
+
+.header__link {
+  text-decoration: none;
+}
