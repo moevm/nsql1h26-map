@@ -104,3 +104,43 @@ async def create_walk(body: CreateWalkRequest, session=Depends(get_session)):
         "durationSeconds": duration_seconds,
         "tilesCount": len(tiles),
     }
+
+@router.get("/")
+async def get_walks(userId: str, session=Depends(get_session)):
+    result = await session.run(
+        """
+        MATCH (u:User {id: $userId})-[:PERFORMED]->(w:Walk)
+        RETURN w.id AS id, w.startedAt AS startedAt, w.finishedAt AS finishedAt,
+               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
+        ORDER BY w.startedAt DESC
+        """,
+        userId=userId,
+    )
+    return [r.data() async for r in result]
+
+
+@router.get("/{walkId}")
+async def get_walk(walkId: str, session=Depends(get_session)):
+    walk_result = await session.run(
+        """
+        MATCH (w:Walk {id: $walkId})
+        RETURN w.id AS id, w.startedAt AS startedAt, w.finishedAt AS finishedAt,
+               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
+        """,
+        walkId=walkId,
+    )
+    record = await walk_result.single()
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Walk not found")
+
+    points_result = await session.run(
+        """
+        MATCH (w:Walk {id: $walkId})-[:HAS_POINT]->(wp:WalkPoint)
+        RETURN wp.lat AS lat, wp.lon AS lon, wp.timestamp AS timestamp, wp.order AS order
+        ORDER BY wp.order
+        """,
+        walkId=walkId,
+    )
+    points = [r.data() async for r in points_result]
+
+    return {**record.data(), "points": points}
