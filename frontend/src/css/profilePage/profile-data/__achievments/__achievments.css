@@ -1,0 +1,5 @@
+.profile-data__achievments {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

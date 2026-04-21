@@ -1,0 +1,16 @@
+@import url(profile-data.css);
+@import url(__logo/__logo--total.css);
+@import url(__image/__image-total.css);
+@import url(__user-info/__user-info.css);
+@import url(__nickname/__nickname.css);
+@import url(__text/__text.css);
+@import url(__cards/__cards.css);
+@import url(__card/__card.css);
+@import url(__card-header/__card-header.css);
+@import url(__card-data/__card-data.css);
+@import url(__achievments/__achievments.css);
+@import url(__header/__header.css);
+@import url(__list/__list.css);
+@import url(__achievment/__achievment.css);
+@import url(__achievment-name/__achievment-name.css);
+@import url(__button/__button.css);

@@ -1,0 +1,12 @@
+.profile-data__logo::after {
+  content: '';
+  position: absolute;
+  display: block;
+  width: 128px;
+  height: 128px;
+  background-color: var(--accent-color);
+  border-radius: 50%;
+  top: 0;
+  right: 0;
+  z-index: -1;
+}
