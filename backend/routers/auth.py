@@ -60,3 +60,32 @@ async def login(body: LoginRequest, session=Depends(get_session)):
     )
 
 
+@router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
+async def register(body: RegisterRequest, session=Depends(get_session)):
+    existing = await session.run(
+        "MATCH (u:User) WHERE u.email = $email OR u.username = $username RETURN u",
+        email=body.email,
+        username=body.username,
+    )
+    if await existing.single():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already exists")
+
+    user_id = str(uuid.uuid4())
+    token = secrets.token_hex(32)
+    await session.run(
+        """
+        CREATE (u:User {
+            id: $id, username: $username, email: $email,
+            password: $password, token: $token, avatarUrl: ''
+        })
+        """,
+        id=user_id,
+        username=body.username,
+        email=body.email,
+        password=body.password,
+        token=token,
+    )
+    return AuthResponse(
+        token=token,
+        user=UserResponse(id=user_id, username=body.username, email=body.email, avatarUrl=""),
+    )
