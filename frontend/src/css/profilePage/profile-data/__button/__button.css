@@ -1,0 +1,13 @@
+.profile-data__button {
+  width: 100%;
+  height: 40px;
+  cursor: pointer;
+  border-radius: 8px;
+  outline: none;
+  background-color: #00F0E8;
+  border: 1px solid var(--accent-color);
+  font-size: 16px;
+  font-weight: 600;
+  color: #0a1f28;
+  box-shadow: 0 6px 10px rgba(46, 232, 196, .25);
+}

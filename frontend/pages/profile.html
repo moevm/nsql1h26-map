@@ -98,13 +98,54 @@
               <img class="profile-data__image profile-data__image--achievment" src="/src/svg/achievment--legend.svg" alt="achievment image">
               <h4 class="profile-data__achievment-name">Легенда</h4>
             </li>
-
           </ul>
         </div>
 
+        <button class="profile-data__button">Выйти из аккаунта</button>
+
       </section>
 
-      <section class="profile-stats"></section>
+      <section class="profile-stats">
+        <div class="stats-settings">
+          <ul class="stats-settings__menu">
+            
+            <li class="stats-settings__menu-item">
+              <div class="stats-settings__select-wrapper">
+                <select class="stats-settings__select" name="duration" id="duration">
+                  <option class="stats-settings__option" value="7days">Последние 7 дней</option>
+                  <option class="stats-settings__option" value="30days">Последние 30 дней</option>
+                  <option class="stats-settings__option" value="90days">Последние 90 дней</option>
+                </select>
+              </div>
+            </li>
+            
+            <li class="stats-settings__menu-item">
+              <div class="stats-settings__select-wrapper">
+                <select class="stats-settings__select" name="metrics" id="metrics">
+                  <option class="stats-settings__option" value="Лондон">Расстояние</option>
+                  <option class="stats-settings__option" value="Париж">Длительность</option>
+                  <option class="stats-settings__option" value="Рига">Новый охват</option>
+                  <option class="stats-settings__option" value="Москва">Скорость</option>
+                  <option class="stats-settings__option" value="asd">Посещённые места</option>
+                </select>
+              </div>
+            </li>
+
+            <li class="stats-settings__menu-item">
+              <div class="stats-settings__select-wrapper">
+                <select class="stats-settings__select" name="city" id="city">
+                  <option class="stats-settings__option" value="Лондон">Лондон</option>
+                  <option class="stats-settings__option" value="Париж">Париж</option>
+                  <option class="stats-settings__option" value="Рига">Рига</option>
+                  <option class="stats-settings__option" value="Москва">Москва</option>
+                </select>
+              </div>
+            </li>
+          
+          </ul>
+          <button class="stats-settings__button">Применить</button>
+        </div>
+      </section>
     </main>
 
     <script type="module" src="/src/js/pages/profilePage.js"></script>

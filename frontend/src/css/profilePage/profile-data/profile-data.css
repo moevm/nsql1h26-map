@@ -1,5 +1,6 @@
 .profile-data {
-  width: 320px;
+  max-width: 320px;
+  width: 30%;
   border-radius: 12px;
   background-color: rgba(23, 54, 53, 0.2);;
   display: flex;
