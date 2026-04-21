@@ -110,7 +110,7 @@ async def get_walks(userId: str, session=Depends(get_session)):
     result = await session.run(
         """
         MATCH (u:User {id: $userId})-[:PERFORMED]->(w:Walk)
-        RETURN w.id AS id, w.startedAt AS startedAt, w.finishedAt AS finishedAt,
+        RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
                w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
         ORDER BY w.startedAt DESC
         """,
@@ -124,7 +124,7 @@ async def get_walk(walkId: str, session=Depends(get_session)):
     walk_result = await session.run(
         """
         MATCH (w:Walk {id: $walkId})
-        RETURN w.id AS id, w.startedAt AS startedAt, w.finishedAt AS finishedAt,
+        RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
                w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
         """,
         walkId=walkId,
@@ -136,7 +136,7 @@ async def get_walk(walkId: str, session=Depends(get_session)):
     points_result = await session.run(
         """
         MATCH (w:Walk {id: $walkId})-[:HAS_POINT]->(wp:WalkPoint)
-        RETURN wp.lat AS lat, wp.lon AS lon, wp.timestamp AS timestamp, wp.order AS order
+        RETURN wp.lat AS lat, wp.lon AS lon, toString(wp.timestamp) AS timestamp, wp.order AS order
         ORDER BY wp.order
         """,
         walkId=walkId,

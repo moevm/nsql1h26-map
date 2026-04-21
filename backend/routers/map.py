@@ -69,7 +69,7 @@ async def get_tiles(userId: str = Query(...), session=Depends(get_session)):
         """
         MATCH (u:User {id: $userId})-[:COVERED]->(ct:CoveredTile)
         RETURN ct.tileX AS tileX, ct.tileY AS tileY,
-               ct.firstCoveredAt AS firstCoveredAt
+               toString(ct.firstCoveredAt) AS firstCoveredAt
         """,
         userId=userId,
     )
