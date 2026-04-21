@@ -1,26 +1,13 @@
 import argparse
 import json
-import math
+import sys
 import urllib.parse
 import urllib.request
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
-
-def lat_lon_to_tile(lat, lon, zoom=19):
-    n = 2 ** zoom
-    tile_x = int((lon + 180) / 360 * n)
-    tile_y = int((1 - math.log(math.tan(math.radians(lat)) + 1 / math.cos(math.radians(lat))) / math.pi) / 2 * n)
-    return tile_x, tile_y
-
-
-def haversine(lat1, lon1, lat2, lon2):
-    R = 6371000
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlambda = math.radians(lon2 - lon1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils import haversine, lat_lon_to_tile
 
 
 def fetch_overpass(bbox):
