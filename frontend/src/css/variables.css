@@ -1,6 +1,13 @@
 :root {
   --main-bg-color: #0F2323;
+
+  --dark-bg-color: #0D1117;
+
   --main-text-color: #FFFFFF;
+
+  --inactive-text-color: #94A3B8;
+
+  --accent-text-color: #00E6C3;
 
   --main-font-family: 'Inter';
 

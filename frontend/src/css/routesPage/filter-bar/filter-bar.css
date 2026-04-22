@@ -3,7 +3,7 @@
   align-items: flex-end;
   gap: 20px;
   padding: 20px;
-  margin: 0px var(--block-padding);
+  margin: 0px var(--block-padding) 20px;
   flex-wrap: wrap;
   background: #162C2880;
   border: 1px solid #273A37;

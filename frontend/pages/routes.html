@@ -53,7 +53,6 @@
         <div class="filter-bar__item filter-bar__item--date">
           <label class="filter-bar__label">Дата</label>
           <div class="filter-bar__control">
-            <img src="/src/svg/routes/filter-calendar.svg" alt="" class="filter-bar__icon">
             <input type="date" class="filter-bar__date-input" id="date-from" placeholder="дд.мм.гггг">
             <span class="filter-bar__date-separator">—</span>
             <input type="date" class="filter-bar__date-input" id="date-to" placeholder="дд.мм.гггг">
@@ -135,16 +134,16 @@
               <td>
                 <input type="checkbox" class="route-checkbox" checked>
               </td>
-              <td>1</td>
+              <td class="route-num">1</td>
               <td>
                 <div class="route-name">Downtown Exploration #42</div>
                 <div class="route-id">RT-20231025-001</div>
               </td>
-              <td>Окт 25, 2023 · 08:42</td>
-              <td>12.4</td>
-              <td>48м 12с</td>
+              <td class="route-date-time">Окт 25, 2023 · 08:42</td>
+              <td class="route-dist">12.4</td>
+              <td class="route-duration">48м 12с</td>
               <td><span class="coverage-badge">64.2%</span></td>
-              <td>12</td>
+              <td class="route-places">12</td>
               <td>
                 <button class="action-btn" data-action="view" data-id="RT-20231025-001">
                   <img src="/src/svg/routes/eye.svg" alt="просмотр">
@@ -159,16 +158,16 @@
               <td>
                 <input type="checkbox" class="route-checkbox">
               </td>
-              <td>2</td>
+              <td class="route-num">2</td>
               <td>
                 <div class="route-name">River Side Morning</div>
                 <div class="route-id">RT-20231024-008</div>
               </td>
-              <td>Окт 24, 2023 · 06:15</td>
-              <td>8.2</td>
-              <td>32м 45с</td>
+              <td class="route-date-time">Окт 24, 2023 · 06:15</td>
+              <td class="route-dist">8.2</td>
+              <td class="route-duration">32м 45с</td>
               <td><span class="coverage-badge coverage-badge--low">12.5%</span></td>
-              <td>4</td>
+              <td class="route-places">4</td>
               <td>
                 <button class="action-btn" data-action="view" data-id="RT-20231024-008">
                   <img src="/src/svg/routes/eye.svg" alt="просмотр">
@@ -183,16 +182,16 @@
               <td>
                 <input type="checkbox" class="route-checkbox">
               </td>
-              <td>3</td>
+              <td class="route-num">3</td>
               <td>
                 <div class="route-name">North Bridge Crossing</div>
                 <div class="route-id">RT-20231022-012</div>
               </td>
-              <td>Окт 22, 2023 · 05:30</td>
-              <td>15.9</td>
-              <td>1ч 05м</td>
+              <td class="route-date-time">Окт 22, 2023 · 05:30</td>
+              <td class="route-dist">15.9</td>
+              <td class="route-duration">1ч 05м</td>
               <td><span class="coverage-badge coverage-badge--high">89.0%</span></td>
-              <td>28</td>
+              <td class="route-places">28</td>
               <td>
                 <button class="action-btn" data-action="view" data-id="RT-20231022-012">
                   <img src="/src/svg/routes/eye.svg" alt="просмотр">
@@ -233,7 +232,7 @@
       </div>
 
       <div class="dashboard">
-        <div class="dashboard__card">
+        <div class="dashboard__card dashboard__card--dist">
           <div class="dashboard__card-header">
             <span class="dashboard__card-title">Общее расстояние</span>
             <img src="/src/svg/routes/dashboard-distance.svg" alt="" class="dashboard__card-icon">
@@ -243,7 +242,7 @@
             <span class="dashboard__card-unit">км</span>
           </div>
         </div>
-        <div class="dashboard__card">
+        <div class="dashboard__card dashboard__card--time">
           <div class="dashboard__card-header">
             <span class="dashboard__card-title">Среднее время / маршрут</span>
             <img src="/src/svg/routes/dashboard-time.svg" alt="" class="dashboard__card-icon">
