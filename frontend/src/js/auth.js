@@ -22,7 +22,7 @@ export function relocateToLogin() {
     window.location.href = '/pages/login.html';
   }
 
-  if (currentLocation === '/pages/login.html' || currentLocation === '/pages/registration.html' || currentLocation === 'index.html') {
+  if (currentLocation === '/pages/login.html' || currentLocation === '/pages/registration.html' || currentLocation === '/index.html') {
     window.location.href = '/pages/profile.html';
   }
 
