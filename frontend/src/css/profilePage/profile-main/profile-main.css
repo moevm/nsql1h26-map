@@ -2,7 +2,10 @@
   width: 100%;
   display: flex;
   justify-content: center;
-  margin-top: 32px;
+  min-height: calc(100vh - 75px);
+  background-image: url(/src/img/overlay.png);
+  background-size: cover;
   padding: 0 var(--block-padding);
+  padding-top: 32px;
   gap: 25px;
 }
