@@ -2,10 +2,11 @@ import heapq
 import uuid
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from database import get_session
+from utils import make_page
 
 router = APIRouter()
 
@@ -237,3 +238,89 @@ async def create_route(body: RouteRequest, session=Depends(get_session)):
                 for i, osm_id in enumerate(path)
             ],
         }
+
+@router.get("/")
+async def list_routes(
+    userId: str | None = Query(None),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    session=Depends(get_session),
+):
+    if userId:
+        count_result = await session.run(
+            "MATCH (u:User {id: $userId})-[:REQUESTED_ROUTE]->(r:Route) RETURN count(r) AS total",
+            userId=userId,
+        )
+        total = (await count_result.single())["total"]
+        result = await session.run(
+            """
+            MATCH (u:User {id: $userId})-[:REQUESTED_ROUTE]->(r:Route)
+            RETURN r.id AS id, toString(r.createdAt) AS createdAt,
+                   r.totalDistanceMeters AS totalDistanceMeters, r.estimatedMinutes AS estimatedMinutes
+            ORDER BY r.createdAt DESC
+            SKIP $offset LIMIT $limit
+            """,
+            userId=userId, offset=offset, limit=limit,
+        )
+    else:
+        count_result = await session.run("MATCH (r:Route) RETURN count(r) AS total")
+        total = (await count_result.single())["total"]
+        result = await session.run(
+            """
+            MATCH (r:Route)
+            RETURN r.id AS id, toString(r.createdAt) AS createdAt,
+                   r.totalDistanceMeters AS totalDistanceMeters, r.estimatedMinutes AS estimatedMinutes
+            ORDER BY r.createdAt DESC
+            SKIP $offset LIMIT $limit
+            """,
+            offset=offset, limit=limit,
+        )
+
+    items = [r.data() async for r in result]
+    return make_page(items, total, offset, limit)
+
+
+@router.get("/{routeId}")
+async def get_route(routeId: str, session=Depends(get_session)):
+    result = await session.run(
+        """
+        MATCH (r:Route {id: $id})
+        RETURN r.id AS id, toString(r.createdAt) AS createdAt,
+               r.totalDistanceMeters AS totalDistanceMeters, r.estimatedMinutes AS estimatedMinutes
+        """,
+        id=routeId,
+    )
+    record = await result.single()
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
+
+    nodes_result = await session.run(
+        """
+        MATCH (r:Route {id: $id})-[pt:PASSES_THROUGH]->(mn:MapNode)
+        RETURN mn.osmId AS osmId, mn.lat AS lat, mn.lon AS lon, pt.order AS order
+        ORDER BY pt.order
+        """,
+        id=routeId,
+    )
+    nodes = [r.data() async for r in nodes_result]
+
+    pois_result = await session.run(
+        """
+        MATCH (r:Route {id: $id})-[:PASSES_THROUGH]->(mn:MapNode)-[:HAS_POI]->(p:POI)
+        RETURN DISTINCT p.osmId AS osmId, p.name AS name, p.category AS category,
+               p.lat AS lat, p.lon AS lon
+        """,
+        id=routeId,
+    )
+    pois = [r.data() async for r in pois_result]
+
+    return {**record.data(), "nodes": nodes, "pois": pois}
+
+
+@router.delete("/{routeId}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_route(routeId: str, session=Depends(get_session)):
+    result = await session.run("MATCH (r:Route {id: $id}) RETURN r", id=routeId)
+    if not await result.single():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
+
+    await session.run("MATCH (r:Route {id: $id}) DETACH DELETE r", id=routeId)
