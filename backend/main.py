@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import driver
-from routers import auth, data, map, walks, routes, users, walkpoints
+from routers import auth, data, map, walks, routes, users, walkpoints, tiles
 from seed import run_seed
 
 
@@ -24,6 +24,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(tiles.router, prefix="/api/tiles")
 app.include_router(walkpoints.router, prefix="/api/walkpoints")
 app.include_router(users.router, prefix="/api/users")
 app.include_router(data.router, prefix="/data")
