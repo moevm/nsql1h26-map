@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import driver
-from routers import auth, data, map, walks, routes, users, walkpoints, tiles, mapnodes, trackfiles, districts
+from routers import auth, data, map, walks, routes, users, walkpoints, tiles, mapnodes, trackfiles, districts, pois
 
 
 @asynccontextmanager
@@ -34,3 +34,4 @@ app.include_router(map.router, prefix="/api/map")
 app.include_router(auth.router, prefix="/api/auth")
 app.include_router(walks.router, prefix="/api/walks")
 app.include_router(routes.router, prefix="/api/routes")
+app.include_router(pois.router, prefix="/api/pois")
