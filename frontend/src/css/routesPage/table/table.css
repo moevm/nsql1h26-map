@@ -1,0 +1,127 @@
+.table-container {
+  padding: 0;
+  margin: 0 var(--block-padding) 20px;
+  overflow-x: auto;
+}
+
+.routes-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  background: #162C28CC;
+}
+
+.routes-table__th {
+  text-align: left;
+  padding: 16px 12px;
+  color: #94A3B8;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  border-bottom: 1px solid #273A37
+}
+
+.routes-table__th--checkbox {
+  width: 40px;
+}
+
+.routes-table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 14px;
+}
+
+.routes-table__row--selected {
+  background: #00E6C30D;
+  border-left: 2px solid #00E6C3;
+}
+
+.route-num {
+  font-weight: 500;
+  line-height: 20px;
+  color: #64748B;
+}
+
+.route-name {
+  font-weight: 700;
+  line-height: 20px;
+  letter-spacing: 0px;
+  color: var(--main-text-color);
+  margin-bottom: 4px;
+}
+
+.route-id {
+  font-weight: 400;
+  font-size: 10px;
+  line-height: 20px;
+  letter-spacing: 0px;
+  color: #64748B;
+}
+
+.route-date-time {
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0px;
+  color: #CBD5E1;
+}
+
+.route-dist {
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0px;
+}
+
+.route-duration {
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0px;
+  color: #CBD5E1;
+}
+
+.coverage-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background: #00E6C333;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-text-color);
+}
+
+.coverage-badge--low {
+  background: #1E293B;
+  color: #94A3B8;
+}
+
+.route-places {
+  font-weight: 700;
+}
+
+.action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  margin-right: 8px;
+}
+
+.action-btn img {
+  width: 18px;
+  height: 14px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.action-btn:hover img {
+  opacity: 1;
+}
+
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent-text-color);
+}

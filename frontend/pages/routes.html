@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CityTrace</title>
+    <link rel="stylesheet" href="/src/css/routesPage/main.css">
+  </head>
+  <body>
+    <header class="header">
+      <div class="header__logo">
+        <img class="header__image" src="/src/svg/tiles.svg" alt="CityTrace logo">
+        <span class="header__logo-text">CityTrace</span>
+      </div>
+      <nav class="header__navigation">
+        <ul class="header__menu">
+          <li class="header__menu-item">
+            <a class="header__link" href="/pages/map.html">Карта</a>
+          </li>
+          <li class="header__menu-item">
+            <a class="header__link header__link--active" href="/pages/routes.html">Маршруты</a>
+          </li>
+          <li class="header__menu-item">
+            <a class="header__link" href="/pages/points.html">Точки карты</a>
+          </li>
+          <li class="header__menu-item">
+            <a class="header__link" href="/pages/statistics.html">Статистика</a>
+          </li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="routes-main">
+      <div class="page-header">
+        <div class="page-header__left">
+          <h1 class="page-header__title">Маршруты</h1>
+          <span class="page-header__count">142 маршрута</span>
+        </div>
+        <div class="page-header__right">
+          <button class="btn btn--secondary" id="import-routes-btn">
+            <img src="/src/svg/routes/import.svg" alt="" class="btn__icon">
+            <span>Импорт маршрутов</span>
+          </button>
+          <button class="btn btn--primary" id="new-route-btn">
+            <img src="/src/svg/routes/plus.svg" alt="" class="btn__icon">
+            <span>Новый маршрут</span>
+          </button>
+        </div>
+      </div>
+
+        <div class="filter-bar">
+        <div class="filter-bar__item filter-bar__item--date">
+          <label class="filter-bar__label">Дата</label>
+          <div class="filter-bar__control">
+            <input type="date" class="filter-bar__date-input" id="date-from" placeholder="дд.мм.гггг">
+            <span class="filter-bar__date-separator">—</span>
+            <input type="date" class="filter-bar__date-input" id="date-to" placeholder="дд.мм.гггг">
+          </div>
+        </div>
+
+        <div class="filter-bar__item">
+          <label class="filter-bar__label">Расстояние</label>
+          <select class="filter-bar__select" id="distance-filter">
+            <option value="any">Любое</option>
+            <option value="0-5">до 5 км</option>
+            <option value="5-10">5-10 км</option>
+            <option value="10-15">10-15 км</option>
+            <option value="15+">более 15 км</option>
+          </select>
+        </div>
+
+        <div class="filter-bar__item">
+          <label class="filter-bar__label">Длительность</label>
+          <select class="filter-bar__select" id="duration-filter">
+            <option value="any">Любая</option>
+            <option value="0-30">до 30 мин</option>
+            <option value="30-60">30-60 мин</option>
+            <option value="60-120">1-2 часа</option>
+            <option value="120+">более 2 часов</option>
+          </select>
+        </div>
+
+        <div class="filter-bar__item">
+          <label class="filter-bar__label">Покрытие %</label>
+          <select class="filter-bar__select" id="coverage-filter">
+            <option value="any">Любое</option>
+            <option value="0-25">0-25%</option>
+            <option value="25-50">25-50%</option>
+            <option value="50-75">50-75%</option>
+            <option value="75-100">75-100%</option>
+          </select>
+        </div>
+
+        <div class="filter-bar__item filter-bar__item--search">
+          <label class="filter-bar__label">Поиск</label>
+          <div class="filter-bar__search">
+            <img src="/src/svg/routes/search.svg" alt="" class="filter-bar__search-icon">
+            <input type="text" class="filter-bar__input" placeholder="Имя маршрута или id..." id="search-input">
+          </div>
+        </div>
+
+        <div class="filter-bar__actions">
+          <button class="btn-reset" id="reset-filters-btn">Сброс фильтров</button>
+          <button class="btn-export" id="export-selected-btn">
+            <img src="/src/svg/routes/export.svg" alt="" class="btn-export__icon">
+            <span>Экспорт выбранных</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="routes-table">
+          <thead>
+            <tr>
+              <th class="routes-table__th routes-table__th--checkbox">
+                <input type="checkbox" id="select-all-checkbox">
+              </th>
+              <th class="routes-table__th">#</th>
+              <th class="routes-table__th">Имя маршрута / ID</th>
+              <th class="routes-table__th">Дата и время</th>
+              <th class="routes-table__th">Расстояние (км)</th>
+              <th class="routes-table__th">Длительность</th>
+              <th class="routes-table__th">Новая зона</th>
+              <th class="routes-table__th">Интересные места</th>
+              <th class="routes-table__th">Действия</th>
+            </tr>
+          </thead>
+          <tbody id="routes-table-body">
+            <!-- здесь будут данные из mockdata.js -->
+
+            <!-- Строка 1 -->
+            <tr class="routes-table__row--selected">
+              <td>
+                <input type="checkbox" class="route-checkbox" checked>
+              </td>
+              <td class="route-num">1</td>
+              <td>
+                <div class="route-name">Downtown Exploration #42</div>
+                <div class="route-id">RT-20231025-001</div>
+              </td>
+              <td class="route-date-time">Окт 25, 2023 · 08:42</td>
+              <td class="route-dist">12.4</td>
+              <td class="route-duration">48м 12с</td>
+              <td><span class="coverage-badge">64.2%</span></td>
+              <td class="route-places">12</td>
+              <td>
+                <button class="action-btn" data-action="view" data-id="RT-20231025-001">
+                  <img src="/src/svg/routes/eye.svg" alt="просмотр">
+                </button>
+                <button class="action-btn" data-action="delete" data-id="RT-20231025-001">
+                  <img src="/src/svg/routes/trash.svg" alt="удалить">
+                </button>
+              </td>
+            </tr>
+            <!-- Строка 2 -->
+            <tr>
+              <td>
+                <input type="checkbox" class="route-checkbox">
+              </td>
+              <td class="route-num">2</td>
+              <td>
+                <div class="route-name">River Side Morning</div>
+                <div class="route-id">RT-20231024-008</div>
+              </td>
+              <td class="route-date-time">Окт 24, 2023 · 06:15</td>
+              <td class="route-dist">8.2</td>
+              <td class="route-duration">32м 45с</td>
+              <td><span class="coverage-badge coverage-badge--low">12.5%</span></td>
+              <td class="route-places">4</td>
+              <td>
+                <button class="action-btn" data-action="view" data-id="RT-20231024-008">
+                  <img src="/src/svg/routes/eye.svg" alt="просмотр">
+                </button>
+                <button class="action-btn" data-action="delete" data-id="RT-20231024-008">
+                  <img src="/src/svg/routes/trash.svg" alt="удалить">
+                </button>
+              </td>
+            </tr>
+            <!-- Строка 3 -->
+            <tr>
+              <td>
+                <input type="checkbox" class="route-checkbox">
+              </td>
+              <td class="route-num">3</td>
+              <td>
+                <div class="route-name">North Bridge Crossing</div>
+                <div class="route-id">RT-20231022-012</div>
+              </td>
+              <td class="route-date-time">Окт 22, 2023 · 05:30</td>
+              <td class="route-dist">15.9</td>
+              <td class="route-duration">1ч 05м</td>
+              <td><span class="coverage-badge coverage-badge--high">89.0%</span></td>
+              <td class="route-places">28</td>
+              <td>
+                <button class="action-btn" data-action="view" data-id="RT-20231022-012">
+                  <img src="/src/svg/routes/eye.svg" alt="просмотр">
+                </button>
+                <button class="action-btn" data-action="delete" data-id="RT-20231022-012">
+                  <img src="/src/svg/routes/trash.svg" alt="удалить">
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="pagination">
+          <div class="pagination__info">
+            <div class="pagination__per-page">
+              <span>Записей на экране</span>
+              <div class="pagination__select" id="per-page-select">
+                <span>15</span>
+                <img src="/src/svg/arrow-down--grey.svg" alt="">
+              </div>
+            </div>
+            <span class="pagination__range" id="pagination-range">Показано 1-15 из 142 маршрутов</span>
+          </div>
+          <div class="pagination__controls">
+            <button class="pagination__btn pagination__btn--prev" id="prev-page-btn">
+              <img src="/src/svg/routes/arrow-left.svg" alt="">
+            </button>
+            <button class="pagination__btn pagination__btn--page pagination__btn--active" data-page="1">1</button>
+            <button class="pagination__btn pagination__btn--page" data-page="2">2</button>
+            <button class="pagination__btn pagination__btn--page" data-page="3">3</button>
+            <span class="pagination__dots">...</span>
+            <button class="pagination__btn pagination__btn--page" data-page="12">12</button>
+            <button class="pagination__btn pagination__btn--next" id="next-page-btn">
+              <img src="/src/svg/routes/arrow-right.svg" alt="">
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard">
+        <div class="dashboard__card dashboard__card--dist">
+          <div class="dashboard__card-header">
+            <span class="dashboard__card-title">Общее расстояние</span>
+            <img src="/src/svg/routes/dashboard-distance.svg" alt="" class="dashboard__card-icon">
+          </div>
+          <div class="dashboard__card-value">
+            <span class="dashboard__card-number">1,842.5</span>
+            <span class="dashboard__card-unit">км</span>
+          </div>
+        </div>
+        <div class="dashboard__card dashboard__card--time">
+          <div class="dashboard__card-header">
+            <span class="dashboard__card-title">Среднее время / маршрут</span>
+            <img src="/src/svg/routes/dashboard-time.svg" alt="" class="dashboard__card-icon">
+          </div>
+          <div class="dashboard__card-value">
+            <span class="dashboard__card-number">42мин 15с</span>
+          </div>
+          <div class="dashboard__card-trend">
+            <img src="/src/svg/routes/trend-up.svg" alt="" class="dashboard__trend-icon">
+            <span class="dashboard__trend-text">+5% с прошлого месяца</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/src/js/pages/routesPage.js"></script>
+  </body>
+</html>
