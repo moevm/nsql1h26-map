@@ -161,5 +161,79 @@ def _dijkstra(graph: dict, start: int, end: int) -> tuple[list[int], float]:
     return path, dist_to.get(end, 0.0)
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_route(body: RouteRequest):
-    return {"detail": "not implemented"}
+async def create_route(body: RouteRequest, session=Depends(get_session)):
+        # 1. Загрузить подграф и закрашенные тайлы
+        nodes, graph = await _load_subgraph(session, body.startLat, body.startLon, body.searchRadius)
+        if not nodes:
+            raise HTTPException(status_code=404, detail="No MapNodes found in search radius")
+
+        covered = await _load_covered_tiles(session, body.userId)
+
+        # 2. Найти ближайшие узлы к старту и финишу
+        start_node = _find_nearest_node(nodes, body.startLat, body.startLon)
+        end_node = _find_nearest_node(nodes, body.endLat, body.endLon)
+        if start_node is None or end_node is None:
+            raise HTTPException(status_code=404, detail="Cannot snap start/end to graph")
+
+        is_loop = (start_node == end_node)
+
+        # 3. Жадный обход: максимизируем новые тайлы
+        path, path_distance = _greedy_walk(
+            nodes, graph, covered, start_node, body.targetDistance, is_loop,
+        )
+
+        # 4. Если кольцевой — вернуться к старту
+        if is_loop and path[-1] != start_node:
+            return_path, return_dist = _dijkstra(graph, path[-1], start_node)
+            if return_path:
+                path.extend(return_path[1:])  # без дубля текущего узла
+                path_distance += return_dist
+        elif not is_loop and path[-1] != end_node:
+            return_path, return_dist = _dijkstra(graph, path[-1], end_node)
+            if return_path:
+                path.extend(return_path[1:])
+                path_distance += return_dist
+
+        # 5. Подсчитать новые тайлы на маршруте
+        new_tiles = set()
+        for osm_id in path:
+            tile = (nodes[osm_id]["tileX"], nodes[osm_id]["tileY"])
+            if tile not in covered:
+                new_tiles.add(tile)
+
+        # 6. Сохранить в Neo4j
+        route_id = str(uuid.uuid4())
+        estimated_minutes = int(path_distance / 80)  # ~80 м/мин пешком
+
+        await session.run(
+            """
+            MATCH (u:User {id: $userId})
+            CREATE (r:Route {
+                id: $routeId,
+                createdAt: datetime(),
+                totalDistanceMeters: $distance,
+                estimatedMinutes: $minutes
+            })
+            CREATE (u)-[:REQUESTED_ROUTE]->(r)
+            WITH r
+            UNWIND $nodeIds AS nd
+            MATCH (mn:MapNode {osmId: nd.osmId})
+            CREATE (r)-[:PASSES_THROUGH {order: nd.order}]->(mn)
+            """,
+            userId=body.userId,
+            routeId=route_id,
+            distance=round(path_distance, 1),
+            minutes=estimated_minutes,
+            nodeIds=[{"osmId": osm_id, "order": i} for i, osm_id in enumerate(path)],
+        )
+
+        return {
+            "routeId": route_id,
+            "totalDistanceMeters": round(path_distance, 1),
+            "estimatedMinutes": estimated_minutes,
+            "newTiles": len(new_tiles),
+            "nodes": [
+                {"osmId": osm_id, "lat": nodes[osm_id]["lat"], "lon": nodes[osm_id]["lon"], "order": i}
+                for i, osm_id in enumerate(path)
+            ],
+        }
