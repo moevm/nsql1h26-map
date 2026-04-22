@@ -1,6 +1,10 @@
 import math
 
 
+def make_page(items: list, total: int, offset: int, limit: int) -> dict:
+    return {"total": total, "offset": offset, "limit": limit, "items": items}
+
+
 def lat_lon_to_tile(lat: float, lon: float, zoom: int = 19) -> tuple[int, int]:
     n = 2 ** zoom
     tile_x = int((lon + 180) / 360 * n)

@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from database import get_session
-from utils import haversine, lat_lon_to_tile
+from utils import haversine, lat_lon_to_tile, make_page
 
 router = APIRouter()
 
@@ -19,6 +19,11 @@ class WalkPoint(BaseModel):
 class CreateWalkRequest(BaseModel):
     userId: str
     points: list[WalkPoint]
+
+
+class UpdateWalkRequest(BaseModel):
+    distanceMeters: float | None = None
+    durationSeconds: int | None = None
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -105,18 +110,46 @@ async def create_walk(body: CreateWalkRequest, session=Depends(get_session)):
         "tilesCount": len(tiles),
     }
 
+
 @router.get("/")
-async def get_walks(userId: str, session=Depends(get_session)):
-    result = await session.run(
-        """
-        MATCH (u:User {id: $userId})-[:PERFORMED]->(w:Walk)
-        RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
-               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
-        ORDER BY w.startedAt DESC
-        """,
-        userId=userId,
-    )
-    return [r.data() async for r in result]
+async def list_walks(
+    userId: str | None = Query(None),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    session=Depends(get_session),
+):
+    if userId:
+        count_result = await session.run(
+            "MATCH (u:User {id: $userId})-[:PERFORMED]->(w:Walk) RETURN count(w) AS total",
+            userId=userId,
+        )
+        total = (await count_result.single())["total"]
+        result = await session.run(
+            """
+            MATCH (u:User {id: $userId})-[:PERFORMED]->(w:Walk)
+            RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
+                   w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
+            ORDER BY w.startedAt DESC
+            SKIP $offset LIMIT $limit
+            """,
+            userId=userId, offset=offset, limit=limit,
+        )
+    else:
+        count_result = await session.run("MATCH (w:Walk) RETURN count(w) AS total")
+        total = (await count_result.single())["total"]
+        result = await session.run(
+            """
+            MATCH (w:Walk)
+            RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
+                   w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
+            ORDER BY w.startedAt DESC
+            SKIP $offset LIMIT $limit
+            """,
+            offset=offset, limit=limit,
+        )
+
+    items = [r.data() async for r in result]
+    return make_page(items, total, offset, limit)
 
 
 @router.get("/{walkId}")
@@ -124,13 +157,16 @@ async def get_walk(walkId: str, session=Depends(get_session)):
     walk_result = await session.run(
         """
         MATCH (w:Walk {id: $walkId})
+        OPTIONAL MATCH (w)-[:HAS_POINT]->(wp:WalkPoint)
+        OPTIONAL MATCH (w)-[:FIRST_COVERED]->(ct:CoveredTile)
         RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
-               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
+               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds,
+               count(DISTINCT wp) AS pointsCount, count(DISTINCT ct) AS newTilesCount
         """,
         walkId=walkId,
     )
     record = await walk_result.single()
-    if not record:
+    if not record or record["id"] is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Walk not found")
 
     points_result = await session.run(
@@ -144,3 +180,46 @@ async def get_walk(walkId: str, session=Depends(get_session)):
     points = [r.data() async for r in points_result]
 
     return {**record.data(), "points": points}
+
+
+@router.put("/{walkId}")
+async def update_walk(walkId: str, body: UpdateWalkRequest, session=Depends(get_session)):
+    result = await session.run("MATCH (w:Walk {id: $id}) RETURN w", id=walkId)
+    if not await result.single():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Walk not found")
+
+    if body.distanceMeters is not None:
+        await session.run(
+            "MATCH (w:Walk {id: $id}) SET w.distanceMeters = $v", id=walkId, v=body.distanceMeters
+        )
+    if body.durationSeconds is not None:
+        await session.run(
+            "MATCH (w:Walk {id: $id}) SET w.durationSeconds = $v", id=walkId, v=body.durationSeconds
+        )
+
+    result = await session.run(
+        """
+        MATCH (w:Walk {id: $id})
+        RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
+               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
+        """,
+        id=walkId,
+    )
+    return (await result.single()).data()
+
+
+@router.delete("/{walkId}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_walk(walkId: str, session=Depends(get_session)):
+    result = await session.run("MATCH (w:Walk {id: $id}) RETURN w", id=walkId)
+    if not await result.single():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Walk not found")
+
+    await session.run(
+        """
+        MATCH (w:Walk {id: $walkId})
+        OPTIONAL MATCH (w)-[:HAS_POINT]->(wp:WalkPoint)
+        OPTIONAL MATCH (w)-[:FIRST_COVERED]->(ct:CoveredTile)
+        DETACH DELETE w, wp, ct
+        """,
+        walkId=walkId,
+    )
