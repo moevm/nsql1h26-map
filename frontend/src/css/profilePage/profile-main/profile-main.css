@@ -5,7 +5,6 @@
   min-height: calc(100vh - 75px);
   background-image: url(/src/img/overlay.png);
   background-size: cover;
-  padding: 0 var(--block-padding);
-  padding-top: 32px;
+  padding: 32px var(--block-padding);
   gap: 25px;
 }

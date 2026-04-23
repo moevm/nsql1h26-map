@@ -1,0 +1,15 @@
+.stats-settings__button {
+  background-color: #00E6C3;
+  color: #0a1f28;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--accent-color);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 6px 10px rgba(46, 232, 196, .25);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+}

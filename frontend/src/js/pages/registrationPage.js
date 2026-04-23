@@ -1,24 +1,28 @@
 import { relocateToLogin } from "../auth";
 
 const register = async (nickname, email, password) => {
-  try {
-    const response = await fetch('http://127.0.0.1:10001/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ "username": nickname, "email": email, "password": password }),
-    });
-
-    const data = await response.json();
-    
-    if (response.ok && data.token) {
-      document.cookie = `token=${data.token}; Path=/; SameSite=Strict;`;
-      return true;
-    }
-
+  const response = await fetch('http://127.0.0.1:10001/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+       "username": nickname,
+       "email": email,
+       "password": password 
+      }),
+  }).catch((error) => {
+    Notify.error("Ошибка сервера");
     return false;
-  } catch (error) {
-    return false;
+  });
+
+  const data = await response.json();
+  
+  if (response.ok && data.token) {
+    document.cookie = `token=${data.token}; Path=/; SameSite=Strict;`;
+    return true;
   }
+
+  Notify.error("Не удалось зарегистрироваться");
+  return false;
 };
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -1,0 +1,13 @@
+.stats-settings__select-wrapper::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 4px);
+  right: 15px;
+  width: 14px;
+  height: 9px;
+  background-image: url(/src/svg/arrow-down.svg);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100%;
+  pointer-events: none;
+}

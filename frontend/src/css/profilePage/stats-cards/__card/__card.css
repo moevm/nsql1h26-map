@@ -1,0 +1,14 @@
+.stats-cards__card {
+  background-color: red;
+  flex-grow: 1;
+  list-style: none;
+  height: 100%;
+  border-radius: 12px;
+  background-color: rgba(23, 54, 53, 0.2);
+  border: 1px solid var(--accent-color);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}

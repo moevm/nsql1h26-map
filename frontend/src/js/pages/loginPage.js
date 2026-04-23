@@ -1,24 +1,30 @@
 import { relocateToLogin } from "../auth";
+import { Notify } from "../utils/notify";
+import { userManager } from "../localManagers/userManager"
 
 const login = async (email, password) => {
-  try {
-    const response = await fetch('http://127.0.0.1:10001/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+  const response = await fetch('http://127.0.0.1:10001/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  }).catch((error) => {
+    Notify.error("Ошибка сервера");
+    return false;
+  });
 
-    const data = await response.json();
+  const data = await response.json();
+  
+  if (response.ok && data.token) {
+    document.cookie = `token=${data.token}; Path=/; SameSite=Strict;`;
+    Notify.success("Успешный вход");
+
+    userManager.save(JSON.stringify(data.user));
     
-    if (response.ok && data.token) {
-      document.cookie = `token=${data.token}; Path=/; SameSite=Strict;`;
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    return false;
+    return true;
   }
+  
+  Notify.error("Неверный логин или пароль");
+  return false;
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -36,8 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const success = await login(email, password);
     
-    if (success) {
-      relocateToLogin();
-    }
+    if (success) relocateToLogin();
   });
 });

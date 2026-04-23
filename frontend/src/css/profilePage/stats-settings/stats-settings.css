@@ -1,0 +1,12 @@
+.stats-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  width: 100%;
+  padding: 16px;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(23, 54, 53, 0.2);
+  border: 1px solid var(--accent-color);
+  border-radius: 12px;
+}
