@@ -22,22 +22,37 @@ class UpdateTrackFileRequest(BaseModel):
 
 @router.get("/")
 async def list_trackfiles(
+    format: str | None = Query(None),
+    source: str | None = Query(None),
+    uploadedFrom: str | None = Query(None),
+    uploadedTo: str | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     session=Depends(get_session),
 ):
-    count_result = await session.run("MATCH (tf:TrackFile) RETURN count(tf) AS total")
+    where = """
+        WHERE ($format       IS NULL OR toLower(tf.format) CONTAINS toLower($format))
+          AND ($source       IS NULL OR toLower(tf.source) CONTAINS toLower($source))
+          AND ($uploadedFrom IS NULL OR tf.uploadedAt >= datetime($uploadedFrom))
+          AND ($uploadedTo   IS NULL OR tf.uploadedAt <= datetime($uploadedTo))
+    """
+    params = dict(format=format, source=source,
+                  uploadedFrom=uploadedFrom, uploadedTo=uploadedTo)
+
+    count_result = await session.run(
+        f"MATCH (tf:TrackFile) {where} RETURN count(tf) AS total", **params
+    )
     total = (await count_result.single())["total"]
 
     result = await session.run(
-        """
-        MATCH (tf:TrackFile)
+        f"""
+        MATCH (tf:TrackFile) {where}
         RETURN tf.id AS id, tf.format AS format, tf.source AS source,
                toString(tf.uploadedAt) AS uploadedAt
         ORDER BY tf.uploadedAt DESC
         SKIP $offset LIMIT $limit
         """,
-        offset=offset, limit=limit,
+        offset=offset, limit=limit, **params,
     )
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)
