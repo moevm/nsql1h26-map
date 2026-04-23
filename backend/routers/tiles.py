@@ -18,6 +18,7 @@ class CreateTileRequest(BaseModel):
 @router.get("/")
 async def list_tiles(
     userId: str = Query(...),
+    walkId: str | None = Query(None),
     tileXMin: int | None = Query(None),
     tileXMax: int | None = Query(None),
     tileYMin: int | None = Query(None),
@@ -35,9 +36,10 @@ async def list_tiles(
           AND ($tileYMax    IS NULL OR ct.tileY <= $tileYMax)
           AND ($coveredFrom IS NULL OR ct.firstCoveredAt >= datetime($coveredFrom))
           AND ($coveredTo   IS NULL OR ct.firstCoveredAt <= datetime($coveredTo))
+          AND ($walkId      IS NULL OR EXISTS { MATCH (w:Walk {id: $walkId})-[:FIRST_COVERED]->(ct) })
     """
     params = dict(
-        userId=userId,
+        userId=userId, walkId=walkId,
         tileXMin=tileXMin, tileXMax=tileXMax,
         tileYMin=tileYMin, tileYMax=tileYMax,
         coveredFrom=coveredFrom, coveredTo=coveredTo,
