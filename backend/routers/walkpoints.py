@@ -20,24 +20,50 @@ class CreateWalkPointRequest(BaseModel):
 @router.get("/")
 async def list_walkpoints(
     walkId: str = Query(...),
+    latMin: float | None = Query(None),
+    latMax: float | None = Query(None),
+    lonMin: float | None = Query(None),
+    lonMax: float | None = Query(None),
+    timestampFrom: str | None = Query(None),
+    timestampTo: str | None = Query(None),
+    orderMin: int | None = Query(None),
+    orderMax: int | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     session=Depends(get_session),
 ):
-    count_result = await session.run(
-        "MATCH (w:Walk {id: $walkId})-[:HAS_POINT]->(wp:WalkPoint) RETURN count(wp) AS total",
+    where = """
+        WHERE ($latMin         IS NULL OR wp.lat >= $latMin)
+          AND ($latMax         IS NULL OR wp.lat <= $latMax)
+          AND ($lonMin         IS NULL OR wp.lon >= $lonMin)
+          AND ($lonMax         IS NULL OR wp.lon <= $lonMax)
+          AND ($timestampFrom  IS NULL OR wp.timestamp >= datetime($timestampFrom))
+          AND ($timestampTo    IS NULL OR wp.timestamp <= datetime($timestampTo))
+          AND ($orderMin       IS NULL OR wp.order >= $orderMin)
+          AND ($orderMax       IS NULL OR wp.order <= $orderMax)
+    """
+    params = dict(
         walkId=walkId,
+        latMin=latMin, latMax=latMax,
+        lonMin=lonMin, lonMax=lonMax,
+        timestampFrom=timestampFrom, timestampTo=timestampTo,
+        orderMin=orderMin, orderMax=orderMax,
+    )
+
+    count_result = await session.run(
+        f"MATCH (w:Walk {{id: $walkId}})-[:HAS_POINT]->(wp:WalkPoint) {where} RETURN count(wp) AS total",
+        **params,
     )
     total = (await count_result.single())["total"]
 
     result = await session.run(
-        """
-        MATCH (w:Walk {id: $walkId})-[:HAS_POINT]->(wp:WalkPoint)
+        f"""
+        MATCH (w:Walk {{id: $walkId}})-[:HAS_POINT]->(wp:WalkPoint) {where}
         RETURN wp.lat AS lat, wp.lon AS lon, toString(wp.timestamp) AS timestamp, wp.order AS order
         ORDER BY wp.order
         SKIP $offset LIMIT $limit
         """,
-        walkId=walkId, offset=offset, limit=limit,
+        offset=offset, limit=limit, **params,
     )
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)

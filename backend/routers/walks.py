@@ -114,40 +114,48 @@ async def create_walk(body: CreateWalkRequest, session=Depends(get_session)):
 @router.get("/")
 async def list_walks(
     userId: str | None = Query(None),
+    startedAtFrom: str | None = Query(None),
+    startedAtTo: str | None = Query(None),
+    distanceMin: float | None = Query(None),
+    distanceMax: float | None = Query(None),
+    durationMin: int | None = Query(None),
+    durationMax: int | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     session=Depends(get_session),
 ):
-    if userId:
-        count_result = await session.run(
-            "MATCH (u:User {id: $userId})-[:PERFORMED]->(w:Walk) RETURN count(w) AS total",
-            userId=userId,
-        )
-        total = (await count_result.single())["total"]
-        result = await session.run(
-            """
-            MATCH (u:User {id: $userId})-[:PERFORMED]->(w:Walk)
-            RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
-                   w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
-            ORDER BY w.startedAt DESC
-            SKIP $offset LIMIT $limit
-            """,
-            userId=userId, offset=offset, limit=limit,
-        )
-    else:
-        count_result = await session.run("MATCH (w:Walk) RETURN count(w) AS total")
-        total = (await count_result.single())["total"]
-        result = await session.run(
-            """
-            MATCH (w:Walk)
-            RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
-                   w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
-            ORDER BY w.startedAt DESC
-            SKIP $offset LIMIT $limit
-            """,
-            offset=offset, limit=limit,
-        )
+    match = "MATCH (u:User)-[:PERFORMED]->(w:Walk)"
+    where = """
+        WHERE ($userId IS NULL OR u.id = $userId)
+          AND ($startedAtFrom IS NULL OR w.startedAt >= datetime($startedAtFrom))
+          AND ($startedAtTo   IS NULL OR w.startedAt <= datetime($startedAtTo))
+          AND ($distanceMin   IS NULL OR w.distanceMeters >= $distanceMin)
+          AND ($distanceMax   IS NULL OR w.distanceMeters <= $distanceMax)
+          AND ($durationMin   IS NULL OR w.durationSeconds >= $durationMin)
+          AND ($durationMax   IS NULL OR w.durationSeconds <= $durationMax)
+    """
+    params = dict(
+        userId=userId,
+        startedAtFrom=startedAtFrom, startedAtTo=startedAtTo,
+        distanceMin=distanceMin, distanceMax=distanceMax,
+        durationMin=durationMin, durationMax=durationMax,
+    )
 
+    count_result = await session.run(
+        f"{match} {where} RETURN count(w) AS total", **params
+    )
+    total = (await count_result.single())["total"]
+
+    result = await session.run(
+        f"""
+        {match} {where}
+        RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
+               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
+        ORDER BY w.startedAt DESC
+        SKIP $offset LIMIT $limit
+        """,
+        offset=offset, limit=limit, **params,
+    )
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)
 

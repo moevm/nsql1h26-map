@@ -21,21 +21,27 @@ class UpdateDistrictRequest(BaseModel):
 
 @router.get("/")
 async def list_districts(
+    name: str | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     session=Depends(get_session),
 ):
-    count_result = await session.run("MATCH (d:District) RETURN count(d) AS total")
+    where = "WHERE ($name IS NULL OR toLower(d.name) CONTAINS toLower($name))"
+    params = dict(name=name)
+
+    count_result = await session.run(
+        f"MATCH (d:District) {where} RETURN count(d) AS total", **params
+    )
     total = (await count_result.single())["total"]
 
     result = await session.run(
-        """
-        MATCH (d:District)
+        f"""
+        MATCH (d:District) {where}
         RETURN d.id AS id, d.name AS name, d.polygon AS polygon
         ORDER BY d.name
         SKIP $offset LIMIT $limit
         """,
-        offset=offset, limit=limit,
+        offset=offset, limit=limit, **params,
     )
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)

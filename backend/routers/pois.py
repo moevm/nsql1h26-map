@@ -23,23 +23,49 @@ class UpdatePOIRequest(BaseModel):
     lon: float | None = None
 
 
+def _parse_bbox(bbox: str | None) -> tuple:
+    if not bbox:
+        return None, None, None, None
+    parts = bbox.split(",")
+    if len(parts) != 4:
+        return None, None, None, None
+    return tuple(float(p) for p in parts)
+
+
 @router.get("/")
 async def list_pois(
+    name: str | None = Query(None),
+    category: str | None = Query(None),
+    bbox: str | None = Query(None, example="59.95,30.28,59.98,30.34"),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     session=Depends(get_session),
 ):
-    count_result = await session.run("MATCH (p:POI) RETURN count(p) AS total")
+    min_lat, min_lon, max_lat, max_lon = _parse_bbox(bbox)
+    where = """
+        WHERE ($name     IS NULL OR toLower(p.name)     CONTAINS toLower($name))
+          AND ($category IS NULL OR toLower(p.category) CONTAINS toLower($category))
+          AND ($minLat   IS NULL OR p.lat >= $minLat)
+          AND ($maxLat   IS NULL OR p.lat <= $maxLat)
+          AND ($minLon   IS NULL OR p.lon >= $minLon)
+          AND ($maxLon   IS NULL OR p.lon <= $maxLon)
+    """
+    params = dict(name=name, category=category,
+                  minLat=min_lat, maxLat=max_lat, minLon=min_lon, maxLon=max_lon)
+
+    count_result = await session.run(
+        f"MATCH (p:POI) {where} RETURN count(p) AS total", **params
+    )
     total = (await count_result.single())["total"]
 
     result = await session.run(
-        """
-        MATCH (p:POI)
+        f"""
+        MATCH (p:POI) {where}
         RETURN p.osmId AS osmId, p.name AS name, p.category AS category, p.lat AS lat, p.lon AS lon
         ORDER BY p.osmId
         SKIP $offset LIMIT $limit
         """,
-        offset=offset, limit=limit,
+        offset=offset, limit=limit, **params,
     )
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)

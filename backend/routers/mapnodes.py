@@ -7,6 +7,16 @@ from utils import lat_lon_to_tile, make_page
 router = APIRouter()
 
 
+def _parse_bbox(bbox: str | None) -> tuple:
+    if not bbox:
+        return None, None, None, None
+    parts = bbox.split(",")
+    if len(parts) != 4:
+        return None, None, None, None
+    min_lat, min_lon, max_lat, max_lon = (float(p) for p in parts)
+    return min_lat, min_lon, max_lat, max_lon
+
+
 class CreateMapNodeRequest(BaseModel):
     osmId: int
     lat: float
@@ -20,21 +30,40 @@ class UpdateMapNodeRequest(BaseModel):
 
 @router.get("/")
 async def list_mapnodes(
+    osmId: int | None = Query(None),
+    tileX: int | None = Query(None),
+    tileY: int | None = Query(None),
+    bbox: str | None = Query(None, example="59.95,30.28,59.98,30.34"),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     session=Depends(get_session),
 ):
-    count_result = await session.run("MATCH (n:MapNode) RETURN count(n) AS total")
+    min_lat, min_lon, max_lat, max_lon = _parse_bbox(bbox)
+    where = """
+        WHERE ($osmId   IS NULL OR n.osmId = $osmId)
+          AND ($tileX   IS NULL OR n.tileX = $tileX)
+          AND ($tileY   IS NULL OR n.tileY = $tileY)
+          AND ($minLat  IS NULL OR n.lat >= $minLat)
+          AND ($maxLat  IS NULL OR n.lat <= $maxLat)
+          AND ($minLon  IS NULL OR n.lon >= $minLon)
+          AND ($maxLon  IS NULL OR n.lon <= $maxLon)
+    """
+    params = dict(osmId=osmId, tileX=tileX, tileY=tileY,
+                  minLat=min_lat, maxLat=max_lat, minLon=min_lon, maxLon=max_lon)
+
+    count_result = await session.run(
+        f"MATCH (n:MapNode) {where} RETURN count(n) AS total", **params
+    )
     total = (await count_result.single())["total"]
 
     result = await session.run(
-        """
-        MATCH (n:MapNode)
+        f"""
+        MATCH (n:MapNode) {where}
         RETURN n.osmId AS osmId, n.lat AS lat, n.lon AS lon, n.tileX AS tileX, n.tileY AS tileY
         ORDER BY n.osmId
         SKIP $offset LIMIT $limit
         """,
-        offset=offset, limit=limit,
+        offset=offset, limit=limit, **params,
     )
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)
