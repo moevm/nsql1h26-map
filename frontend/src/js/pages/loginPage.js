@@ -3,6 +3,12 @@ import { Notify } from "../utils/notify";
 import { userManager } from "../localManagers/userManager"
 
 const login = async (email, password) => {
+
+  if ([email, password].some(field => !field)) {
+    Notify.error("Поля должны быть заполнены");
+    return false;
+  }
+
   const response = await fetch('http://127.0.0.1:10001/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

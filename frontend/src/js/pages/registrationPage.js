@@ -1,6 +1,14 @@
 import { relocateToLogin } from "../auth";
+import { Notify } from "../utils/notify";
+import { userManager } from "../localManagers/userManager";
 
 const register = async (nickname, email, password) => {
+
+  if ([nickname, email, password].some(field => !field)) {
+    Notify.error("Поля должны быть заполнены");
+    return false;
+  }
+
   const response = await fetch('http://127.0.0.1:10001/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -18,6 +26,8 @@ const register = async (nickname, email, password) => {
   
   if (response.ok && data.token) {
     document.cookie = `token=${data.token}; Path=/; SameSite=Strict;`;
+    Notify.success("Успешный вход");
+    userManager.save(JSON.stringify(data.user));
     return true;
   }
 
