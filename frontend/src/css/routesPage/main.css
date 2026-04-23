@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import url(/src/css/total.css);
 @import url(header/header.css);
 @import url(page-header/page-header.css);
@@ -6,8 +5,3 @@
 @import url(table/table.css);
 @import url(table/pagination.css);
 @import url(dashboard/dashboard.css);
-
-body {
-  background-color: var(--dark-bg-color);
-  font-family: 'Space Grotesk', sans-serif;
-}
