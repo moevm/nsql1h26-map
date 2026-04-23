@@ -37,6 +37,7 @@ async def list_pois(
     name: str | None = Query(None),
     category: str | None = Query(None),
     bbox: str | None = Query(None, example="59.95,30.28,59.98,30.34"),
+    route_id: str | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     session=Depends(get_session),
@@ -49,8 +50,9 @@ async def list_pois(
           AND ($maxLat   IS NULL OR p.lat <= $maxLat)
           AND ($minLon   IS NULL OR p.lon >= $minLon)
           AND ($maxLon   IS NULL OR p.lon <= $maxLon)
+          AND ($route_id  IS NULL OR EXISTS { MATCH (r:Route {id: $route_id})-[:PASSES_THROUGH]->(mn:MapNode)-[:HAS_POI]->(p) })
     """
-    params = dict(name=name, category=category,
+    params = dict(name=name, category=category, route_id=route_id,
                   minLat=min_lat, maxLat=max_lat, minLon=min_lon, maxLon=max_lon)
 
     count_result = await session.run(
