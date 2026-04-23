@@ -18,24 +18,45 @@ class CreateTileRequest(BaseModel):
 @router.get("/")
 async def list_tiles(
     userId: str = Query(...),
+    tileXMin: int | None = Query(None),
+    tileXMax: int | None = Query(None),
+    tileYMin: int | None = Query(None),
+    tileYMax: int | None = Query(None),
+    coveredFrom: str | None = Query(None),
+    coveredTo: str | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     session=Depends(get_session),
 ):
-    count_result = await session.run(
-        "MATCH (u:User {id: $userId})-[:COVERED]->(ct:CoveredTile) RETURN count(ct) AS total",
+    where = """
+        WHERE ($tileXMin    IS NULL OR ct.tileX >= $tileXMin)
+          AND ($tileXMax    IS NULL OR ct.tileX <= $tileXMax)
+          AND ($tileYMin    IS NULL OR ct.tileY >= $tileYMin)
+          AND ($tileYMax    IS NULL OR ct.tileY <= $tileYMax)
+          AND ($coveredFrom IS NULL OR ct.firstCoveredAt >= datetime($coveredFrom))
+          AND ($coveredTo   IS NULL OR ct.firstCoveredAt <= datetime($coveredTo))
+    """
+    params = dict(
         userId=userId,
+        tileXMin=tileXMin, tileXMax=tileXMax,
+        tileYMin=tileYMin, tileYMax=tileYMax,
+        coveredFrom=coveredFrom, coveredTo=coveredTo,
+    )
+
+    count_result = await session.run(
+        f"MATCH (u:User {{id: $userId}})-[:COVERED]->(ct:CoveredTile) {where} RETURN count(ct) AS total",
+        **params,
     )
     total = (await count_result.single())["total"]
 
     result = await session.run(
-        """
-        MATCH (u:User {id: $userId})-[:COVERED]->(ct:CoveredTile)
+        f"""
+        MATCH (u:User {{id: $userId}})-[:COVERED]->(ct:CoveredTile) {where}
         RETURN ct.tileX AS tileX, ct.tileY AS tileY, toString(ct.firstCoveredAt) AS firstCoveredAt
         ORDER BY ct.firstCoveredAt
         SKIP $offset LIMIT $limit
         """,
-        userId=userId, offset=offset, limit=limit,
+        offset=offset, limit=limit, **params,
     )
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)
