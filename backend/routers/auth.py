@@ -2,6 +2,7 @@ import secrets
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
 from database import get_session
@@ -91,19 +92,21 @@ async def register(body: RegisterRequest, session=Depends(get_session)):
     )
 
 
-@router.get("/me", response_model=UserResponse)
-async def me(token: str, session=Depends(get_session)):
-    result = await session.run(
-        "MATCH (u:User {token: $token}) RETURN u",
-        token=token,
-    )
+_bearer = HTTPBearer()
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(_bearer), session=Depends(get_session)):
+    result = await session.run("MATCH (u:User {token: $token}) RETURN u", token=credentials.credentials)
     record = await result.single()
     if not record:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    u = record["u"]
+    return record["u"]
+
+
+@router.get("/me", response_model=UserResponse)
+async def me(user=Depends(get_current_user)):
     return UserResponse(
-        id=u["id"],
-        username=u["username"],
-        email=u["email"],
-        avatarUrl=u.get("avatarUrl", ""),
+        id=user["id"],
+        username=user["username"],
+        email=user["email"],
+        avatarUrl=user.get("avatarUrl", ""),
     )
