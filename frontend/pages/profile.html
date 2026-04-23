@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CityTrace</title>
-    
+
     <link rel="stylesheet" href="/src/css/profilePage/main.css">
 
   </head>
@@ -43,7 +43,7 @@
         </div>
         
         <div class="profile-data__user-info">
-          <h3 class="profile-data__nickname">Сергей Минаев</h3>
+          <h3 class="profile-data__nickname"></h3>
 
           <div class="profile-data__location">
             <img class="profile-data__image profile-data__image--geopoint" src="/src/svg/geopoint.svg" alt="svg location">
@@ -121,23 +121,22 @@
             
             <li class="stats-settings__menu-item">
               <div class="stats-settings__select-wrapper">
-                <select class="stats-settings__select" name="metrics" id="metrics">
-                  <option class="stats-settings__option" value="Лондон">Расстояние</option>
-                  <option class="stats-settings__option" value="Париж">Длительность</option>
-                  <option class="stats-settings__option" value="Рига">Новый охват</option>
-                  <option class="stats-settings__option" value="Москва">Скорость</option>
-                  <option class="stats-settings__option" value="asd">Посещённые места</option>
+                <select class="stats-settings__select" name="metric-type" id="metric-type">
+                  <option class="stats-settings__option" value="distance">Расстояние</option>
+                  <option class="stats-settings__option" value="duration">Длительность</option>
+                  <option class="stats-settings__option" value="new-zone">Новый охват</option>
+                  <option class="stats-settings__option" value="speed">Скорость</option>
+                  <option class="stats-settings__option" value="places">Посещённые места</option>
                 </select>
               </div>
             </li>
 
             <li class="stats-settings__menu-item">
               <div class="stats-settings__select-wrapper">
-                <select class="stats-settings__select" name="city" id="city">
-                  <option class="stats-settings__option" value="Лондон">Лондон</option>
-                  <option class="stats-settings__option" value="Париж">Париж</option>
-                  <option class="stats-settings__option" value="Рига">Рига</option>
-                  <option class="stats-settings__option" value="Москва">Москва</option>
+                <select class="stats-settings__select" name="graph-type" id="graph-type">
+                  <option class="stats-settings__option" value="bar">Столбчатый график</option>
+                  <option class="stats-settings__option" value="line">Линейный график</option>
+                  <option class="stats-settings__option" value="radar">Радар</option>
                 </select>
               </div>
             </li>
@@ -145,9 +144,54 @@
           </ul>
           <button class="stats-settings__button">Применить</button>
         </div>
-      </section>
-    </main>
 
+        <div class="stats-graph">
+          <div class="stats-graph__description">
+            <p class="stats-graph__text stats-graph__text--duration">Активность за месяц</p>
+            <p class="stats-graph__text stats-graph__text--metrics">Расстояние (км)</p>
+          </div>
+          <div class="stats-graph__chart">
+            <canvas id="chart"></canvas>
+            <div id="heatmap"></div>
+          </div>
+        </div>
+
+        <div class="stats-cards">
+          <ul class="stats-cards__list">
+            
+            <li class="stats-cards__card">
+              <div class="stats-card__header">
+                <span class="stats-card__title">Лучший день</span>
+                <img class="stats-cards__image" src="/src/svg/stars.svg" alt="card image">
+              </div>
+              <h3 class="stats-card__data">18.4 км</h3>
+              <h4 class="stats-card__info">12 окт, суббота</h4>
+            </li>
+
+            <li class="stats-cards__card">
+              <div class="stats-card__header">
+                <span class="stats-card__title">Среднее за прогулку</span>
+                <img class="stats-cards__image" src="/src/svg/stats.svg" alt="card image">
+              </div>
+              <h3 class="stats-card__data">5.2 км</h3>
+              <h4 class="stats-card__info">Основано на 242 записях</h4>
+            </li>
+
+            <li class="stats-cards__card">
+              <div class="stats-card__header">
+                <span class="stats-card__title">Динамика недели</span>
+                <img class="stats-cards__image" src="/src/svg/line-goup.svg" alt="card image">
+              </div>
+              <h3 class="stats-card__data">+12%</h3>
+              <h4 class="stats-card__info">Относительно прош. нед.</h4>
+            </li>
+
+          </ul>
+        </div>
+      </section>
+
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module" src="/src/js/pages/profilePage.js"></script>
   </body>
 </html>

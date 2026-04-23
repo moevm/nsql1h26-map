@@ -1,0 +1,6 @@
+.stats-settings__menu {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}

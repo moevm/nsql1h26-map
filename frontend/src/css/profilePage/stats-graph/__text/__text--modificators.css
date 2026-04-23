@@ -1,0 +1,10 @@
+.stats-graph__text--duration {
+  font-size: 18px;
+} 
+
+.stats-graph__text--metrics {
+  font-size: 16px;
+  color: #94A3B8;
+  display: flex;
+  gap: 10px;
+}

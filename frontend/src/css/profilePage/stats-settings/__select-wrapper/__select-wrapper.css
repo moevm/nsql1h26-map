@@ -1,0 +1,5 @@
+@import url(__select-wrapper--pseudoelements.css);
+
+.stats-settings__select-wrapper {
+  position: relative;
+}

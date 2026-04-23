@@ -1,0 +1,14 @@
+.stats-settings__select {
+  position: relative;
+  border: 1px solid var(--accent-color);
+  border-radius: 6px;
+  padding: 9px 75px 9px 9px;
+  background-color: rgba(0, 230, 195, 0.2);
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 300;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}

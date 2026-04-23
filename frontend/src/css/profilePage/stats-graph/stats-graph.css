@@ -1,0 +1,11 @@
+@import url(__chart/__chart.css);
+@import url(__description/__description.css);
+@import url(__text/__text--total.css);
+
+.stats-graph {
+  margin-top: 24px;
+  background-color: rgba(23, 54, 53, 0.2);
+  border: 1px solid var(--accent-color);
+  border-radius: 12px;
+  padding: 16px;
+}

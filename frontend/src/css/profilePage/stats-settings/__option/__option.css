@@ -1,0 +1,5 @@
+@import url(__option--pseduoclass.css);
+
+.stats-settings__option {
+  background-color: rgb(26, 167, 146);
+}

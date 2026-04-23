@@ -10,4 +10,5 @@
   overflow: hidden;
   padding: 24px;
   border: 1px solid var(--accent-color);
+  height: fit-content;
 }

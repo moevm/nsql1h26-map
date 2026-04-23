@@ -1,0 +1,7 @@
+.stats-graph__text--metrics::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  background-color: #00E6C3;
+  border-radius: 50%;
+}
