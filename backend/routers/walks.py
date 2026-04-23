@@ -124,7 +124,7 @@ async def list_walks(
     limit: int = Query(20, ge=1, le=100),
     session=Depends(get_session),
 ):
-    match = "MATCH (u:User)-[:PERFORMED]->(w:Walk)" if userId else "MATCH (w:Walk)"
+    match = "MATCH (u:User)-[:PERFORMED]->(w:Walk)"
     where = """
         WHERE ($userId IS NULL OR u.id = $userId)
           AND ($startedAtFrom IS NULL OR w.startedAt >= datetime($startedAtFrom))
