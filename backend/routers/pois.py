@@ -75,19 +75,29 @@ async def list_pois(
 
 @router.get("/{poiId}")
 async def get_poi(poiId: str, session=Depends(get_session)):
+    try:
+        poi_id: int | str = int(poiId)
+    except ValueError:
+        poi_id = poiId
+
     result = await session.run(
-        """
-        MATCH (p:POI {osmId: $poiId})
-        OPTIONAL MATCH (n:MapNode)-[:HAS_POI]->(p)
-        RETURN p.osmId AS osmId, p.name AS name, p.category AS category, p.lat AS lat, p.lon AS lon,
-               n.osmId AS nearestNodeOsmId, n.lat AS nearestNodeLat, n.lon AS nearestNodeLon
-        """,
-        poiId=poiId,
+        "MATCH (p:POI {osmId: $poiId}) RETURN p.osmId AS osmId, p.name AS name, p.category AS category, p.lat AS lat, p.lon AS lon",
+        poiId=poi_id,
     )
     record = await result.single()
     if not record or record["osmId"] is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
-    return record.data()
+
+    nodes_result = await session.run(
+        """
+        MATCH (n:MapNode)-[:HAS_POI]->(p:POI {osmId: $poiId})
+        RETURN n.osmId AS osmId, n.lat AS lat, n.lon AS lon
+        """,
+        poiId=poi_id,
+    )
+    nodes = [r.data() async for r in nodes_result]
+
+    return {**record.data(), "mapNodes": nodes}
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -125,14 +135,19 @@ async def create_poi(body: CreatePOIRequest, session=Depends(get_session)):
 
 @router.put("/{poiId}")
 async def update_poi(poiId: str, body: UpdatePOIRequest, session=Depends(get_session)):
-    result = await session.run("MATCH (p:POI {osmId: $poiId}) RETURN p", poiId=poiId)
+    try:
+        poi_id: int | str = int(poiId)
+    except ValueError:
+        poi_id = poiId
+
+    result = await session.run("MATCH (p:POI {osmId: $poiId}) RETURN p", poiId=poi_id)
     if not await result.single():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
 
     if body.name is not None:
-        await session.run("MATCH (p:POI {osmId: $id}) SET p.name = $v", id=poiId, v=body.name)
+        await session.run("MATCH (p:POI {osmId: $id}) SET p.name = $v", id=poi_id, v=body.name)
     if body.category is not None:
-        await session.run("MATCH (p:POI {osmId: $id}) SET p.category = $v", id=poiId, v=body.category)
+        await session.run("MATCH (p:POI {osmId: $id}) SET p.category = $v", id=poi_id, v=body.category)
 
     if body.lat is not None and body.lon is not None:
         nearest_result = await session.run(
@@ -158,20 +173,25 @@ async def update_poi(poiId: str, body: UpdatePOIRequest, session=Depends(get_ses
             MATCH (n:MapNode {osmId: $nodeOsmId})
             CREATE (n)-[:HAS_POI]->(p)
             """,
-            poiId=poiId, lat=body.lat, lon=body.lon, nodeOsmId=nearest["osmId"],
+            poiId=poi_id, lat=body.lat, lon=body.lon, nodeOsmId=nearest["osmId"],
         )
 
     result = await session.run(
         "MATCH (p:POI {osmId: $id}) RETURN p.osmId AS osmId, p.name AS name, p.category AS category, p.lat AS lat, p.lon AS lon",
-        id=poiId,
+        id=poi_id,
     )
     return (await result.single()).data()
 
 
 @router.delete("/{poiId}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_poi(poiId: str, session=Depends(get_session)):
-    result = await session.run("MATCH (p:POI {osmId: $id}) RETURN p", id=poiId)
+    try:
+        poi_id: int | str = int(poiId)
+    except ValueError:
+        poi_id = poiId
+
+    result = await session.run("MATCH (p:POI {osmId: $id}) RETURN p", id=poi_id)
     if not await result.single():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POI not found")
 
-    await session.run("MATCH (p:POI {osmId: $id}) DETACH DELETE p", id=poiId)
+    await session.run("MATCH (p:POI {osmId: $id}) DETACH DELETE p", id=poi_id)

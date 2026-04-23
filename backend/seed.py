@@ -2,8 +2,11 @@ import json
 import uuid
 from pathlib import Path
 
+from utils import haversine
+
 SEED_FILE = Path(__file__).parent / "data" / "osm_seed.json"
 BATCH_SIZE = 500
+POI_RADIUS_METERS = 25
 
 
 async def run_seed(driver):
@@ -51,39 +54,58 @@ async def run_seed(driver):
 
         pois = data["pois"]
         node_coords = [(n["osmId"], n["lat"], n["lon"]) for n in nodes]
-        for poi in pois:
-            nearest = min(node_coords, key=lambda n: (n[1] - poi["lat"]) ** 2 + (n[2] - poi["lon"]) ** 2)
-            poi["nearestOsmId"] = nearest[0]
 
-        for i in range(0, len(pois), BATCH_SIZE):
+        # 50 м в градусах (приближение для широты ~60°)
+        LAT_DELTA = POI_RADIUS_METERS / 111_000
+        LON_DELTA = POI_RADIUS_METERS / 55_500
+
+        poi_batch = []
+        for p in pois:
+            plat, plon = p["lat"], p["lon"]
+            candidates = [
+                (osmId, lat, lon) for osmId, lat, lon in node_coords
+                if abs(lat - plat) <= LAT_DELTA and abs(lon - plon) <= LON_DELTA
+            ]
+            nearby = [
+                osmId for osmId, lat, lon in candidates
+                if haversine(lat, lon, plat, plon) <= POI_RADIUS_METERS
+            ]
+            if not nearby:
+                nearest = min(node_coords, key=lambda n: (n[1] - plat) ** 2 + (n[2] - plon) ** 2)
+                nearby = [nearest[0]]
+            poi_batch.append({
+                "osmId": p["osmId"],
+                "name": p.get("name", ""),
+                "category": p.get("category", ""),
+                "lat": p["lat"],
+                "lon": p["lon"],
+                "nearestOsmIds": nearby,
+            })
+
+        for i in range(0, len(poi_batch), BATCH_SIZE):
             await session.run(
                 """
                 UNWIND $batch AS p
                 CREATE (poi:POI {osmId: p.osmId, name: p.name, category: p.category, lat: p.lat, lon: p.lon})
                 WITH poi, p
-                MATCH (n:MapNode {osmId: p.nearestOsmId})
+                UNWIND p.nearestOsmIds AS nodeId
+                MATCH (n:MapNode {osmId: nodeId})
                 CREATE (n)-[:HAS_POI]->(poi)
                 """,
-                batch=[
-                    {
-                        "osmId": p["osmId"],
-                        "name": p.get("name", ""),
-                        "category": p.get("category", ""),
-                        "lat": p["lat"],
-                        "lon": p["lon"],
-                        "nearestOsmId": p["nearestOsmId"],
-                    }
-                    for p in pois[i:i + BATCH_SIZE]
-                ],
+                batch=poi_batch[i:i + BATCH_SIZE],
             )
-        print(f"[seed] Created {len(pois)} POIs.")
+        total_links = sum(len(p["nearestOsmIds"]) for p in poi_batch)
+        print(f"[seed] Created {len(poi_batch)} POIs with {total_links} HAS_POI links.")
 
+        user_id = str(uuid.uuid4())
         await session.run(
             """
             MERGE (u:User {username: 'testuser'})
             ON CREATE SET u.id = $id, u.password = 'test123', u.email = 'testuser@example.com', u.avatarUrl = ''
             """,
-            id=str(uuid.uuid4()),
+            id=user_id,
         )
-        print("[seed] Debug user testuser/test123 created.")
+        result = await session.run("MATCH (u:User {username: 'testuser'}) RETURN u.id AS id")
+        record = await result.single()
+        print(f"[seed] Debug user: email=testuser@example.com  password=test123  id={record['id']}")
         print("[seed] Done.")
