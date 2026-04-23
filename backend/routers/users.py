@@ -22,21 +22,31 @@ class UpdateUserRequest(BaseModel):
 
 @router.get("/")
 async def list_users(
+    username: str | None = Query(None),
+    email: str | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     session=Depends(get_session),
 ):
-    count_result = await session.run("MATCH (u:User) RETURN count(u) AS total")
+    where = """
+        WHERE ($username IS NULL OR toLower(u.username) CONTAINS toLower($username))
+          AND ($email IS NULL OR toLower(u.email) CONTAINS toLower($email))
+    """
+
+    count_result = await session.run(
+        f"MATCH (u:User) {where} RETURN count(u) AS total",
+        username=username, email=email,
+    )
     total = (await count_result.single())["total"]
 
     result = await session.run(
-        """
-        MATCH (u:User)
+        f"""
+        MATCH (u:User) {where}
         RETURN u.id AS id, u.username AS username, u.email AS email, u.avatarUrl AS avatarUrl
         ORDER BY u.username
         SKIP $offset LIMIT $limit
         """,
-        offset=offset, limit=limit,
+        username=username, email=email, offset=offset, limit=limit,
     )
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)
