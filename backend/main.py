@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import driver
 from routers import auth, data, map, walks, routes, users, walkpoints, tiles, mapnodes, trackfiles, districts, pois
+from seed import run_seed
 
 
 @asynccontextmanager
