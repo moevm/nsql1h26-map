@@ -1,8 +1,8 @@
 ## Отладочные пользователи
 
-| username | email | password | роль |
-|----------|---------------------|----------|------|
-| testuser | testuser@example.com test123 | user     |
+| username | email                         | password | роль |
+|----------|-------------------------------|----------|------|
+| testuser | testuser@example.com |  test123 | user     |
 
 Пользователь создаётся автоматически при первом запуске приложения.
 
