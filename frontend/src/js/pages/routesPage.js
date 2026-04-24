@@ -76,7 +76,79 @@ document.addEventListener('DOMContentLoaded', () => {
         </tr>
       `;
     }).join('');
+
+    attachTableEvents();
+    updateSelectAllCheckbox();
   }
 
+  function attachTableEvents() {
+    document.querySelectorAll('.route-checkbox').forEach(cb => {
+      cb.removeEventListener('change', handleCheckboxChange);
+      cb.addEventListener('change', handleCheckboxChange);
+    });
+
+    document.querySelectorAll('[data-action="delete"]').forEach(btn => {
+      btn.removeEventListener('click', handleDeleteClick);
+      btn.addEventListener('click', handleDeleteClick);
+    });
+  }
+
+  function handleCheckboxChange(e) {
+    const id = e.target.dataset.id;
+    const row = e.target.closest('tr');
+    
+    if (e.target.checked) {
+      if (!selectedIds.includes(id)) selectedIds.push(id);
+      if (row) row.classList.add('routes-table__row--selected');
+    } else {
+      selectedIds = selectedIds.filter(i => i !== id);
+      if (row) row.classList.remove('routes-table__row--selected');
+    }
+    updateSelectAllCheckbox();
+  }
+
+  function handleDeleteClick(e) {
+    const id = e.currentTarget.dataset.id;
+    if (confirm(`Удалить маршрут ${id}?`)) {
+      routes = routes.filter(r => r.id !== id);
+      totalRoutes = routes.length;
+      selectedIds = selectedIds.filter(i => i !== id);
+      
+      if (routes.length === 0) currentPage = 1;
+      if (currentPage > Math.ceil(routes.length / perPage)) {
+        currentPage = Math.max(1, Math.ceil(routes.length / perPage));
+      }
+      
+      renderTable();
+    }
+  }
+
+  function updateSelectAllCheckbox() {
+    const selectAll = document.getElementById('select-all-checkbox');
+    if (selectAll) {
+      const currentPageIds = routes.slice((currentPage - 1) * perPage, currentPage * perPage).map(r => r.id);
+      const allSelected = currentPageIds.length > 0 && currentPageIds.every(id => selectedIds.includes(id));
+      selectAll.checked = allSelected;
+    }
+  }
+
+  function initSelectAll() {
+    const selectAll = document.getElementById('select-all-checkbox');
+    if (selectAll) {
+      selectAll.addEventListener('change', (e) => {
+        const currentPageIds = routes.slice((currentPage - 1) * perPage, currentPage * perPage).map(r => r.id);
+        if (e.target.checked) {
+          currentPageIds.forEach(id => {
+            if (!selectedIds.includes(id)) selectedIds.push(id);
+          });
+        } else {
+          selectedIds = selectedIds.filter(id => !currentPageIds.includes(id));
+        }
+        renderTable();
+      });
+    }
+  }
+
+  initSelectAll();
   renderTable();
 });
