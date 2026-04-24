@@ -1,6 +1,7 @@
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi.responses import JSONResponse
 
 from database import get_session
 from utils import make_csv_response
@@ -8,18 +9,38 @@ from utils import make_csv_response
 router = APIRouter()
 
 
+def _serialize(val):
+    """Рекурсивно конвертирует Neo4j-типы (DateTime и др.) в JSON-совместимые."""
+    if hasattr(val, "isoformat"):
+        return val.isoformat()
+    if isinstance(val, dict):
+        return {k: _serialize(v) for k, v in val.items()}
+    if isinstance(val, list):
+        return [_serialize(i) for i in val]
+    return val
+
+
 @router.get("/db/export")
 async def db_export(session=Depends(get_session)):
-    nodes = await session.run(
-        "match (n) return labels(n) as labels, properties(n) as props"
+    nodes_result = await session.run(
+        "MATCH (n) RETURN labels(n) AS labels, properties(n) AS props"
     )
-    rels = await session.run(
-        "match (n1)-[r]->(n2) return labels(n1) as fromLabels, properties(n1) as fromProps, type(r) as relType, properties(r) as relProps, labels(n2) as toLabels, properties(n2) as toProps"
+    rels_result = await session.run(
+        """
+        MATCH (a)-[r]->(b)
+        RETURN labels(a) AS fromLabels, properties(a) AS fromProps,
+               type(r) AS relType, properties(r) AS relProps,
+               labels(b) AS toLabels, properties(b) AS toProps
+        """
     )
-    return {
-        "nodes": [n.data() async for n in nodes],
-        "relationships": [r.data() async for r in rels],
+    dump = {
+        "nodes": [_serialize(n.data()) async for n in nodes_result],
+        "relationships": [_serialize(r.data()) async for r in rels_result],
     }
+    return JSONResponse(
+        content=dump,
+        headers={"Content-Disposition": "attachment; filename=dump.json"},
+    )
 
 
 @router.post("/db/import")
