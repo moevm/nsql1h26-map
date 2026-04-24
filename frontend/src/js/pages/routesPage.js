@@ -243,7 +243,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  //initPerPage();
+  function initPerPage() {
+    const perPageSelect = document.getElementById('per-page-select');
+    if (!perPageSelect) return;
+
+    perPageSelect.value = perPage.toString();
+
+    perPageSelect.addEventListener('change', (e) => {
+        const newValue = parseInt(e.target.value);
+        if (!isNaN(newValue) && newValue !== perPage) {
+            perPage = newValue;
+            currentPage = 1;
+            renderTable();
+        }
+    });
+  }
+
+  initPerPage();
   initSelectAll();
   renderTable();
 });

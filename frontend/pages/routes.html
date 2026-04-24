@@ -132,18 +132,19 @@
         </table>
 
         <div class="pagination">
-
           <div class="pagination__info">
             <div class="pagination__per-page">
               <span>Записей на экране</span>
-              <div class="pagination__select" id="per-page-select">
-                <span>5</span>
-                <img src="/src/svg/arrow-down--grey.svg" alt="">
-              </div>
+              <select class="pagination__select" id="per-page-select">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">25</option>
+                <option value="50">50</option>
+              </select>
             </div>
             <span class="pagination__range" id="pagination-range">Показано 1-5 из 42 маршрутов</span>
           </div>
-
           <div class="pagination__controls">
             <button class="pagination__btn pagination__btn--prev" id="prev-page-btn">
               <img src="/src/svg/routes/arrow-left.svg" alt="">
