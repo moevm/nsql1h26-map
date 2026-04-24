@@ -1,0 +1,17 @@
+.map-area {
+  flex-grow: 2;
+  flex-basis: 80%;
+  position: relative;
+  background: var(--color-map-bg);
+  overflow: hidden;
+}
+
+.map-area__canvas {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 55% 40%,
+      rgba(0, 30, 50, 0.6) 0%,
+      transparent 70%),
+    var(--color-map-bg);
+}

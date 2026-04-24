@@ -1,0 +1,61 @@
+
+.map-layers {
+  border: 1px solid var(--accent-color);
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 10px 10px #fff;
+
+}
+
+.map-layers__title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.map-layers__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.map-layer-chip {
+  flex-basis: 30%;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background-color: transparent;
+  border: 1px solid var(--accent-color);
+  font-size: 13px;
+  font-weight: 600;
+  color: #00e6c3;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.map-layer-chip:hover {
+  filter:sepia(1);
+}
+
+.map-layer-chip--active {
+  background: #00e6c3;
+  border-color: #00e6c3;
+  color: #000;
+}
+
+.map-layer-chip--active:hover {
+  filter: sepia(0);
+}
+
+.map-layer-chip__icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}

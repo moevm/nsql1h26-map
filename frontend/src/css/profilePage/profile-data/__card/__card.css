@@ -5,6 +5,7 @@
   border-radius: 8px;
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
   padding: 12px;
   gap: 5px;
   border: 1px solid var(--accent-color);

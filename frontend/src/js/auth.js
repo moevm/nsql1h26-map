@@ -16,13 +16,13 @@ export function relocateToLogin() {
   const currentLocation = window.location.pathname;
 
   if (!isAuth) {
-    if (currentLocation === '/pages/login.html' || currentLocation === '/pages/registration.html') {
+    if (['/pages/login.html','/pages/registration.html'].includes(currentLocation)) {
       return;
     }
     window.location.href = '/pages/login.html';
   }
 
-  if (currentLocation === '/pages/login.html' || currentLocation === '/pages/registration.html' || currentLocation === '/index.html') {
+  if (['/pages/login.html', '/pages/registration.html', '/index.html', '/'].includes(currentLocation)) {
     window.location.href = '/pages/profile.html';
   }
 

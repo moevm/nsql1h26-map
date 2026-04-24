@@ -4,5 +4,10 @@
   gap: 5px;
   align-items: center;
   justify-content: space-between;
-  cursor: pointer;
+  cursor: crosshair;
+  transition: transform 1s ease;
+}
+
+.profile-data__achievment:hover {
+  transform: rotate(360deg);
 }

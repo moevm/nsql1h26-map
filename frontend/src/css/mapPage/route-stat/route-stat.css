@@ -1,0 +1,22 @@
+
+.route-stat {
+  color: #00e6c3;
+}
+
+.route-stat__value {
+  display: block;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.route-stat__label {
+  display: block;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 3px;
+}

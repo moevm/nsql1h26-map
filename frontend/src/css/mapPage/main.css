@@ -1,0 +1,19 @@
+@import url(/src/css/total.css);
+@import url(header/header.css);
+@import url(sidebar/sidebar.css);
+@import url(route-card/route-card.css);
+@import url(route-stat/route-stat.css);
+@import url(map-controls/map-controls.css);
+@import url(map-layers/map-layers.css);
+@import url(map-area/map-area.css);
+@import url(map-area/map-bottom-bar/map-bottom-bar.css);
+
+.map-layout {
+  display: flex;
+  position: relative;
+  width: 100%;
+  justify-content: center;
+  min-height: calc(100vh - 75px);
+  background-image: url(/src/img/overlay.png);
+  background-size: cover;
+}

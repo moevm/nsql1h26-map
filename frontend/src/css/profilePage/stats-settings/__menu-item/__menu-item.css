@@ -1,3 +1,4 @@
 .stats-settings__menu-item {
   list-style: none;
+  flex-grow: 1;
 }
