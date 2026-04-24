@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (paginatedRoutes.length === 0) {
       tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;">Маршрутов не найдено</td></tr>';
+      updatePaginationInfo();
       return;
     }
 
@@ -78,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
 
     attachTableEvents();
+    updatePaginationInfo();
     updateSelectAllCheckbox();
   }
 
@@ -132,6 +134,98 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function updatePaginationInfo() {
+    const total = routes.length;
+    const start = (currentPage - 1) * perPage + 1;
+    const end = Math.min(currentPage * perPage, total);
+    const rangeSpan = document.getElementById('pagination-range');
+    const routesCountSpan = document.querySelector('.page-header__count');
+    
+    if (rangeSpan) {
+      rangeSpan.textContent = `Показано ${start}-${end} из ${total} маршрутов`;
+    }
+    if (routesCountSpan) {
+      routesCountSpan.textContent = `${total} маршрутов`;
+    }
+    
+    renderPaginationControls(total);
+  }
+
+  function renderPaginationControls(total) {
+    const maxPage = Math.ceil(total / perPage);
+    const controlsContainer = document.querySelector('.pagination__controls');
+    if (!controlsContainer) return;
+
+    if (maxPage <= 1) {
+      controlsContainer.innerHTML = '';
+      return;
+    }
+
+    let pages = [];
+    if (maxPage <= 7) {
+      pages = Array.from({ length: maxPage }, (_, i) => i + 1);
+    } else {
+      if (currentPage <= 4) {
+        pages = [1, 2, 3, 4, 5, '...', maxPage];
+      } else if (currentPage >= maxPage - 3) {
+        pages = [1, '...', maxPage - 4, maxPage - 3, maxPage - 2, maxPage - 1, maxPage];
+      } else {
+        pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', maxPage];
+      }
+    }
+
+    controlsContainer.innerHTML = `
+      <button class="pagination__btn pagination__btn--prev" ${currentPage === 1 ? 'disabled' : ''}>
+        <img src="/src/svg/routes/arrow-left.svg" alt="">
+      </button>
+      ${pages.map(page => {
+        if (page === '...') {
+          return '<span class="pagination__dots">...</span>';
+        }
+        return `<button class="pagination__btn pagination__btn--page ${currentPage === page ? 'pagination__btn--active' : ''}" data-page="${page}">${page}</button>`;
+      }).join('')}
+      <button class="pagination__btn pagination__btn--next" ${currentPage === maxPage ? 'disabled' : ''}>
+        <img src="/src/svg/routes/arrow-right.svg" alt="">
+      </button>
+    `;
+
+    document.querySelectorAll('.pagination__btn--page').forEach(btn => {
+      btn.removeEventListener('click', handlePageClick);
+      btn.addEventListener('click', handlePageClick);
+    });
+
+    const prevBtn = controlsContainer.querySelector('.pagination__btn--prev');
+    const nextBtn = controlsContainer.querySelector('.pagination__btn--next');
+    if (prevBtn) {
+      prevBtn.removeEventListener('click', handlePrevClick);
+      prevBtn.addEventListener('click', handlePrevClick);
+    }
+    if (nextBtn) {
+      nextBtn.removeEventListener('click', handleNextClick);
+      nextBtn.addEventListener('click', handleNextClick);
+    }
+  }
+
+  function handlePageClick(e) {
+    currentPage = parseInt(e.currentTarget.dataset.page);
+    renderTable();
+  }
+
+  function handlePrevClick() {
+    if (currentPage > 1) {
+      currentPage--;
+      renderTable();
+    }
+  }
+
+  function handleNextClick() {
+    const maxPage = Math.ceil(routes.length / perPage);
+    if (currentPage < maxPage) {
+      currentPage++;
+      renderTable();
+    }
+  }
+
   function initSelectAll() {
     const selectAll = document.getElementById('select-all-checkbox');
     if (selectAll) {
@@ -149,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  //initPerPage();
   initSelectAll();
   renderTable();
 });
