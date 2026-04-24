@@ -127,80 +127,7 @@
             </tr>
           </thead>
           <tbody id="routes-table-body">
-            <!-- здесь будут данные из mockdata.js -->
-
-            <!-- Строка 1 -->
-            <tr class="routes-table__row--selected">
-              <td>
-                <input type="checkbox" class="route-checkbox" checked>
-              </td>
-              <td class="route-num">1</td>
-              <td>
-                <div class="route-name">Downtown Exploration #42</div>
-                <div class="route-id">RT-20231025-001</div>
-              </td>
-              <td class="route-date-time">Окт 25, 2023 · 08:42</td>
-              <td class="route-dist">12.4</td>
-              <td class="route-duration">48м 12с</td>
-              <td><span class="coverage-badge">64.2%</span></td>
-              <td class="route-places">12</td>
-              <td>
-                <button class="action-btn" data-action="view" data-id="RT-20231025-001">
-                  <img src="/src/svg/routes/eye.svg" alt="просмотр">
-                </button>
-                <button class="action-btn" data-action="delete" data-id="RT-20231025-001">
-                  <img src="/src/svg/routes/trash.svg" alt="удалить">
-                </button>
-              </td>
-            </tr>
-            <!-- Строка 2 -->
-            <tr>
-              <td>
-                <input type="checkbox" class="route-checkbox">
-              </td>
-              <td class="route-num">2</td>
-              <td>
-                <div class="route-name">River Side Morning</div>
-                <div class="route-id">RT-20231024-008</div>
-              </td>
-              <td class="route-date-time">Окт 24, 2023 · 06:15</td>
-              <td class="route-dist">8.2</td>
-              <td class="route-duration">32м 45с</td>
-              <td><span class="coverage-badge coverage-badge--low">12.5%</span></td>
-              <td class="route-places">4</td>
-              <td>
-                <button class="action-btn" data-action="view" data-id="RT-20231024-008">
-                  <img src="/src/svg/routes/eye.svg" alt="просмотр">
-                </button>
-                <button class="action-btn" data-action="delete" data-id="RT-20231024-008">
-                  <img src="/src/svg/routes/trash.svg" alt="удалить">
-                </button>
-              </td>
-            </tr>
-            <!-- Строка 3 -->
-            <tr>
-              <td>
-                <input type="checkbox" class="route-checkbox">
-              </td>
-              <td class="route-num">3</td>
-              <td>
-                <div class="route-name">North Bridge Crossing</div>
-                <div class="route-id">RT-20231022-012</div>
-              </td>
-              <td class="route-date-time">Окт 22, 2023 · 05:30</td>
-              <td class="route-dist">15.9</td>
-              <td class="route-duration">1ч 05м</td>
-              <td><span class="coverage-badge coverage-badge--high">89.0%</span></td>
-              <td class="route-places">28</td>
-              <td>
-                <button class="action-btn" data-action="view" data-id="RT-20231022-012">
-                  <img src="/src/svg/routes/eye.svg" alt="просмотр">
-                </button>
-                <button class="action-btn" data-action="delete" data-id="RT-20231022-012">
-                  <img src="/src/svg/routes/trash.svg" alt="удалить">
-                </button>
-              </td>
-            </tr>
+            <!-- данные из mockdata.js -->
           </tbody>
         </table>
 
@@ -208,12 +135,15 @@
           <div class="pagination__info">
             <div class="pagination__per-page">
               <span>Записей на экране</span>
-              <div class="pagination__select" id="per-page-select">
-                <span>15</span>
-                <img src="/src/svg/arrow-down--grey.svg" alt="">
-              </div>
+              <select class="pagination__select" id="per-page-select">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">25</option>
+                <option value="50">50</option>
+              </select>
             </div>
-            <span class="pagination__range" id="pagination-range">Показано 1-15 из 142 маршрутов</span>
+            <span class="pagination__range" id="pagination-range">Показано 1-5 из 42 маршрутов</span>
           </div>
           <div class="pagination__controls">
             <button class="pagination__btn pagination__btn--prev" id="prev-page-btn">

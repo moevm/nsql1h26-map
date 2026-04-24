@@ -27,6 +27,7 @@
 
 .pagination__select {
   display: flex;
+  min-width: 70px;
   align-items: center;
   gap: 8px;
   padding: 5px 12px;
@@ -34,11 +35,20 @@
   border: 1px solid #273A37;
   border-radius: 4px;
   cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-image: url("../../../svg/arrow-down--grey.svg");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  color: #94A3B8;
 }
 
-.pagination__select img {
-  width: 18px;
-  height: 18px;
+.pagination__select:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.pagination__select option {
+  background: #1a2a2a;
 }
 
 .pagination__range {

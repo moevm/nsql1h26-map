@@ -1,5 +1,265 @@
 import { relocateToLogin } from "../auth";
+import { mockRoutes } from "../develop/mockdata.js";
 
 document.addEventListener('DOMContentLoaded', () => {
   relocateToLogin();
+  
+  let currentPage = 1;
+  let perPage = 5;
+  let routes = [...mockRoutes];
+  let totalRoutes = routes.length;
+  let selectedIds = [];
+
+  function formatDuration(duration) {
+    if (duration.minutes >= 60) {
+      const hours = Math.floor(duration.minutes / 60);
+      const mins = duration.minutes % 60;
+      return `${hours}ч ${mins}м`;
+    }
+    return `${duration.minutes}м ${duration.seconds}с`;
+  }
+
+  function formatDate(dateStr) {
+    const [year, month, day] = dateStr.split('-');
+    const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+    return `${months[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
+  }
+
+  function getCoverageClass(coverage) {
+    if (coverage < 25) return 'coverage-badge coverage-badge--low';
+    if (coverage > 75) return 'coverage-badge coverage-badge--high';
+    return 'coverage-badge';
+  }
+
+  function renderTable() {
+    const start = (currentPage - 1) * perPage;
+    const paginatedRoutes = routes.slice(start, start + perPage);
+    const tbody = document.getElementById('routes-table-body');
+    if (!tbody) return;
+
+    if (paginatedRoutes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;">Маршрутов не найдено</td></tr>';
+      updatePaginationInfo();
+      return;
+    }
+
+    tbody.innerHTML = paginatedRoutes.map((route, idx) => {
+      const rowNumber = start + idx + 1;
+      const isSelected = selectedIds.includes(route.id);
+      const durationText = formatDuration(route.duration);
+      const formattedDate = formatDate(route.date);
+      const coverageClass = getCoverageClass(route.coverage);
+      const selectedRowClass = isSelected ? 'routes-table__row--selected' : '';
+
+      return `
+        <tr class="${selectedRowClass}" data-id="${route.id}">
+          <td>
+            <input type="checkbox" class="route-checkbox" data-id="${route.id}" ${isSelected ? 'checked' : ''}>
+          </td>
+          <td class="route-num">${rowNumber}</td>
+          <td>
+            <div class="route-name">${route.name}</div>
+            <div class="route-id">${route.id}</div>
+          </td>
+          <td class="route-date-time">${formattedDate} · ${route.time}</td>
+          <td class="route-dist">${route.distance}</td>
+          <td class="route-duration">${durationText}</td>
+          <td><span class="${coverageClass}">${route.coverage}%</span></td>
+          <td class="route-places">${route.pois}</td>
+          <td>
+            <button class="action-btn" data-action="view" data-id="${route.id}">
+              <img src="/src/svg/routes/eye.svg" alt="просмотр">
+            </button>
+            <button class="action-btn" data-action="delete" data-id="${route.id}">
+              <img src="/src/svg/routes/trash.svg" alt="удалить">
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    attachTableEvents();
+    updatePaginationInfo();
+    updateSelectAllCheckbox();
+  }
+
+  function attachTableEvents() {
+    document.querySelectorAll('.route-checkbox').forEach(cb => {
+      cb.removeEventListener('change', handleCheckboxChange);
+      cb.addEventListener('change', handleCheckboxChange);
+    });
+
+    document.querySelectorAll('[data-action="delete"]').forEach(btn => {
+      btn.removeEventListener('click', handleDeleteClick);
+      btn.addEventListener('click', handleDeleteClick);
+    });
+  }
+
+  function handleCheckboxChange(e) {
+    const id = e.target.dataset.id;
+    const row = e.target.closest('tr');
+    
+    if (e.target.checked) {
+      if (!selectedIds.includes(id)) selectedIds.push(id);
+      if (row) row.classList.add('routes-table__row--selected');
+    } else {
+      selectedIds = selectedIds.filter(i => i !== id);
+      if (row) row.classList.remove('routes-table__row--selected');
+    }
+    updateSelectAllCheckbox();
+  }
+
+  function handleDeleteClick(e) {
+    const id = e.currentTarget.dataset.id;
+    if (confirm(`Удалить маршрут ${id}?`)) {
+      routes = routes.filter(r => r.id !== id);
+      totalRoutes = routes.length;
+      selectedIds = selectedIds.filter(i => i !== id);
+      
+      if (routes.length === 0) currentPage = 1;
+      if (currentPage > Math.ceil(routes.length / perPage)) {
+        currentPage = Math.max(1, Math.ceil(routes.length / perPage));
+      }
+      
+      renderTable();
+    }
+  }
+
+  function updateSelectAllCheckbox() {
+    const selectAll = document.getElementById('select-all-checkbox');
+    if (selectAll) {
+      const currentPageIds = routes.slice((currentPage - 1) * perPage, currentPage * perPage).map(r => r.id);
+      const allSelected = currentPageIds.length > 0 && currentPageIds.every(id => selectedIds.includes(id));
+      selectAll.checked = allSelected;
+    }
+  }
+
+  function updatePaginationInfo() {
+    const total = routes.length;
+    const start = (currentPage - 1) * perPage + 1;
+    const end = Math.min(currentPage * perPage, total);
+    const rangeSpan = document.getElementById('pagination-range');
+    const routesCountSpan = document.querySelector('.page-header__count');
+    
+    if (rangeSpan) {
+      rangeSpan.textContent = `Показано ${start}-${end} из ${total} маршрутов`;
+    }
+    if (routesCountSpan) {
+      routesCountSpan.textContent = `${total} маршрутов`;
+    }
+    
+    renderPaginationControls(total);
+  }
+
+  function renderPaginationControls(total) {
+    const maxPage = Math.ceil(total / perPage);
+    const controlsContainer = document.querySelector('.pagination__controls');
+    if (!controlsContainer) return;
+
+    if (maxPage <= 1) {
+      controlsContainer.innerHTML = '';
+      return;
+    }
+
+    let pages = [];
+    if (maxPage <= 7) {
+      pages = Array.from({ length: maxPage }, (_, i) => i + 1);
+    } else {
+      if (currentPage <= 4) {
+        pages = [1, 2, 3, 4, 5, '...', maxPage];
+      } else if (currentPage >= maxPage - 3) {
+        pages = [1, '...', maxPage - 4, maxPage - 3, maxPage - 2, maxPage - 1, maxPage];
+      } else {
+        pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', maxPage];
+      }
+    }
+
+    controlsContainer.innerHTML = `
+      <button class="pagination__btn pagination__btn--prev" ${currentPage === 1 ? 'disabled' : ''}>
+        <img src="/src/svg/routes/arrow-left.svg" alt="">
+      </button>
+      ${pages.map(page => {
+        if (page === '...') {
+          return '<span class="pagination__dots">...</span>';
+        }
+        return `<button class="pagination__btn pagination__btn--page ${currentPage === page ? 'pagination__btn--active' : ''}" data-page="${page}">${page}</button>`;
+      }).join('')}
+      <button class="pagination__btn pagination__btn--next" ${currentPage === maxPage ? 'disabled' : ''}>
+        <img src="/src/svg/routes/arrow-right.svg" alt="">
+      </button>
+    `;
+
+    document.querySelectorAll('.pagination__btn--page').forEach(btn => {
+      btn.removeEventListener('click', handlePageClick);
+      btn.addEventListener('click', handlePageClick);
+    });
+
+    const prevBtn = controlsContainer.querySelector('.pagination__btn--prev');
+    const nextBtn = controlsContainer.querySelector('.pagination__btn--next');
+    if (prevBtn) {
+      prevBtn.removeEventListener('click', handlePrevClick);
+      prevBtn.addEventListener('click', handlePrevClick);
+    }
+    if (nextBtn) {
+      nextBtn.removeEventListener('click', handleNextClick);
+      nextBtn.addEventListener('click', handleNextClick);
+    }
+  }
+
+  function handlePageClick(e) {
+    currentPage = parseInt(e.currentTarget.dataset.page);
+    renderTable();
+  }
+
+  function handlePrevClick() {
+    if (currentPage > 1) {
+      currentPage--;
+      renderTable();
+    }
+  }
+
+  function handleNextClick() {
+    const maxPage = Math.ceil(routes.length / perPage);
+    if (currentPage < maxPage) {
+      currentPage++;
+      renderTable();
+    }
+  }
+
+  function initSelectAll() {
+    const selectAll = document.getElementById('select-all-checkbox');
+    if (selectAll) {
+      selectAll.addEventListener('change', (e) => {
+        const currentPageIds = routes.slice((currentPage - 1) * perPage, currentPage * perPage).map(r => r.id);
+        if (e.target.checked) {
+          currentPageIds.forEach(id => {
+            if (!selectedIds.includes(id)) selectedIds.push(id);
+          });
+        } else {
+          selectedIds = selectedIds.filter(id => !currentPageIds.includes(id));
+        }
+        renderTable();
+      });
+    }
+  }
+
+  function initPerPage() {
+    const perPageSelect = document.getElementById('per-page-select');
+    if (!perPageSelect) return;
+
+    perPageSelect.value = perPage.toString();
+
+    perPageSelect.addEventListener('change', (e) => {
+        const newValue = parseInt(e.target.value);
+        if (!isNaN(newValue) && newValue !== perPage) {
+            perPage = newValue;
+            currentPage = 1;
+            renderTable();
+        }
+    });
+  }
+
+  initPerPage();
+  initSelectAll();
+  renderTable();
 });
