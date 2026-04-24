@@ -58,3 +58,53 @@ async def list_edges(
     )
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_edge(body: CreateEdgeRequest, session=Depends(get_session)):
+    result = await session.run(
+        """
+        MATCH (a:MapNode {osmId: $from})
+        MATCH (b:MapNode {osmId: $to})
+        RETURN a.lat AS aLat, a.lon AS aLon, b.lat AS bLat, b.lon AS bLon
+        """,
+        **{"from": body.fromOsmId, "to": body.toOsmId},
+    )
+    record = await result.single()
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="One or both MapNodes not found")
+
+    dist = body.distanceMeters if body.distanceMeters is not None else round(
+        haversine(record["aLat"], record["aLon"], record["bLat"], record["bLon"]), 2
+    )
+
+    await session.run(
+        """
+        MATCH (a:MapNode {osmId: $from})
+        MATCH (b:MapNode {osmId: $to})
+        CREATE (a)-[:CONNECTED_TO {distanceMeters: $dist}]->(b)
+        CREATE (b)-[:CONNECTED_TO {distanceMeters: $dist}]->(a)
+        """,
+        **{"from": body.fromOsmId, "to": body.toOsmId, "dist": dist},
+    )
+    return {"fromOsmId": body.fromOsmId, "toOsmId": body.toOsmId, "distanceMeters": dist}
+
+
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_edge(
+    fromOsmId: int = Query(...),
+    toOsmId: int = Query(...),
+    session=Depends(get_session),
+):
+    check = await session.run(
+        "MATCH (a:MapNode {osmId: $from})-[r:CONNECTED_TO]-(b:MapNode {osmId: $to}) RETURN r LIMIT 1",
+        **{"from": fromOsmId, "to": toOsmId},
+    )
+    if not await check.single():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edge not found")
+
+    await session.run(
+        "MATCH (a:MapNode {osmId: $from})-[r:CONNECTED_TO]-(b:MapNode {osmId: $to}) DELETE r",
+        **{"from": fromOsmId, "to": toOsmId},
+    )
+
