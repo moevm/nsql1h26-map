@@ -1,3 +1,5 @@
+import csv
+import io
 import math
 
 
@@ -10,6 +12,20 @@ def lat_lon_to_tile(lat: float, lon: float, zoom: int = 19) -> tuple[int, int]:
     tile_x = int((lon + 180) / 360 * n)
     tile_y = int((1 - math.log(math.tan(math.radians(lat)) + 1 / math.cos(math.radians(lat))) / math.pi) / 2 * n)
     return tile_x, tile_y
+
+
+def make_csv_response(rows: list[list], headers: list[str], filename: str):
+    from fastapi.responses import StreamingResponse
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(headers)
+    writer.writerows(rows)
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:

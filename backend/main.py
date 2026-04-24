@@ -29,7 +29,7 @@ _auth = [Depends(get_current_user)]
 
 app.include_router(map.router,        prefix="/api/map")
 app.include_router(auth.router,       prefix="/api/auth")
-app.include_router(data.router,       prefix="/data")
+app.include_router(data.router,       prefix="/data", dependencies=_auth)
 app.include_router(districts.router,  prefix="/api/districts",  dependencies=_auth)
 app.include_router(trackfiles.router, prefix="/api/trackfiles", dependencies=_auth)
 app.include_router(mapnodes.router,   prefix="/api/mapnodes",   dependencies=_auth)
