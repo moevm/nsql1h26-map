@@ -1,0 +1,43 @@
+
+.map-bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--accent-color);
+  z-index: 10;
+}
+
+.bottom-bar-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: #00e6c3;
+  border-radius: 12px;
+  color: #0a1f28;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--accent-color);
+  cursor: pointer;
+  transition:
+    opacity 0.15s,
+    box-shadow 0.15s;
+}
+
+.bottom-bar-btn--import {
+  border: 1px solid var(--color-border);
+}
+
+.bottom-bar-btn--export {
+  background: transparent;
+  color: #fff;
+}

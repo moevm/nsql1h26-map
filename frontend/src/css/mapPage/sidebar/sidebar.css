@@ -1,0 +1,36 @@
+.sidebar {
+  border-right: 1px solid var(--accent-color);
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 24px;
+  flex-basis: 20%;
+  background-color: rgba(23, 54, 53, 0.2);
+}
+
+.sidebar__build-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: #00e6c3;
+  border-radius: 12px;
+  color: #0a1f28;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--accent-color);
+  cursor: pointer;
+  transition:
+    opacity 0.15s,
+    box-shadow 0.15s;
+  box-shadow: 0 6px 10px rgba(46, 232, 196, 0.25);
+}
+
+.sidebar__build-btn-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}

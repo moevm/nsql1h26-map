@@ -5,3 +5,11 @@
 @import url(table/table.css);
 @import url(table/pagination.css);
 @import url(dashboard/dashboard.css);
+
+.routes-main {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 75px);
+  background-image: url(/src/img/overlay.png);
+  background-size: cover;
+}

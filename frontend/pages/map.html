@@ -33,8 +33,148 @@
       </nav>
     </header>
 
-    <main class="map-main">
-    </main>
+    <div class="map-layout">
+
+      <aside class="sidebar">
+
+        <div class="route-card">
+          <div class="route-card__header">
+            <span class="route-card__label">Текущий маршрут</span>
+            <span class="route-card__status"></span>
+          </div>
+          <div class="route-card__stats">
+            <div class="route-stat">
+              <span class="route-stat__value">4.2 KM</span>
+              <span class="route-stat__label">Расстояние</span>
+            </div>
+            <div class="route-stat">
+              <span class="route-stat__value">52 МИН</span>
+              <span class="route-stat__label">Время</span>
+            </div>
+          </div>
+          <div class="route-card__divider"></div>
+          <div class="route-card__info">
+            <svg class="route-card__info-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M7 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            <span>1.4км новой территории исследовано</span>
+          </div>
+        </div>
+
+        <div class="map-controls">
+
+          <div class="map-control">
+            <div class="map-control__header">
+              <span class="map-control__title">Радиус охвата</span>
+              <span class="map-control__value" id="radius-value">75m</span>
+            </div>
+            <div class="range-slider">
+              <input
+                class="range-slider__input"
+                id="radius-slider"
+                type="range"
+                min="50"
+                max="100"
+                value="75"
+              >
+              <div class="range-slider__labels">
+                <span class="range-slider__label">50M</span>
+                <span class="range-slider__label">100M</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="toggle-control">
+            <div class="toggle-control__left">
+              <svg class="toggle-control__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 8h12M2 4h7M2 12h5" stroke="#8aa4b4" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M12 2v12" stroke="#8aa4b4" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 2"/>
+              </svg>
+              <div class="toggle-control__text">
+                <span class="toggle-control__title">Избегать пройденных улиц</span>
+                <span class="toggle-control__subtitle">Только новые улицы</span>
+              </div>
+            </div>
+            <label class="toggle">
+              <input class="toggle__input" type="checkbox" id="avoid-visited-toggle" checked>
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+
+          <div class="toggle-control">
+            <div class="toggle-control__left">
+              <svg class="toggle-control__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 1C5.239 1 3 3.239 3 6c0 3.75 5 9 5 9s5-5.25 5-9c0-2.761-2.239-5-5-5z" stroke="#8aa4b4" stroke-width="1.4"/>
+                <circle cx="8" cy="6" r="1.8" stroke="#8aa4b4" stroke-width="1.2"/>
+              </svg>
+              <div class="toggle-control__text">
+                <span class="toggle-control__title">Точки интереса</span>
+              </div>
+            </div>
+            <label class="toggle">
+              <input class="toggle__input" type="checkbox" id="poi-toggle" checked>
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+
+        </div>
+
+        <div class="map-layers">
+          <p class="map-layers__title">Слои карты</p>
+          <div class="map-layers__grid">
+            <button class="map-layer-chip map-layer-chip--active" data-layer="parks">
+              <span class="map-layer-chip__icon">🌳</span>
+              <span>Парки</span>
+            </button>
+            <button class="map-layer-chip" data-layer="museums">
+              <span class="map-layer-chip__icon">🏛</span>
+              <span>Музеи</span>
+            </button>
+            <button class="map-layer-chip" data-layer="cafes">
+              <span class="map-layer-chip__icon">☕</span>
+              <span>Кафе</span>
+            </button>
+            <button class="map-layer-chip" data-layer="monuments">
+              <span class="map-layer-chip__icon">🗿</span>
+              <span>Памятники</span>
+            </button>
+          </div>
+        </div>
+
+        <button class="sidebar__build-btn" id="build-route-btn">
+          <svg class="sidebar__build-btn-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 1.5v15M1.5 9h15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M4 4l1.5 1.5M12.5 12.5L14 14M14 4l-1.5 1.5M5.5 12.5L4 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span>Построить оптимальный маршрут</span>
+        </button>
+        
+      </aside>
+
+      <main class="map-area" id="map-container">
+        <div class="map-area__canvas"></div>
+
+        <div class="map-bottom-bar">
+          <button class="bottom-bar-btn bottom-bar-btn--import" id="import-btn">
+            <svg class="bottom-bar-btn__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 2v9M4.5 7.5L8 11l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span>Импорт данных</span>
+          </button>
+          <button class="bottom-bar-btn bottom-bar-btn--export" id="export-btn">
+            <svg class="bottom-bar-btn__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 10V1M4.5 4.5L8 1l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span>Экспорт текущих данных</span>
+          </button>
+        </div>
+
+      </main>
+      
+    </div>
 
     <script type="module" src="/src/js/pages/mapPage.js"></script>
   </body>
