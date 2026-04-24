@@ -1,6 +1,7 @@
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi.responses import JSONResponse
 
 from database import get_session
 from utils import make_csv_response
@@ -8,18 +9,38 @@ from utils import make_csv_response
 router = APIRouter()
 
 
+def _serialize(val):
+    """Рекурсивно конвертирует Neo4j-типы (DateTime и др.) в JSON-совместимые."""
+    if hasattr(val, "isoformat"):
+        return val.isoformat()
+    if isinstance(val, dict):
+        return {k: _serialize(v) for k, v in val.items()}
+    if isinstance(val, list):
+        return [_serialize(i) for i in val]
+    return val
+
+
 @router.get("/db/export")
 async def db_export(session=Depends(get_session)):
-    nodes = await session.run(
-        "match (n) return labels(n) as labels, properties(n) as props"
+    nodes_result = await session.run(
+        "MATCH (n) RETURN labels(n) AS labels, properties(n) AS props"
     )
-    rels = await session.run(
-        "match (n1)-[r]->(n2) return labels(n1) as fromLabels, properties(n1) as fromProps, type(r) as relType, properties(r) as relProps, labels(n2) as toLabels, properties(n2) as toProps"
+    rels_result = await session.run(
+        """
+        MATCH (a)-[r]->(b)
+        RETURN labels(a) AS fromLabels, properties(a) AS fromProps,
+               type(r) AS relType, properties(r) AS relProps,
+               labels(b) AS toLabels, properties(b) AS toProps
+        """
     )
-    return {
-        "nodes": [n.data() async for n in nodes],
-        "relationships": [r.data() async for r in rels],
+    dump = {
+        "nodes": [_serialize(n.data()) async for n in nodes_result],
+        "relationships": [_serialize(r.data()) async for r in rels_result],
     }
+    return JSONResponse(
+        content=dump,
+        headers={"Content-Disposition": "attachment; filename=dump.json"},
+    )
 
 
 @router.post("/db/import")
@@ -28,29 +49,160 @@ async def db_import(file: UploadFile = File(...), session=Depends(get_session)):
     try:
         dump = json.loads(content.decode("utf-8"))
     except Exception:
-        raise HTTPException(status_code=400, detail="Incorrect json file")
+        raise HTTPException(status_code=400, detail="Invalid JSON file")
 
-    await session.run("match (n) detach delete n")
+    nodes = dump["nodes"]
+    rels = dump["relationships"]
 
-    label_map = {
-        "User": "create (n:User) set n = row.props",
-        "Walk": "create (n:Walk) set n = row.props",
+    def nodes_of(lbl: str) -> list:
+        return [n["props"] for n in nodes if lbl in n["labels"]]
+
+    def rels_of(rel_type: str) -> list:
+        return [r for r in rels if r["relType"] == rel_type]
+
+    # 1. Полная очистка БД
+    await session.run("MATCH (n) DETACH DELETE n")
+
+    # 2. Все узлы
+    datetime_fields = {
+        "Walk":      ["startedAt", "finishedAt"],
+        "Route":     ["createdAt"],
+        "TrackFile": ["uploadedAt"],
     }
-    for label, script in label_map.items():
-        nodes_for_label = [n for n in dump["nodes"] if label in n["labels"]]
-        if nodes_for_label:
-            await session.run(f"unwind $rows as row {script}", rows=nodes_for_label)
+    for label in ("User", "Walk", "Route", "TrackFile", "District", "MapNode", "POI"):
+        items = nodes_of(lbl=label)
+        if not items:
+            continue
+        fields = datetime_fields.get(label, [])
+        set_dates = " ".join(
+            f"SET n.{f} = datetime(props.{f})" for f in fields
+        )
+        await session.run(
+            f"UNWIND $items AS props CREATE (n:{label}) SET n = props {set_dates}",
+            items=items,
+        )
 
-    rel_map = {"PERFORMED": "CREATE (a)-[:PERFORMED]->(b)"}
-    for rel_type, script in rel_map.items():
-        rels_for_type = [r for r in dump["relationships"] if r["relType"] == rel_type]
-        if rels_for_type:
-            await session.run(
-                f"unwind $rows as row match (a {{id: row.fromProps.id}}) match (b {{id: row.toProps.id}}) {script}",
-                rows=rels_for_type,
-            )
+    # 3. (MapNode)-[:CONNECTED_TO]->(MapNode)
+    items = rels_of("CONNECTED_TO")
+    if items:
+        await session.run(
+            """
+            UNWIND $rows AS row
+            MATCH (a:MapNode {osmId: row.fromProps.osmId})
+            MATCH (b:MapNode {osmId: row.toProps.osmId})
+            CREATE (a)-[:CONNECTED_TO {distanceMeters: row.relProps.distanceMeters}]->(b)
+            """,
+            rows=items,
+        )
 
-    return {"nodesRestored": len(dump["nodes"]), "relationshipsRestored": len(dump["relationships"])}
+    # 4. (MapNode)-[:HAS_POI]->(POI)
+    items = rels_of("HAS_POI")
+    if items:
+        await session.run(
+            """
+            UNWIND $rows AS row
+            MATCH (mn:MapNode {osmId: row.fromProps.osmId})
+            MATCH (p:POI {osmId: row.toProps.osmId})
+            CREATE (mn)-[:HAS_POI]->(p)
+            """,
+            rows=items,
+        )
+
+    # 5. (User)-[:PERFORMED]->(Walk)
+    items = rels_of("PERFORMED")
+    if items:
+        await session.run(
+            """
+            UNWIND $rows AS row
+            MATCH (u:User {id: row.fromProps.id})
+            MATCH (w:Walk {id: row.toProps.id})
+            CREATE (u)-[:PERFORMED]->(w)
+            """,
+            rows=items,
+        )
+
+    # 6. (Walk)-[:HAS_POINT]->(WalkPoint) — WalkPoint создаём inline
+    items = rels_of("HAS_POINT")
+    if items:
+        await session.run(
+            """
+            UNWIND $rows AS row
+            MATCH (w:Walk {id: row.fromProps.id})
+            CREATE (wp:WalkPoint) SET wp = row.toProps
+            SET wp.timestamp = datetime(row.toProps.timestamp)
+            CREATE (w)-[:HAS_POINT]->(wp)
+            """,
+            rows=items,
+        )
+
+    # 7. (User)-[:COVERED]->(CoveredTile) — CoveredTile создаём inline
+    items = rels_of("COVERED")
+    if items:
+        await session.run(
+            """
+            UNWIND $rows AS row
+            MATCH (u:User {id: row.fromProps.id})
+            CREATE (ct:CoveredTile) SET ct = row.toProps
+            SET ct.firstCoveredAt = datetime(row.toProps.firstCoveredAt)
+            CREATE (u)-[:COVERED]->(ct)
+            """,
+            rows=items,
+        )
+
+    # 8. (Walk)-[:FIRST_COVERED]->(CoveredTile) — ищем уже созданный CoveredTile
+    items = rels_of("FIRST_COVERED")
+    if items:
+        await session.run(
+            """
+            UNWIND $rows AS row
+            MATCH (w:Walk {id: row.fromProps.id})
+            MATCH (u:User)-[:PERFORMED]->(w)
+            MATCH (u)-[:COVERED]->(ct:CoveredTile {tileX: row.toProps.tileX, tileY: row.toProps.tileY})
+            CREATE (w)-[:FIRST_COVERED]->(ct)
+            """,
+            rows=items,
+        )
+
+    # 9. (User)-[:REQUESTED_ROUTE]->(Route)
+    items = rels_of("REQUESTED_ROUTE")
+    if items:
+        await session.run(
+            """
+            UNWIND $rows AS row
+            MATCH (u:User {id: row.fromProps.id})
+            MATCH (r:Route {id: row.toProps.id})
+            CREATE (u)-[:REQUESTED_ROUTE]->(r)
+            """,
+            rows=items,
+        )
+
+    # 10. (Route)-[:PASSES_THROUGH]->(MapNode)
+    items = rels_of("PASSES_THROUGH")
+    if items:
+        await session.run(
+            """
+            UNWIND $rows AS row
+            MATCH (r:Route {id: row.fromProps.id})
+            MATCH (mn:MapNode {osmId: row.toProps.osmId})
+            CREATE (r)-[:PASSES_THROUGH {order: row.relProps.order}]->(mn)
+            """,
+            rows=items,
+        )
+
+    # 11. (TrackFile)-[:CONTAINS]->(Walk)
+    items = rels_of("CONTAINS")
+    if items:
+        await session.run(
+            """
+            UNWIND $rows AS row
+            MATCH (tf:TrackFile {id: row.fromProps.id})
+            MATCH (w:Walk {id: row.toProps.id})
+            CREATE (tf)-[:CONTAINS]->(w)
+            """,
+            rows=items,
+        )
+
+    return {"nodesRestored": len(nodes), "relationshipsRestored": len(rels)}
 
 @router.get("/export/walks")
 async def export_walks(
