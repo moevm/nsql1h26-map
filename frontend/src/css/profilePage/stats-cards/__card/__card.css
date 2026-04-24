@@ -11,4 +11,10 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 8px;
+  transition: filter 0.35s ease;
+  cursor: crosshair;
+}
+
+.stats-cards__card:hover {
+  filter: sepia(1);
 }
