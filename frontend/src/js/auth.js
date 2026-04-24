@@ -6,9 +6,12 @@ function getCookie() {
   }, {})
 }
 
+export function getToken() {
+  return getCookie().token;
+}
+
 function isAuthenticated() {
-  const cookies = getCookie();
-  return cookies.token;
+  return getToken();
 }
 
 export function relocateToLogin() {

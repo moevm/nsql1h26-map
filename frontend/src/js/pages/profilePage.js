@@ -1,17 +1,22 @@
 import { relocateToLogin } from "../auth";
 import { Notify } from "../utils/notify";
 import { userManager } from "../localManagers/userManager";
+import { getToken } from "../auth";
 
 let currentChart = null;
+let chartData = [];
 
 const unlogin = () => {
   document.cookie = 'token=; Path=/; SameSite=Strict; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
 }
 
-const setChart = (chartCanvasElement, type) => {
+const setChart = (chartCanvasElement, type, dataMetrics) => {
   const types = ["bar", "line", "radar"];
   if ((types.includes(type)) === false) return;
   if (currentChart) currentChart.destroy();
+
+  const data = dataMetrics.length ? dataMetrics : [10, 20, 30, 40, 50, 60, 70];
+
   currentChart = new Chart(chartCanvasElement, {
     type: type,
     data: {
@@ -19,14 +24,9 @@ const setChart = (chartCanvasElement, type) => {
       datasets: [
         {
         label: '# of Votes',
-        data: [12, 19, 3, 5, 2, 3],
+        data: data,
         borderWidth: 3
       },
-      {
-        label: '# of Votes2',
-        data: [22, 29, 23, 25, 12, 33],
-        borderWidth: 5
-      }
     ],
     },
     options: {
@@ -69,13 +69,14 @@ const setMetricsText = (metric) => {
 
 const setDurationText = (duration) => {
   const durations = {
+    "0days": "Это ваша будущая статистика",
     "7days": "7 дней",
     "30days": "30 дней",
     "90days": "90 дней",
   }
-  if ((Object.keys(durations).includes(duration)) === false) return;
+  if ((Object.keys(durations).includes(duration)) === false && motivation === false) return;
   const durationField = document.querySelector('.stats-graph__text--duration');
-  durationField.textContent = `Активность за ${durations[duration]}`;
+  durationField.textContent = duration === "0days" ? "Это ваша будущая статистика": `Активность за ${durations[duration]}`;
 }
 
 const setUserName = () => {
@@ -110,6 +111,25 @@ const createAchievment = (title, image) => {
   document.querySelector('.profile-data__list').appendChild(clone);
 }
 
+const getStats = async () => {
+  const userId = userManager.get().id;
+
+  const response = await fetch(`http://127.0.0.1:10001/api/stats/?userId=${userId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${getToken()}`,
+      'credentials': true
+    },
+    credentials: 'include',
+  }).catch((error) => {
+    Notify.error("Ошибка сервера");
+    return false;
+  });
+
+  const data = await response.json();
+  return data;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   relocateToLogin();
 
@@ -135,39 +155,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const metricTypeValue = metricType.value;
     const duration = durationData.value;
 
-    setChart(chart, graphTypeValue);
+    setChart(chart, graphTypeValue, chartData);
     setMetricsText(metricTypeValue);
     setDurationText(duration);
 
     Notify.success("Данные успешно обновлены");
   })
 
-  setChart(chart, graphType.value);
   setMetricsText(metricType.value);
   setDurationText(durationData.value);
   setUserName();
-
-  createProfileCard("Расстояние", "1.248 км");
-  createProfileCard("Охват", "8.2%");
-  createProfileCard("Прогулки", "242");
-  createProfileCard("Дни", "14");
 
   createAchievment("Профи", "/src/svg/achievment--profi.svg");
   createAchievment("Марафон", "/src/svg/achievment--walk.svg");
   createAchievment("Скаут", "/src/svg/achievment--scout.svg");
   createAchievment("Легенда", "/src/svg/achievment--legend.svg");
 
-  createStatCard(
-    "Лучший день",
-    "/src/svg/stars.svg",
-    "18.4 км",
-    "12 окт, суббота"
-  );
-  createStatCard(
-    "Среднее за прогулку",
-    "/src/svg/stats.svg",
-    "5.2 км",
-    "Основано на 242 записях"
-  );
+  getStats().then((result) => {
+    const bestDay = result.bestDay;
+
+    console.log(result)
+
+    createProfileCard("Расстояние", `${result.totalDistance}`);
+    createProfileCard("Охват", `${result.coveragePercent}%`);
+    createProfileCard("Прогулки", `${result.walkCount}`);
+    createProfileCard("Дни", `${result.activeDays}`);
+
+    if (bestDay !== null) {
+      chartData = result.distanceByDate;
+      setChart(chart, graphType.value, result.distanceByDate);
+
+      createStatCard(
+        "Лучший день",
+        "/src/svg/stars.svg",
+        "18.4 км",
+        "12 окт, суббота"
+      );
+
+      createStatCard(
+        "Среднее за прогулку",
+        "/src/svg/stats.svg",
+        "5.2 км",
+        "Основано на 242 записях"
+      );
+    }else {
+
+      setChart(chart, graphType.value, chartData);
+      setDurationText("0days");
+
+      createStatCard(
+        "CityTrace информация",
+        "/src/svg/stars.svg",
+        "Загрузите информацию о своих прогулках и получайте статистику",
+        "Команда CityTrace"
+      );
+
+      applySettingsBtn.setAttribute('disabled', true);
+    }
+  });
 
 })

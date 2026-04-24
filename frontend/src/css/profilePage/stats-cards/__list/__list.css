@@ -5,5 +5,5 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  height: 126px;
+  height: fit-content;
 }
