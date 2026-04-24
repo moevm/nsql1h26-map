@@ -52,26 +52,6 @@
         </div>
 
         <ul class="profile-data__cards">
-          
-          <li class="profile-data__card">
-            <h4 class="profile-data__card-header">Расстояние</h4>
-            <h5 class="profile-data__card-data">1.248 км</h5>
-          </li>
-
-          <li class="profile-data__card">
-            <h4 class="profile-data__card-header">Охват</h4>
-            <h5 class="profile-data__card-data">8.2%</h5>
-          </li>
-
-          <li class="profile-data__card">
-            <h4 class="profile-data__card-header">Прогулки</h4>
-            <h5 class="profile-data__card-data">242</h5>
-          </li>
-
-          <li class="profile-data__card">
-            <h4 class="profile-data__card-header">Дни</h4>
-            <h5 class="profile-data__card-data">14</h5>
-          </li>
 
         </ul>
 
@@ -79,25 +59,6 @@
           <h3 class="profile-data__header">Достижения</h3>
           <ul class="profile-data__list">
 
-            <li class="profile-data__achievment">
-              <img class="profile-data__image profile-data__image--achievment" src="/src/svg/achievment--profi.svg" alt="achievment image">
-              <h4 class="profile-data__achievment-name">Профи</h4>
-            </li>
-
-            <li class="profile-data__achievment">
-              <img class="profile-data__image profile-data__image--achievment" src="/src/svg/achievment--walk.svg" alt="achievment image">
-              <h4 class="profile-data__achievment-name">Марафон</h4>
-            </li>
-
-            <li class="profile-data__achievment">
-              <img class="profile-data__image profile-data__image--achievment" src="/src/svg/achievment--scout.svg" alt="achievment image">
-              <h4 class="profile-data__achievment-name">Скаут</h4>
-            </li>
-
-            <li class="profile-data__achievment">
-              <img class="profile-data__image profile-data__image--achievment" src="/src/svg/achievment--legend.svg" alt="achievment image">
-              <h4 class="profile-data__achievment-name">Легенда</h4>
-            </li>
           </ul>
         </div>
 
@@ -158,39 +119,38 @@
 
         <div class="stats-cards">
           <ul class="stats-cards__list">
-            
-            <li class="stats-cards__card">
-              <div class="stats-card__header">
-                <span class="stats-card__title">Лучший день</span>
-                <img class="stats-cards__image" src="/src/svg/stars.svg" alt="card image">
-              </div>
-              <h3 class="stats-card__data">18.4 км</h3>
-              <h4 class="stats-card__info">12 окт, суббота</h4>
-            </li>
-
-            <li class="stats-cards__card">
-              <div class="stats-card__header">
-                <span class="stats-card__title">Среднее за прогулку</span>
-                <img class="stats-cards__image" src="/src/svg/stats.svg" alt="card image">
-              </div>
-              <h3 class="stats-card__data">5.2 км</h3>
-              <h4 class="stats-card__info">Основано на 242 записях</h4>
-            </li>
-
-            <li class="stats-cards__card">
-              <div class="stats-card__header">
-                <span class="stats-card__title">Динамика недели</span>
-                <img class="stats-cards__image" src="/src/svg/line-goup.svg" alt="card image">
-              </div>
-              <h3 class="stats-card__data">+12%</h3>
-              <h4 class="stats-card__info">Относительно прош. нед.</h4>
-            </li>
 
           </ul>
         </div>
       </section>
 
     </main>
+
+    <template id="profile-data-card-template"> 
+      <li class="profile-data__card">
+        <h4 class="profile-data__card-header"></h4>
+        <h5 class="profile-data__card-data"></h5>
+      </li>
+    </template>
+
+    <template id="achievment-template">
+      <li class="profile-data__achievment">
+        <img class="profile-data__image profile-data__image--achievment" src="/src/svg/achievment--profi.svg" alt="achievment image">
+        <h4 class="profile-data__achievment-name">Профи</h4>
+      </li>
+    </template>
+
+    <template id="stat-card-template">
+      <li class="stats-cards__card">
+        <div class="stats-card__header">
+          <span class="stats-card__title"></span>
+          <img class="stats-cards__image" src="" alt="card image">
+        </div>
+        <h3 class="stats-card__data"></h3>
+        <h4 class="stats-card__info"></h4>
+      </li>
+    </template>
+
     <script src="/src/js/utils/chart.js"></script>
     <script type="module" src="/src/js/pages/profilePage.js"></script>
   </body>

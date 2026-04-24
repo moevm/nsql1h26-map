@@ -1,5 +1,6 @@
 .profile-data__list {
   display: flex;
+  flex-wrap: wrap;
   list-style: none;
   gap: 15px;
 }
