@@ -13,3 +13,7 @@
   display: flex;
   align-items: center;
 }
+
+.stats-settings__button:disabled {
+  cursor: no-drop;
+}
