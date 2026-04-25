@@ -3,22 +3,23 @@ import uuid
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from database import get_session
 from utils import make_page
 
 router = APIRouter()
 
+DEFAULT_PRIORITY = 0.5
+DEFAULT_TARGET_DISTANCE = 3000.0
+
 
 class RouteRequest(BaseModel):
     userId: str
     startLat: float
     startLon: float
-    endLat: float
-    endLon: float
-    searchRadius: float = 1500.0
-    targetDistance: float = 3000.0
+    targetDistance: float = DEFAULT_TARGET_DISTANCE
+    priority: float = Field(DEFAULT_PRIORITY, ge=0.0, le=1.0)
 
 
 async def _load_subgraph(session, start_lat: float, start_lon: float, search_radius: float):
@@ -65,6 +66,29 @@ async def _load_covered_tiles(session, user_id: str) -> set:
     )
     return {(r["tileX"], r["tileY"]) async for r in result}
 
+
+async def _load_pois_per_node(session, node_ids: list) -> dict:
+    """Возвращает map osmId -> список POI, привязанных к этому MapNode через HAS_POI."""
+    if not node_ids:
+        return {}
+    result = await session.run(
+        """
+        UNWIND $nodeIds AS nid
+        MATCH (n:MapNode {osmId: nid})-[:HAS_POI]->(p:POI)
+        RETURN n.osmId AS nodeOsmId, p.osmId AS osmId, p.name AS name,
+               p.category AS category, p.lat AS lat, p.lon AS lon
+        """,
+        nodeIds=node_ids,
+    )
+    pois_per_node = defaultdict(list)
+    async for row in result:
+        d = row.data()
+        pois_per_node[d["nodeOsmId"]].append({
+            "osmId": d["osmId"], "name": d["name"], "category": d["category"],
+            "lat": d["lat"], "lon": d["lon"],
+        })
+    return pois_per_node
+
 def _find_nearest_node(nodes: dict, lat: float, lon: float) -> int | None:
     """Найти osmId ближайшего узла к заданным координатам."""
     best_id = None
@@ -77,56 +101,66 @@ def _find_nearest_node(nodes: dict, lat: float, lon: float) -> int | None:
     return best_id
 
 def _greedy_walk(
-            nodes: dict,
-            graph: dict,
-            covered: set,
-            start: int,
-            target_distance: float,
-            is_loop: bool,
-    ) -> tuple[list[int], float]:
-        """
-        Жадный обход графа: на каждом шаге предпочитаем соседа
-        с непокрытым тайлом. Останавливаемся, когда набрали ~targetDistance.
-        Для кольцевого маршрута останавливаемся раньше, оставляя запас на обратный путь.
-        """
-        budget = target_distance * 0.75 if is_loop else target_distance
-        path = [start]
-        visited_edges = set()
-        total_dist = 0.0
-        seen_tiles = set(covered)  # копия, чтобы не считать один тайл дважды за маршрут
-        current = start
+    nodes: dict,
+    graph: dict,
+    covered: set,
+    pois_per_node: dict,
+    start: int,
+    target_distance: float,
+    priority: float,
+    penalised_edges: set | None = None,
+) -> tuple[list[int], float]:
+    """
+    Жадный обход кольцевого маршрута. Скоринг соседа — взвешенная комбинация
+    «новизны тайла» и «насыщенности POI», вес задаёт priority ∈ [0, 1].
 
-        while total_dist < budget:
-            neighbors = graph.get(current, [])
-            if not neighbors:
-                break
+    priority=0 → строго максимизируем непокрытые тайлы.
+    priority=1 → строго ведём маршрут через узлы с POI.
+    penalised_edges: рёбра, по которым следует избегать ходить (используется
+    при построении альтернативного маршрута).
+    """
+    budget = target_distance * 0.5  # кольцо: оставляем половину на возврат через Dijkstra
+    penalised = penalised_edges or set()
+    path = [start]
+    visited_edges = set()
+    total_dist = 0.0
+    seen_tiles = set(covered)
+    current = start
 
-            # Сортируем: сначала соседи с новым тайлом, потом по расстоянию
-            scored = []
-            for neighbor_id, dist in neighbors:
-                edge_key = (min(current, neighbor_id), max(current, neighbor_id))
-                tile = (nodes[neighbor_id]["tileX"], nodes[neighbor_id]["tileY"])
-                is_new = tile not in seen_tiles
-                already_walked = edge_key in visited_edges
-                # Приоритет: новый тайл > не ходили по ребру > короче
-                score = (not is_new, already_walked, dist)
-                scored.append((score, neighbor_id, dist, tile, edge_key))
+    while total_dist < budget:
+        neighbors = graph.get(current, [])
+        if not neighbors:
+            break
 
-            scored.sort(key=lambda x: x[0])
+        scored = []
+        for neighbor_id, dist in neighbors:
+            edge_key = (min(current, neighbor_id), max(current, neighbor_id))
+            tile = (nodes[neighbor_id]["tileX"], nodes[neighbor_id]["tileY"])
 
-            # Берём лучшего кандидата
-            _, next_node, dist, tile, edge_key = scored[0]
+            tile_score = 1.0 if tile not in seen_tiles else 0.0
+            poi_count = len(pois_per_node.get(neighbor_id, []))
+            poi_score = min(poi_count, 3) / 3.0
+            combined = (1.0 - priority) * tile_score + priority * poi_score
 
-            if total_dist + dist > target_distance * 1.2:
-                break
+            penalty = 1.0 if edge_key in penalised else 0.0
+            walked = 1.0 if edge_key in visited_edges else 0.0
 
-            path.append(next_node)
-            total_dist += dist
-            visited_edges.add(edge_key)
-            seen_tiles.add(tile)
-            current = next_node
+            score = (penalty, walked, -combined, dist)
+            scored.append((score, neighbor_id, dist, tile, edge_key))
 
-        return path, total_dist
+        scored.sort(key=lambda x: x[0])
+        _, next_node, dist, tile, edge_key = scored[0]
+
+        if total_dist + dist > target_distance * 1.2:
+            break
+
+        path.append(next_node)
+        total_dist += dist
+        visited_edges.add(edge_key)
+        seen_tiles.add(tile)
+        current = next_node
+
+    return path, total_dist
 
 
 def _dijkstra(graph: dict, start: int, end: int) -> tuple[list[int], float]:
@@ -161,50 +195,67 @@ def _dijkstra(graph: dict, start: int, end: int) -> tuple[list[int], float]:
 
     return path, dist_to.get(end, 0.0)
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_route(body: RouteRequest, session=Depends(get_session)):
-        # 1. Загрузить подграф и закрашенные тайлы
-        nodes, graph = await _load_subgraph(session, body.startLat, body.startLon, body.searchRadius)
-        if not nodes:
-            raise HTTPException(status_code=404, detail="No MapNodes found in search radius")
+async def _build_and_save_route(
+    session,
+    user_id: str,
+    start_lat: float,
+    start_lon: float,
+    target_distance: float,
+    priority: float,
+    penalised_edges: set | None = None,
+) -> dict:
+    """Полный цикл построения и сохранения кольцевого маршрута. Используется
+    как обычным `POST /`, так и `POST /{routeId}/alternative`.
+    """
+    search_radius = max(target_distance * 0.7, 1500.0)
 
-        covered = await _load_covered_tiles(session, body.userId)
+    nodes, graph = await _load_subgraph(session, start_lat, start_lon, search_radius)
+    if not nodes:
+        raise HTTPException(status_code=404, detail="No MapNodes found in search radius")
 
-        # 2. Найти ближайшие узлы к старту и финишу
-        start_node = _find_nearest_node(nodes, body.startLat, body.startLon)
-        end_node = _find_nearest_node(nodes, body.endLat, body.endLon)
-        if start_node is None or end_node is None:
-            raise HTTPException(status_code=404, detail="Cannot snap start/end to graph")
+    covered = await _load_covered_tiles(session, user_id)
+    start_node = _find_nearest_node(nodes, start_lat, start_lon)
+    if start_node is None:
+        raise HTTPException(status_code=404, detail="Cannot snap start to graph")
 
-        is_loop = (start_node == end_node)
+    pois_per_node = await _load_pois_per_node(session, list(nodes.keys()))
 
-        # 3. Жадный обход: максимизируем новые тайлы
-        path, path_distance = _greedy_walk(
-            nodes, graph, covered, start_node, body.targetDistance, is_loop,
-        )
+    path, path_distance = _greedy_walk(
+        nodes, graph, covered, pois_per_node,
+        start_node, target_distance, priority,
+        penalised_edges=penalised_edges,
+    )
 
-        # 4. Если кольцевой — вернуться к старту
-        if is_loop and path[-1] != start_node:
-            return_path, return_dist = _dijkstra(graph, path[-1], start_node)
-            if return_path:
-                path.extend(return_path[1:])  # без дубля текущего узла
-                path_distance += return_dist
-        elif not is_loop and path[-1] != end_node:
-            return_path, return_dist = _dijkstra(graph, path[-1], end_node)
-            if return_path:
-                path.extend(return_path[1:])
-                path_distance += return_dist
+    # Замыкаем кольцо: всегда возвращаемся к старту через Dijkstra.
+    if path[-1] != start_node:
+        return_path, return_dist = _dijkstra(graph, path[-1], start_node)
+        if return_path:
+            path.extend(return_path[1:])
+            path_distance += return_dist
 
-        # 5. Подсчитать новые тайлы на маршруте
-        new_tiles = set()
-        for osm_id in path:
-            tile = (nodes[osm_id]["tileX"], nodes[osm_id]["tileY"])
-            if tile not in covered:
-                new_tiles.add(tile)
+    # POI вдоль маршрута через PASSES_THROUGH-узлы (dedup по osmId).
+    seen_poi_ids = set()
+    highlights = []
+    for osm_id in path:
+        for poi in pois_per_node.get(osm_id, []):
+            if poi["osmId"] in seen_poi_ids:
+                continue
+            seen_poi_ids.add(poi["osmId"])
+            highlights.append(poi)
 
         # 6. Сохранить в Neo4j
         route_id = str(uuid.uuid4())
         estimated_minutes = int(path_distance / 80)  # ~80 м/мин пешком
+    # Тайлы, которые этот маршрут откроет пользователю (есть в пути, нет в covered).
+    new_tiles_set = {
+        (nodes[osm_id]["tileX"], nodes[osm_id]["tileY"])
+        for osm_id in path
+        if (nodes[osm_id]["tileX"], nodes[osm_id]["tileY"]) not in covered
+    }
+    new_tiles = sorted(new_tiles_set)
+
+    route_id = str(uuid.uuid4())
+    estimated_minutes = int(path_distance / 80)  # ~80 м/мин пешком
 
         await session.run(
             """
@@ -227,6 +278,35 @@ async def create_route(body: RouteRequest, session=Depends(get_session)):
             minutes=estimated_minutes,
             nodeIds=[{"osmId": osm_id, "order": i} for i, osm_id in enumerate(path)],
         )
+    await session.run(
+        """
+        MATCH (u:User {id: $userId})
+        CREATE (r:Route {
+            id: $routeId,
+            createdAt: datetime(),
+            totalDistanceMeters: $distance,
+            estimatedMinutes: $minutes,
+            priority: $priority,
+            targetDistance: $targetDistance,
+            newTilesX: $newTilesX,
+            newTilesY: $newTilesY
+        })
+        CREATE (u)-[:REQUESTED_ROUTE]->(r)
+        WITH r
+        UNWIND $nodeIds AS nd
+        MATCH (mn:MapNode {osmId: nd.osmId})
+        CREATE (r)-[:PASSES_THROUGH {order: nd.order}]->(mn)
+        """,
+        userId=user_id,
+        routeId=route_id,
+        distance=round(path_distance, 1),
+        minutes=estimated_minutes,
+        priority=priority,
+        targetDistance=target_distance,
+        newTilesX=[t[0] for t in new_tiles],
+        newTilesY=[t[1] for t in new_tiles],
+        nodeIds=[{"osmId": osm_id, "order": i} for i, osm_id in enumerate(path)],
+    )
 
         return {
             "routeId": route_id,
@@ -238,6 +318,31 @@ async def create_route(body: RouteRequest, session=Depends(get_session)):
                 for i, osm_id in enumerate(path)
             ],
         }
+    if highlights:
+        await session.run(
+            """
+            MATCH (r:Route {id: $routeId})
+            UNWIND $poiIds AS pid
+            MATCH (p:POI {osmId: pid})
+            CREATE (r)-[:HIGHLIGHTS]->(p)
+            """,
+            routeId=route_id,
+            poiIds=[h["osmId"] for h in highlights],
+        )
+
+    return {
+        "routeId": route_id,
+        "totalDistanceMeters": round(path_distance, 1),
+        "estimatedMinutes": estimated_minutes,
+        "priority": priority,
+        "targetDistance": target_distance,
+        "newTiles": [{"tileX": x, "tileY": y} for x, y in new_tiles],
+        "highlights": highlights,
+        "nodes": [
+            {"osmId": osm_id, "lat": nodes[osm_id]["lat"], "lon": nodes[osm_id]["lon"], "order": i}
+            for i, osm_id in enumerate(path)
+        ],
+    }
 
 @router.get("/")
 async def list_routes(
