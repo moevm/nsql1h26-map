@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from database import get_session
-from utils import make_page
+from utils import make_page, tiles_on_segment
 
 router = APIRouter()
 
@@ -100,6 +100,20 @@ def _find_nearest_node(nodes: dict, lat: float, lon: float) -> int | None:
             best_id = osm_id
     return best_id
 
+def _edge_tiles(
+    nodes: dict, a: int, b: int, cache: dict,
+) -> set:
+    """Тайлы, через которые проходит отрезок между MapNode a и b. Кешируется."""
+    key = (min(a, b), max(a, b))
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
+    na, nb = nodes[a], nodes[b]
+    tiles = tiles_on_segment(na["lat"], na["lon"], nb["lat"], nb["lon"])
+    cache[key] = tiles
+    return tiles
+
+
 def _greedy_walk(
     nodes: dict,
     graph: dict,
@@ -109,15 +123,18 @@ def _greedy_walk(
     target_distance: float,
     priority: float,
     penalised_edges: set | None = None,
-) -> tuple[list[int], float]:
+) -> tuple[list[int], float, dict]:
     """
     Жадный обход кольцевого маршрута. Скоринг соседа — взвешенная комбинация
-    «новизны тайла» и «насыщенности POI», вес задаёт priority ∈ [0, 1].
+    «новизны тайлов вдоль ребра» и «насыщенности POI», вес задаёт priority ∈ [0, 1].
 
     priority=0 → строго максимизируем непокрытые тайлы.
     priority=1 → строго ведём маршрут через узлы с POI.
     penalised_edges: рёбра, по которым следует избегать ходить (используется
     при построении альтернативного маршрута).
+
+    Возвращает (path, total_dist, edge_tiles_cache) — кеш тайлов по ребру
+    переиспользуется на этапе сборки итогового набора newTiles.
     """
     budget = target_distance * 0.5  # кольцо: оставляем половину на возврат через Dijkstra
     penalised = penalised_edges or set()
@@ -125,6 +142,7 @@ def _greedy_walk(
     visited_edges = set()
     total_dist = 0.0
     seen_tiles = set(covered)
+    edge_tiles_cache: dict = {}
     current = start
 
     while total_dist < budget:
@@ -135,9 +153,12 @@ def _greedy_walk(
         scored = []
         for neighbor_id, dist in neighbors:
             edge_key = (min(current, neighbor_id), max(current, neighbor_id))
-            tile = (nodes[neighbor_id]["tileX"], nodes[neighbor_id]["tileY"])
+            edge_tiles = _edge_tiles(nodes, current, neighbor_id, edge_tiles_cache)
+            new_along_edge = edge_tiles - seen_tiles
 
-            tile_score = 1.0 if tile not in seen_tiles else 0.0
+            # Доля новых тайлов по ребру: длинное ребро через незнакомую зону
+            # выигрывает у короткого внутри одного тайла, но скоринг остаётся в [0,1].
+            tile_score = len(new_along_edge) / len(edge_tiles) if edge_tiles else 0.0
             poi_count = len(pois_per_node.get(neighbor_id, []))
             poi_score = min(poi_count, 3) / 3.0
             combined = (1.0 - priority) * tile_score + priority * poi_score
@@ -146,10 +167,10 @@ def _greedy_walk(
             walked = 1.0 if edge_key in visited_edges else 0.0
 
             score = (penalty, walked, -combined, dist)
-            scored.append((score, neighbor_id, dist, tile, edge_key))
+            scored.append((score, neighbor_id, dist, edge_tiles, edge_key))
 
         scored.sort(key=lambda x: x[0])
-        _, next_node, dist, tile, edge_key = scored[0]
+        _, next_node, dist, edge_tiles, edge_key = scored[0]
 
         if total_dist + dist > target_distance * 1.2:
             break
@@ -157,10 +178,10 @@ def _greedy_walk(
         path.append(next_node)
         total_dist += dist
         visited_edges.add(edge_key)
-        seen_tiles.add(tile)
+        seen_tiles.update(edge_tiles)
         current = next_node
 
-    return path, total_dist
+    return path, total_dist, edge_tiles_cache
 
 
 def _dijkstra(graph: dict, start: int, end: int) -> tuple[list[int], float]:
@@ -220,7 +241,7 @@ async def _build_and_save_route(
 
     pois_per_node = await _load_pois_per_node(session, list(nodes.keys()))
 
-    path, path_distance = _greedy_walk(
+    path, path_distance, edge_tiles_cache = _greedy_walk(
         nodes, graph, covered, pois_per_node,
         start_node, target_distance, priority,
         penalised_edges=penalised_edges,
@@ -243,12 +264,16 @@ async def _build_and_save_route(
             seen_poi_ids.add(poi["osmId"])
             highlights.append(poi)
 
-    # Тайлы, которые этот маршрут откроет пользователю (есть в пути, нет в covered).
-    new_tiles_set = {
-        (nodes[osm_id]["tileX"], nodes[osm_id]["tileY"])
-        for osm_id in path
-        if (nodes[osm_id]["tileX"], nodes[osm_id]["tileY"]) not in covered
-    }
+    # Тайлы маршрута: объединение тайлов вдоль каждого ребра пути (с растеризацией),
+    # чтобы покрыть «пустоту» между удалёнными MapNode'ами.
+    route_tiles: set = set()
+    for prev_id, next_id in zip(path, path[1:]):
+        route_tiles |= _edge_tiles(nodes, prev_id, next_id, edge_tiles_cache)
+    # Узлы с одним элементом / стартовый тайл, если путь оказался пустым.
+    for osm_id in path:
+        route_tiles.add((nodes[osm_id]["tileX"], nodes[osm_id]["tileY"]))
+
+    new_tiles_set = route_tiles - covered
     new_tiles = sorted(new_tiles_set)
 
     route_id = str(uuid.uuid4())
