@@ -243,9 +243,6 @@ async def _build_and_save_route(
             seen_poi_ids.add(poi["osmId"])
             highlights.append(poi)
 
-        # 6. Сохранить в Neo4j
-        route_id = str(uuid.uuid4())
-        estimated_minutes = int(path_distance / 80)  # ~80 м/мин пешком
     # Тайлы, которые этот маршрут откроет пользователю (есть в пути, нет в covered).
     new_tiles_set = {
         (nodes[osm_id]["tileX"], nodes[osm_id]["tileY"])
@@ -257,27 +254,6 @@ async def _build_and_save_route(
     route_id = str(uuid.uuid4())
     estimated_minutes = int(path_distance / 80)  # ~80 м/мин пешком
 
-        await session.run(
-            """
-            MATCH (u:User {id: $userId})
-            CREATE (r:Route {
-                id: $routeId,
-                createdAt: datetime(),
-                totalDistanceMeters: $distance,
-                estimatedMinutes: $minutes
-            })
-            CREATE (u)-[:REQUESTED_ROUTE]->(r)
-            WITH r
-            UNWIND $nodeIds AS nd
-            MATCH (mn:MapNode {osmId: nd.osmId})
-            CREATE (r)-[:PASSES_THROUGH {order: nd.order}]->(mn)
-            """,
-            userId=body.userId,
-            routeId=route_id,
-            distance=round(path_distance, 1),
-            minutes=estimated_minutes,
-            nodeIds=[{"osmId": osm_id, "order": i} for i, osm_id in enumerate(path)],
-        )
     await session.run(
         """
         MATCH (u:User {id: $userId})
@@ -308,16 +284,6 @@ async def _build_and_save_route(
         nodeIds=[{"osmId": osm_id, "order": i} for i, osm_id in enumerate(path)],
     )
 
-        return {
-            "routeId": route_id,
-            "totalDistanceMeters": round(path_distance, 1),
-            "estimatedMinutes": estimated_minutes,
-            "newTiles": len(new_tiles),
-            "nodes": [
-                {"osmId": osm_id, "lat": nodes[osm_id]["lat"], "lon": nodes[osm_id]["lon"], "order": i}
-                for i, osm_id in enumerate(path)
-            ],
-        }
     if highlights:
         await session.run(
             """
@@ -343,6 +309,69 @@ async def _build_and_save_route(
             for i, osm_id in enumerate(path)
         ],
     }
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_route(body: RouteRequest, session=Depends(get_session)):
+    return await _build_and_save_route(
+        session,
+        user_id=body.userId,
+        start_lat=body.startLat,
+        start_lon=body.startLon,
+        target_distance=body.targetDistance,
+        priority=body.priority,
+    )
+
+
+@router.post("/{routeId}/alternative", status_code=status.HTTP_201_CREATED)
+async def create_alternative_route(routeId: str, session=Depends(get_session)):
+    """Строит альтернативный маршрут с теми же параметрами, что и исходный,
+    штрафуя в жадном скоринге его рёбра."""
+    meta_result = await session.run(
+        """
+        MATCH (u:User)-[:REQUESTED_ROUTE]->(r:Route {id: $id})
+        RETURN u.id AS userId,
+               r.priority AS priority,
+               r.targetDistance AS targetDistance
+        """,
+        id=routeId,
+    )
+    meta = await meta_result.single()
+    if not meta:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
+
+    path_result = await session.run(
+        """
+        MATCH (r:Route {id: $id})-[pt:PASSES_THROUGH]->(mn:MapNode)
+        RETURN mn.osmId AS osmId, mn.lat AS lat, mn.lon AS lon
+        ORDER BY pt.order
+        """,
+        id=routeId,
+    )
+    path_nodes = [row.data() async for row in path_result]
+    if len(path_nodes) < 2:
+        raise HTTPException(status_code=400, detail="Original route is too short to alternate")
+
+    penalised_edges = set()
+    for i in range(len(path_nodes) - 1):
+        a, b = path_nodes[i]["osmId"], path_nodes[i + 1]["osmId"]
+        penalised_edges.add((min(a, b), max(a, b)))
+
+    priority = meta["priority"] if meta["priority"] is not None else DEFAULT_PRIORITY
+    target_distance = (
+        meta["targetDistance"] if meta["targetDistance"] is not None
+        else DEFAULT_TARGET_DISTANCE
+    )
+
+    return await _build_and_save_route(
+        session,
+        user_id=meta["userId"],
+        start_lat=path_nodes[0]["lat"],
+        start_lon=path_nodes[0]["lon"],
+        target_distance=target_distance,
+        priority=priority,
+        penalised_edges=penalised_edges,
+    )
 
 @router.get("/")
 async def list_routes(
@@ -399,7 +428,12 @@ async def get_route(routeId: str, session=Depends(get_session)):
         """
         MATCH (r:Route {id: $id})
         RETURN r.id AS id, toString(r.createdAt) AS createdAt,
-               r.totalDistanceMeters AS totalDistanceMeters, r.estimatedMinutes AS estimatedMinutes
+               r.totalDistanceMeters AS totalDistanceMeters,
+               r.estimatedMinutes AS estimatedMinutes,
+               r.priority AS priority,
+               r.targetDistance AS targetDistance,
+               r.newTilesX AS newTilesX,
+               r.newTilesY AS newTilesY
         """,
         id=routeId,
     )
@@ -417,17 +451,24 @@ async def get_route(routeId: str, session=Depends(get_session)):
     )
     nodes = [r.data() async for r in nodes_result]
 
-    pois_result = await session.run(
+    highlights_result = await session.run(
         """
-        MATCH (r:Route {id: $id})-[:PASSES_THROUGH]->(mn:MapNode)-[:HAS_POI]->(p:POI)
-        RETURN DISTINCT p.osmId AS osmId, p.name AS name, p.category AS category,
+        MATCH (r:Route {id: $id})-[:HIGHLIGHTS]->(p:POI)
+        RETURN p.osmId AS osmId, p.name AS name, p.category AS category,
                p.lat AS lat, p.lon AS lon
         """,
         id=routeId,
     )
-    pois = [r.data() async for r in pois_result]
+    highlights = [r.data() async for r in highlights_result]
 
-    return {**record.data(), "nodes": nodes, "pois": pois}
+    tiles_x = record["newTilesX"] or []
+    tiles_y = record["newTilesY"] or []
+    new_tiles = [{"tileX": x, "tileY": y} for x, y in zip(tiles_x, tiles_y)]
+
+    data = record.data()
+    data.pop("newTilesX", None)
+    data.pop("newTilesY", None)
+    return {**data, "nodes": nodes, "highlights": highlights, "newTiles": new_tiles}
 
 
 @router.delete("/{routeId}", status_code=status.HTTP_204_NO_CONTENT)
