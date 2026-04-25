@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import driver
-from routers import auth, data, map, walks, routes, users, walkpoints, tiles, mapnodes, trackfiles, districts, pois, stats
+from routers import auth, data, map, walks, routes, users, walkpoints, tiles, mapnodes, trackfiles, districts, pois, stats, edges
 from routers.auth import get_current_user
 from seed import run_seed
 
@@ -41,3 +41,4 @@ app.include_router(walks.router,      prefix="/api/walks",      dependencies=_au
 app.include_router(routes.router,     prefix="/api/routes",     dependencies=_auth)
 app.include_router(pois.router,        prefix="/api/pois",        dependencies=_auth)
 app.include_router(stats.router,       prefix="/api/stats",       dependencies=_auth)
+app.include_router(edges.router,       prefix="/api/edges",       dependencies=_auth)
