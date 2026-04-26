@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -7,6 +8,8 @@ from database import driver
 from routers import auth, data, map, walks, routes, users, walkpoints, tiles, mapnodes, trackfiles, districts, pois, stats, edges
 from routers.auth import get_current_user
 from seed import run_seed
+
+DEV_MODE = os.getenv("DEV_MODE", "false").lower() == "true"
 
 
 @asynccontextmanager
@@ -20,13 +23,13 @@ app = FastAPI(title="WalkMap API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5678"],
+    allow_origins=["*"] if DEV_MODE else ["http://127.0.0.1:5678"],
     allow_methods=["*"],
     allow_headers=["*"],
-    allow_credentials=True,
+    allow_credentials=not DEV_MODE,
 )
 
-_auth = [Depends(get_current_user)]
+_auth = [] if DEV_MODE else [Depends(get_current_user)]
 
 app.include_router(map.router,        prefix="/api/map")
 app.include_router(auth.router,       prefix="/api/auth")
