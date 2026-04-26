@@ -1,10 +1,13 @@
+import csv
+import io
 import json
+from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from fastapi.responses import JSONResponse
 
 from database import get_session
-from utils import make_csv_response
+from utils import make_csv_response, lat_lon_to_tile, tiles_on_segment
 
 router = APIRouter()
 
@@ -203,6 +206,136 @@ async def db_import(file: UploadFile = File(...), session=Depends(get_session)):
         )
 
     return {"nodesRestored": len(nodes), "relationshipsRestored": len(rels)}
+
+@router.post("/import/walks")
+async def import_walks(
+    userId: str = Query(...),
+    walks_file: UploadFile = File(...),
+    walkpoints_file: UploadFile = File(...),
+    session=Depends(get_session),
+):
+    try:
+        walks_rows = list(csv.DictReader(io.StringIO((await walks_file.read()).decode("utf-8"))))
+        walkpoints_rows = list(csv.DictReader(io.StringIO((await walkpoints_file.read()).decode("utf-8"))))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid CSV format")
+
+    user_result = await session.run("MATCH (u:User {id: $userId}) RETURN u", userId=userId)
+    if not await user_result.single():
+        raise HTTPException(status_code=404, detail="User not found")
+
+    existing_result = await session.run(
+        "MATCH (u:User {id: $userId})-[:PERFORMED]->(w:Walk) RETURN w.id AS id",
+        userId=userId,
+    )
+    existing_walk_ids = {r["id"] async for r in existing_result}
+
+    covered_result = await session.run(
+        "MATCH (u:User {id: $userId})-[:COVERED]->(ct:CoveredTile) RETURN ct.tileX AS tileX, ct.tileY AS tileY",
+        userId=userId,
+    )
+    covered_tiles: set[tuple[int, int]] = {(r["tileX"], r["tileY"]) async for r in covered_result}
+
+    walkpoints_by_walk: dict[str, list] = defaultdict(list)
+    for wp in walkpoints_rows:
+        walkpoints_by_walk[wp["walkId"]].append(wp)
+    for wid in walkpoints_by_walk:
+        walkpoints_by_walk[wid].sort(key=lambda x: int(x["order"]))
+
+    walks_rows.sort(key=lambda x: x["startedAt"])
+
+    imported_count = 0
+    skipped_count = 0
+    new_tiles_total = 0
+
+    for walk_row in walks_rows:
+        walk_id = walk_row["id"]
+
+        if walk_id in existing_walk_ids:
+            skipped_count += 1
+            continue
+
+        wps = walkpoints_by_walk.get(walk_id, [])
+
+        # tile -> timestamp первого касания в рамках этой прогулки
+        walk_tile_ts: dict[tuple[int, int], str] = {}
+        for i, wp in enumerate(wps):
+            lat, lon, ts = float(wp["lat"]), float(wp["lon"]), wp["timestamp"]
+            tile = lat_lon_to_tile(lat, lon)
+            if tile not in walk_tile_ts:
+                walk_tile_ts[tile] = ts
+            if i + 1 < len(wps):
+                nxt = wps[i + 1]
+                for seg_tile in tiles_on_segment(lat, lon, float(nxt["lat"]), float(nxt["lon"])):
+                    if seg_tile not in walk_tile_ts:
+                        walk_tile_ts[seg_tile] = ts
+
+        new_walk_tiles = {tile: ts for tile, ts in walk_tile_ts.items() if tile not in covered_tiles}
+
+        distance = float(walk_row["distanceMeters"]) if walk_row.get("distanceMeters") else None
+        duration = int(walk_row["durationSeconds"]) if walk_row.get("durationSeconds") else None
+
+        await session.run(
+            """
+            MATCH (u:User {id: $userId})
+            CREATE (w:Walk {
+                id: $walkId,
+                startedAt: datetime($startedAt),
+                finishedAt: datetime($finishedAt),
+                distanceMeters: $distanceMeters,
+                durationSeconds: $durationSeconds
+            })
+            CREATE (u)-[:PERFORMED]->(w)
+            """,
+            userId=userId,
+            walkId=walk_id,
+            startedAt=walk_row["startedAt"],
+            finishedAt=walk_row["finishedAt"],
+            distanceMeters=distance,
+            durationSeconds=duration,
+        )
+
+        if wps:
+            await session.run(
+                """
+                MATCH (w:Walk {id: $walkId})
+                UNWIND $points AS pt
+                CREATE (wp:WalkPoint {lat: pt.lat, lon: pt.lon, timestamp: datetime(pt.timestamp), order: pt.order})
+                CREATE (w)-[:HAS_POINT]->(wp)
+                """,
+                walkId=walk_id,
+                points=[
+                    {"lat": float(wp["lat"]), "lon": float(wp["lon"]),
+                     "timestamp": wp["timestamp"], "order": int(wp["order"])}
+                    for wp in wps
+                ],
+            )
+
+        if new_walk_tiles:
+            await session.run(
+                """
+                MATCH (u:User {id: $userId})
+                MATCH (w:Walk {id: $walkId})
+                UNWIND $tiles AS t
+                CREATE (ct:CoveredTile {tileX: t.tileX, tileY: t.tileY, firstCoveredAt: datetime(t.firstCoveredAt)})
+                CREATE (u)-[:COVERED]->(ct)
+                CREATE (w)-[:FIRST_COVERED]->(ct)
+                """,
+                userId=userId,
+                walkId=walk_id,
+                tiles=[
+                    {"tileX": tile[0], "tileY": tile[1], "firstCoveredAt": ts}
+                    for tile, ts in new_walk_tiles.items()
+                ],
+            )
+            covered_tiles.update(new_walk_tiles.keys())
+            new_tiles_total += len(new_walk_tiles)
+
+        existing_walk_ids.add(walk_id)
+        imported_count += 1
+
+    return {"imported": imported_count, "skipped": skipped_count, "newTiles": new_tiles_total}
+
 
 @router.get("/export/walks")
 async def export_walks(
