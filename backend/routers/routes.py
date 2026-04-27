@@ -290,7 +290,8 @@ async def _build_and_save_route(
             priority: $priority,
             targetDistance: $targetDistance,
             newTilesX: $newTilesX,
-            newTilesY: $newTilesY
+            newTilesY: $newTilesY,
+            allTilesCount: $allTilesCount
         })
         CREATE (u)-[:REQUESTED_ROUTE]->(r)
         WITH r
@@ -306,6 +307,7 @@ async def _build_and_save_route(
         targetDistance=target_distance,
         newTilesX=[t[0] for t in new_tiles],
         newTilesY=[t[1] for t in new_tiles],
+        allTilesCount=len(route_tiles),
         nodeIds=[{"osmId": osm_id, "order": i} for i, osm_id in enumerate(path)],
     )
 
@@ -328,6 +330,7 @@ async def _build_and_save_route(
         "priority": priority,
         "targetDistance": target_distance,
         "newTiles": [{"tileX": x, "tileY": y} for x, y in new_tiles],
+        "allTilesCount": len(route_tiles),
         "highlights": highlights,
         "nodes": [
             {"osmId": osm_id, "lat": nodes[osm_id]["lat"], "lon": nodes[osm_id]["lon"], "order": i}
@@ -437,7 +440,12 @@ async def list_routes(
         f"""
         {match} {where}
         RETURN r.id AS id, toString(r.createdAt) AS createdAt,
-               r.totalDistanceMeters AS totalDistanceMeters, r.estimatedMinutes AS estimatedMinutes
+               r.totalDistanceMeters AS totalDistanceMeters,
+               r.estimatedMinutes AS estimatedMinutes,
+               size(r.newTilesX) AS newTilesCount,
+               r.allTilesCount AS allTilesCount,
+               size([(r)-[:HIGHLIGHTS]->(p) | p]) AS poiCount,
+               [(r)-[:HIGHLIGHTS]->(p) | {{osmId: p.osmId, name: p.name, category: p.category}}][..5] AS poiPreview
         ORDER BY r.createdAt DESC
         SKIP $offset LIMIT $limit
         """,
@@ -458,7 +466,8 @@ async def get_route(routeId: str, session=Depends(get_session)):
                r.priority AS priority,
                r.targetDistance AS targetDistance,
                r.newTilesX AS newTilesX,
-               r.newTilesY AS newTilesY
+               r.newTilesY AS newTilesY,
+               r.allTilesCount AS allTilesCount
         """,
         id=routeId,
     )
