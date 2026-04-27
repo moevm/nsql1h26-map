@@ -1,6 +1,6 @@
 """
 Скрипт для заполнения БД тестовыми прогулками через API.
-Запуск: python3 -m backend.scripts.seed_database
+Запуск: docker compose exec backend python3 -m scripts.seed_walks
 """
 
 import requests
@@ -8,8 +8,13 @@ import random
 from datetime import datetime, timedelta
 import time
 import sys
+import os
 
-API_BASE = "http://127.0.0.1:10001/api"
+if os.path.exists('/.dockerenv'):
+    API_BASE = "http://backend:11111/api"
+else:
+    API_BASE = "http://127.0.0.1:10001/api"
+
 TEST_USER_EMAIL = "testuser@example.com"
 TEST_USER_PASSWORD = "test123"
 
@@ -84,6 +89,9 @@ def create_walk(user_id, token, points, started_at):
 
 
 def main():
+    print(f"DEBUG: os.path.exists('/.dockerenv') = {os.path.exists('/.dockerenv')}")
+    print(f"DEBUG: API_BASE = {API_BASE}")
+
     print("=" * 60)
     print("Заполнение БД тестовыми прогулками")
     print(f"Область: lat[{LAT_MIN}..{LAT_MAX}], lon[{LON_MIN}..{LON_MAX}]")
