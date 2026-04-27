@@ -17,14 +17,21 @@ const setChart = (chartCanvasElement, type, dataMetrics) => {
 
   const data = dataMetrics.length ? dataMetrics : [10, 20, 30, 40, 50, 60, 70];
 
+  const labels = [];
+  const metrics = [];
+  for (const item of dataMetrics) {
+    labels.push(item.date);
+    metrics.push(item.distance);
+  }
+
   currentChart = new Chart(chartCanvasElement, {
     type: type,
     data: {
-      labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+      labels: labels,
       datasets: [
         {
-        label: '# of Votes',
-        data: data,
+        label: 'метр',
+        data: metrics,
         borderWidth: 3
       },
     ],
@@ -56,7 +63,7 @@ const setChart = (chartCanvasElement, type, dataMetrics) => {
 
 const setMetricsText = (metric) => {
   const metrics = {
-    "distance": "Расстояние(км)",
+    "distance": "Расстояние(м)",
     "duration": "Длительность(мин)",
     "new-zone": "Новый охват(%)",
     "speed": "Скорость(км/ч)",
@@ -174,9 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
   getStats().then((result) => {
     const bestDay = result.bestDay;
 
-    console.log(result)
-
-    createProfileCard("Расстояние", `${result.totalDistance}`);
+    createProfileCard("Расстояние", `${result.totalDistance} м`);
     createProfileCard("Охват", `${result.coveragePercent}%`);
     createProfileCard("Прогулки", `${result.walkCount}`);
     createProfileCard("Дни", `${result.activeDays}`);
@@ -188,15 +193,15 @@ document.addEventListener('DOMContentLoaded', () => {
       createStatCard(
         "Лучший день",
         "/src/svg/stars.svg",
-        "18.4 км",
-        "12 окт, суббота"
+        `${bestDay.distance} м`,
+        `${bestDay.date}`
       );
 
       createStatCard(
         "Среднее за прогулку",
         "/src/svg/stats.svg",
-        "5.2 км",
-        "Основано на 242 записях"
+        `${result.avgDistancePerWalk} м`,
+        `${result.distanceByDate[0].date}---${result.distanceByDate[ result.distanceByDate.length - 1].date}`
       );
     }else {
 
