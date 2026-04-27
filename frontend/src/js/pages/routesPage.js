@@ -183,9 +183,11 @@ function renderTable() {
         <td><span class="coverage-badge">${coveragePercent}</span></td>
         <td class="route-places">${poisCount}</td>
         <td>
+          <!--
           <button class="action-btn" data-action="view" data-id="${route.id}">
             <img src="/src/svg/routes/eye.svg" alt="просмотр">
           </button>
+          -->
           <button class="action-btn" data-action="delete" data-id="${route.id}">
             <img src="/src/svg/routes/trash.svg" alt="удалить">
           </button>
