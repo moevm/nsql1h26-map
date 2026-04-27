@@ -12,11 +12,15 @@ let selectedIds = [];
 let authToken = null;
 let userId = null;
 
+// для статистики
+let allRoutes = [];
+
 document.addEventListener('DOMContentLoaded', async () => {
   relocateToLogin();
   
   await login();
   await loadRoutes();
+  await loadAllRoutesForStats();
   
   initPerPage();
   initSelectAll();
@@ -34,6 +38,19 @@ async function login() {
   userId = data.user.id;
 }
 
+async function loadAllRoutesForStats() {
+  const url = `${API_BASE}/routes/?userId=${userId}&offset=0&limit=100`;
+  
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${authToken}` }
+  });
+  
+  const data = await response.json();
+  allRoutes = data.items || [];
+  
+  updateDashboardStats();
+}
+
 async function loadRoutes() {
   const offset = (currentPage - 1) * perPage;
   const url = `${API_BASE}/routes/?userId=${userId}&offset=${offset}&limit=${perPage}`;
@@ -48,6 +65,44 @@ async function loadRoutes() {
   
   renderTable();
   updatePaginationInfo();
+}
+
+function updateDashboardStats() {
+  if (!allRoutes || allRoutes.length === 0) {
+    document.querySelector('.dashboard__card--dist .dashboard__card-number').textContent = '0';
+    document.querySelector('.dashboard__card--time .dashboard__card-number').textContent = '0';
+    return;
+  }
+  
+  const totalDistanceKm = allRoutes.reduce((sum, route) => {
+    const distance = route.totalDistanceMeters ? route.totalDistanceMeters / 1000 : 0;
+    return sum + distance;
+  }, 0);
+  
+  const avgTimeMinutes = allRoutes.reduce((sum, route) => {
+    return sum + (route.estimatedMinutes || 0);
+  }, 0) / allRoutes.length;
+  
+  const formattedDistance = totalDistanceKm.toLocaleString('ru-RU', { 
+    minimumFractionDigits: 1, 
+    maximumFractionDigits: 1 
+  });
+  
+  let formattedTime;
+  if (avgTimeMinutes >= 60) {
+    const hours = Math.floor(avgTimeMinutes / 60);
+    const mins = Math.round(avgTimeMinutes % 60);
+    formattedTime = `${hours}ч ${mins}м`;
+  } else {
+    formattedTime = `${Math.round(avgTimeMinutes)}м`;
+  }
+  
+
+  const distanceElement = document.querySelector('.dashboard__card--dist .dashboard__card-number');
+  const timeElement = document.querySelector('.dashboard__card--time .dashboard__card-number');
+  
+  if (distanceElement) distanceElement.textContent = formattedDistance;
+  if (timeElement) timeElement.textContent = formattedTime;
 }
 
 function formatDuration(estimatedMinutes) {
