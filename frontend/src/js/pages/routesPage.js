@@ -1,4 +1,5 @@
 import { relocateToLogin } from "../auth.js";
+import { initFilters, buildFilterParams, activeFilters } from "../filters/routesFilter.js";
 
 const API_BASE = "http://127.0.0.1:10001/api";
 const TEST_EMAIL = "testuser@example.com";
@@ -16,9 +17,17 @@ let userId = null;
 let allRoutes = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
-  relocateToLogin();
+  //relocateToLogin();
   
   await login();
+
+  initFilters();
+  
+  window.addEventListener('filters-updated', () => {
+    currentPage = 1;
+    loadRoutes();
+  });
+
   await loadRoutes();
   await loadAllRoutesForStats();
   
@@ -53,7 +62,12 @@ async function loadAllRoutesForStats() {
 
 async function loadRoutes() {
   const offset = (currentPage - 1) * perPage;
-  const url = `${API_BASE}/routes/?userId=${userId}&offset=${offset}&limit=${perPage}`;
+  let url = `${API_BASE}/routes/?userId=${userId}&offset=${offset}&limit=${perPage}`;
+
+  const filterParams = buildFilterParams();
+  if (filterParams) {
+    url += `&${filterParams}`;
+  }
   
   const response = await fetch(url, {
     headers: { 'Authorization': `Bearer ${authToken}` }
