@@ -17,7 +17,7 @@ let userId = null;
 let allRoutes = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
-  //relocateToLogin();
+  relocateToLogin();
   
   await login();
 
@@ -160,8 +160,12 @@ function renderTable() {
     const formattedDate = formatDate(route.createdAt);
     const formattedTime = formatTime(route.createdAt);
     const distanceKm = route.totalDistanceMeters ? (route.totalDistanceMeters / 1000).toFixed(1) : '—';
-    const poisCount = route.highlights ? route.highlights.length : '—';
-    const newTiles = route.newTilesCount !== undefined ? route.newTilesCount : '—';
+    
+    let coveragePercent = '—';
+    if (route.newTilesCount !== undefined && route.allTilesCount && route.allTilesCount > 0) {
+      coveragePercent = Math.round((route.newTilesCount / route.allTilesCount) * 100) + '%';
+    }
+    const poisCount = route.poiCount !== undefined ? route.poiCount : '-';
 
     return `
       <tr class="${selectedRowClass}" data-id="${route.id}">
@@ -176,7 +180,7 @@ function renderTable() {
         <td class="route-date-time">${formattedDate} · ${formattedTime}</td>
         <td class="route-dist">${distanceKm}</td>
         <td class="route-duration">${durationText}</td>
-        <td><span class="coverage-badge">${newTiles === '—' ? '—' : newTiles}</span></td>
+        <td><span class="coverage-badge">${coveragePercent}</span></td>
         <td class="route-places">${poisCount}</td>
         <td>
           <button class="action-btn" data-action="view" data-id="${route.id}">
@@ -186,7 +190,7 @@ function renderTable() {
             <img src="/src/svg/routes/trash.svg" alt="удалить">
           </button>
         </td>
-      </tr>
+       </tr>
     `;
   }).join('');
 
