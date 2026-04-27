@@ -17,7 +17,8 @@ let userId = null;
 let allRoutes = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
-  //relocateToLogin();
+  relocateToLogin();
+  initMap();
   
   await login();
 
@@ -79,6 +80,8 @@ async function loadRoutes() {
   
   renderTable();
   updatePaginationInfo();
+  
+  await loadAndDrawAllFilteredRoutes();
 }
 
 function updateDashboardStats() {
@@ -183,11 +186,6 @@ function renderTable() {
         <td><span class="coverage-badge">${coveragePercent}</span></td>
         <td class="route-places">${poisCount}</td>
         <td>
-          <!--
-          <button class="action-btn" data-action="view" data-id="${route.id}">
-            <img src="/src/svg/routes/eye.svg" alt="просмотр">
-          </button>
-          -->
           <button class="action-btn" data-action="delete" data-id="${route.id}">
             <img src="/src/svg/routes/trash.svg" alt="удалить">
           </button>
@@ -197,6 +195,7 @@ function renderTable() {
   }).join('');
 
   attachTableEvents();
+  attachRowClickEvents();
   updateSelectAllCheckbox();
 }
 
@@ -369,5 +368,139 @@ function initPerPage() {
       currentPage = 1;
       loadRoutes();
     }
+  });
+}
+
+// Инициализация карты
+let map;
+let allRouteLayers = [];
+let currentHighlightedLayer = null;
+
+function initMap() {
+  const mapContainer = document.getElementById('routes-map');
+  if (!mapContainer) return;
+  
+  map = L.map('routes-map').setView([59.9676, 30.3129], 13);
+  
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+}
+
+function clearAllRoutesFromMap() {
+  allRouteLayers.forEach(layer => {
+    if (map) map.removeLayer(layer);
+  });
+  allRouteLayers = [];
+  currentHighlightedLayer = null;
+}
+
+function drawAllRoutesOnMap(routesData) {
+  if (!map) return;
+  clearAllRoutesFromMap();
+  
+  routesData.forEach(route => {
+    if (route.nodes && route.nodes.length > 0) {
+      const latlngs = route.nodes.map(n => [n.lat, n.lon]);
+      const polyline = L.polyline(latlngs, {
+        color: '#00e5a0',
+        weight: 2,
+        opacity: 0.6,
+        originalColor: '#00e5a0'
+      }).addTo(map);
+      polyline.routeId = route.id;
+      allRouteLayers.push(polyline);
+    }
+  });
+  
+  if (allRouteLayers.length > 0 && map) {
+    const group = L.featureGroup(allRouteLayers);
+    map.fitBounds(group.getBounds(), { padding: [50, 50] });
+  }
+}
+
+async function loadAndDrawAllFilteredRoutes() {
+  let url = `${API_BASE}/routes/?userId=${userId}&offset=0&limit=100`;
+  
+  const filterParams = buildFilterParams();
+  if (filterParams) {
+    url += `&${filterParams}`;
+  }
+  
+  try {
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      const allFilteredRoutes = data.items || [];
+      
+      const routesWithNodes = [];
+      for (const route of allFilteredRoutes) {
+        try {
+          const routeDetailResponse = await fetch(`${API_BASE}/routes/${route.id}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          if (routeDetailResponse.ok) {
+            const routeDetail = await routeDetailResponse.json();
+            if (routeDetail.nodes && routeDetail.nodes.length > 0) {
+              routesWithNodes.push(routeDetail);
+            }
+          }
+        } catch (e) {
+          console.error('Ошибка загрузки деталей маршрута:', route.id);
+        }
+      }
+      
+      drawAllRoutesOnMap(routesWithNodes);
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки отфильтрованных маршрутов:', error);
+  }
+}
+
+function highlightRouteOnMap(routeId) {
+  if (currentHighlightedLayer) {
+    currentHighlightedLayer.setStyle({
+      color: '#00e5a0',
+      weight: 2,
+      opacity: 0.6
+    });
+    currentHighlightedLayer = null;
+  }
+  
+  for (const layer of allRouteLayers) {
+    if (layer.routeId === routeId) {
+      layer.setStyle({
+        color: '#ff4d6d',
+        weight: 4,
+        opacity: 0.9
+      });
+      currentHighlightedLayer = layer;
+      
+      map.fitBounds(layer.getBounds(), { padding: [50, 50] });
+      break;
+    }
+  }
+}
+
+function handleRowClick(e) {
+  if (e.target.type === 'checkbox' || e.target.closest('.action-btn')) {
+    return;
+  }
+  
+  const row = e.currentTarget;
+  const routeId = row.dataset.id;
+  if (routeId) {
+    highlightRouteOnMap(routeId);
+  }
+}
+
+function attachRowClickEvents() {
+  document.querySelectorAll('.routes-table tbody tr').forEach(row => {
+    row.removeEventListener('click', handleRowClick);
+    row.addEventListener('click', handleRowClick);
   });
 }

@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CityTrace</title>
     <link rel="stylesheet" href="/src/css/routesPage/main.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   </head>
   <body>
     <header class="header">
@@ -80,26 +82,7 @@
             <option value="120+">более 2 часов</option>
           </select>
         </div>
-<!--
-        <div class="filter-bar__item">
-          <label class="filter-bar__label">Покрытие %</label>
-          <select class="filter-bar__select" id="coverage-filter">
-            <option value="any">Любое</option>
-            <option value="0-25">0-25%</option>
-            <option value="25-50">25-50%</option>
-            <option value="50-75">50-75%</option>
-            <option value="75-100">75-100%</option>
-          </select>
-        </div>
 
-        <div class="filter-bar__item filter-bar__item--search">
-          <label class="filter-bar__label">Поиск</label>
-          <div class="filter-bar__search">
-            <img src="/src/svg/routes/search.svg" alt="" class="filter-bar__search-icon">
-            <input type="text" class="filter-bar__input" placeholder="Имя маршрута или id..." id="search-input">
-          </div>
-        </div>
--->
         <div class="filter-bar__actions">
           <button class="btn-reset" id="reset-filters-btn">Сброс фильтров</button>
           <button class="btn-export" id="export-selected-btn">
@@ -158,6 +141,10 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <div class="map-container">
+        <div id="routes-map"></div>
       </div>
 
       <div class="dashboard">
