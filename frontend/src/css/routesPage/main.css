@@ -5,6 +5,7 @@
 @import url(table/table.css);
 @import url(table/pagination.css);
 @import url(dashboard/dashboard.css);
+@import url(map/map.css);
 
 .routes-main {
   display: flex;
