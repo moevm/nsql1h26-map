@@ -17,7 +17,7 @@ let userId = null;
 let allRoutes = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
-  relocateToLogin();
+  //relocateToLogin();
   
   await login();
 
@@ -106,9 +106,9 @@ function updateDashboardStats() {
   if (avgTimeMinutes >= 60) {
     const hours = Math.floor(avgTimeMinutes / 60);
     const mins = Math.round(avgTimeMinutes % 60);
-    formattedTime = `${hours}ч ${mins}м`;
+    formattedTime = `${hours} ч ${mins}мин`;
   } else {
-    formattedTime = `${Math.round(avgTimeMinutes)}м`;
+    formattedTime = `${Math.round(avgTimeMinutes)} мин`;
   }
   
 
