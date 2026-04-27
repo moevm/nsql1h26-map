@@ -14,4 +14,11 @@
       rgba(0, 30, 50, 0.6) 0%,
       transparent 70%),
     var(--color-map-bg);
+    display: flex;
+}
+
+.map-area__map {
+  flex: 1;
+  height: calc(100% - 77px);
+  z-index: 0;
 }
