@@ -12,7 +12,6 @@
 
 .map-layout {
   display: flex;
-  position: relative;
   width: 100%;
   justify-content: center;
   min-height: calc(100vh - 75px);
@@ -82,4 +81,42 @@
 .pagination__ellipsis {
   padding: 0 4px;
   opacity: .5;
+}
+
+.map-control-switcher {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.map-control-tab {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 12px;
+  background: #1d1f27;
+  color: #aaa;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.map-control-tab:hover {
+  background: #252834;
+  color: white;
+}
+
+.map-control-tab--active {
+  background: #00e6c3;
+  color: #111;
+  font-weight: 600;
+}
+
+.map-controls {
+  display: none;
+}
+
+.map-controls--active {
+  display: block;
 }

@@ -60,12 +60,12 @@ const drawPOI = (layer, points, iconColor = "blue") => {
 
 const getPois = async () => {
   const query = buildQuery({
-    name:     val('poi-name'),
+    name: val('poi-name'),
     category: val('poi-category'),
-    bbox:     val('poi-bbox'),
+    bbox: val('poi-bbox'),
     route_id: val('poi-route-id'),
-    limit:    num('poi-radius-slider'),
-    offset:   num('poi-offset-slider'),
+    limit: num('poi-radius-slider'),
+    offset: num('poi-offset-slider'),
   });
   const response = await fetch(`http://127.0.0.1:10001/api/pois/${query}`, {
     method: 'GET',
@@ -88,42 +88,75 @@ const getWalks = async () => {
 const getWalkPoints = async (walkId) => {
   const query = buildQuery({
     walkId,
-    latMin:         val('wp-lat-min'),
-    latMax:         val('wp-lat-max'),
-    lonMin:         val('wp-lon-min'),
-    lonMax:         val('wp-lon-max'),
-    timestampFrom:  val('wp-timestamp-from'),
-    timestampTo:    val('wp-timestamp-to'),
-    orderMin:       val('wp-order-min'),
-    orderMax:       val('wp-order-max'),
-    limit:          num('wp-radius-slider'),
-    offset:         num('wp-offset-slider'),
+    latMin: val('wp-lat-min'),
+    latMax: val('wp-lat-max'),
+    lonMin: val('wp-lon-min'),
+    lonMax: val('wp-lon-max'),
+    timestampFrom: val('wp-timestamp-from'),
+    timestampTo: val('wp-timestamp-to'),
+    orderMin: val('wp-order-min'),
+    orderMax: val('wp-order-max'),
   });
-  const response = await fetch(`http://127.0.0.1:10001/api/walkpoints/${query}`, {
-    method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`, 'credentials': true },
-    credentials: 'include',
-  }).catch(() => { Notify.error("Ошибка сервера: не удалось получить WalkPoints"); return false; });
+
+  const response = await fetch(
+    `http://127.0.0.1:10001/api/walkpoints/${query}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`,
+        'credentials': true
+      },
+      credentials: 'include',
+    }
+  ).catch(() => {
+    Notify.error("Ошибка сервера: не удалось получить WalkPoints");
+    return false;
+  });
+
   return await response.json();
-}
+};
 
 const getTiles = async () => {
   const userId = userManager.get().id;
-  const response = await fetch(`http://127.0.0.1:10001/api/map/tiles/?userId=${userId}`, {
-    method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`, 'credentials': true },
-    credentials: 'include',
-  }).catch(() => { Notify.error("Ошибка сервера: не удалось получить Tiles"); return false; });
+
+  const query = buildQuery({
+    userId,
+    walkId: val('tiles-walkid'),
+    tileXMin: val('tiles-tile-x-min'),
+    tileXMax: val('tiles-tile-x-max'),
+    tileYMin: val('tiles-tile-y-min'),
+    tileYMax: val('tiles-tile-y-max'),
+    coveredFrom: val('tiles-coveredFrom'),
+    coveredTo: val('tiles-coveredTo'),
+    offset: num('tiles-offset-slider'),
+    limit: num('tiles-radius-slider'),
+  });
+
+  const response = await fetch(
+    `http://127.0.0.1:10001/api/tiles/${query}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`,
+        'credentials': true
+      },
+      credentials: 'include',
+    }
+  ).catch(() => {
+    Notify.error("Ошибка сервера: не удалось получить Tiles");
+    return false;
+  });
+
   return await response.json();
-}
+};
 
 const getMapNodes = async () => {
   const query = buildQuery({
     osmId: val('mn-osm-id'),
     tileX: val('mn-tile-x'),
     tileY: val('mn-tile-y'),
-    bbox:  val('mn-bbox'),
-    limit:  num('mn-radius-slider'),
+    bbox: val('mn-bbox'),
+    limit: num('mn-radius-slider'),
     offset: num('mn-offset-slider'),
   });
   const response = await fetch(`http://127.0.0.1:10001/api/mapnodes/${query}`, {
@@ -170,18 +203,21 @@ const fetchEntityData = async (entity) => {
       return result?.items ?? [];
     }
     case 'walkpoints': {
+      const limit = num('wp-radius-slider') ?? 75;
+      const offset = num('wp-offset-slider') ?? 0;
+
       const walksResult = await getWalks();
       const walks = walksResult?.items ?? [];
-
-      console.log(walks);
 
       const results = await Promise.all(
         walks.map(walk => getWalkPoints(walk.id))
       );
 
-      return results
+      const allItems = results
         .map(result => result?.items ?? [])
         .flat();
+
+      return allItems.slice(offset, offset + limit);
     }
     case 'mapnodes': {
       const result = await getMapNodes();
@@ -198,6 +234,30 @@ const fetchEntityData = async (entity) => {
 
 document.addEventListener('DOMContentLoaded', () => {
   relocateToLogin();
+
+  const tabs = document.querySelectorAll('.map-control-tab');
+  const controls = document.querySelectorAll('.map-controls');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.target;
+
+      tabs.forEach(t => t.classList.remove('map-control-tab--active'));
+      tab.classList.add('map-control-tab--active');
+
+      controls.forEach(control => {
+        control.classList.remove('map-controls--active');
+
+        if (control.dataset.control === target) {
+          control.classList.add('map-controls--active');
+        }
+      });
+    });
+  });
+
+  // показать первый блок по умолчанию
+  document.querySelector('[data-control="pois"]')
+    ?.classList.add('map-controls--active');
 
   const mapLayersBtns = Array.from(document.querySelectorAll('.map-layer-chip'));
 
@@ -229,8 +289,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (btn.classList.contains('map-layer-chip--active')) {
         if (layerName === "tiles") {
-          getTiles().then((tiles) => { drawTiles(layer, tiles); });
-          map.addLayer(layer);
+          getTiles().then((result) => {
+    const tiles = Array.isArray(result)
+      ? result
+      : (result?.items ?? []);
+
+    drawTiles(layer, tiles);
+  }).catch(() => {
+    btn.classList.toggle('map-layer-chip--active');
+  });
+
+  map.addLayer(layer);
         }
         if (layerName === "pois") {
           getPois().then((result) => {

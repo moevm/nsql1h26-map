@@ -51,7 +51,7 @@ const getPOI = async (type) => {
   const lat = 59.9676;
   const lon = 30.3129;
   const radius = 3000;
-  
+
 
   const tags = {
     parks: 'leisure=park',
@@ -89,7 +89,7 @@ const getPOI = async (type) => {
     }));
   } catch (error) {
     Notify.error(`Ошибка загрузки ${type}`);
-    throw(error);
+    throw (error);
   }
 };
 
@@ -109,6 +109,80 @@ const drawPOI = (layer, points, iconColor = "blue") => {
   });
 };
 
+const downloadBlob = async (url, filename) => {
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${getToken()}`
+    },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error("Ошибка экспорта");
+  }
+
+  const blob = await response.blob();
+  const objectUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  a.href = objectUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+
+  a.remove();
+  window.URL.revokeObjectURL(objectUrl);
+};
+
+const exportData = async () => {
+  const userId = userManager.get().id;
+
+  try {
+    await Promise.all([
+      downloadBlob(`http://127.0.0.1:10001/api/data/export/walks/?userId=${userId}`, "walks.csv"),
+      downloadBlob(`http://127.0.0.1:10001/api/data/export/walkpoints/?userId=${userId}`, "walkpoints.csv"),
+      downloadBlob(`http://127.0.0.1:10001/api/data/export/tiles/?userId=${userId}`, "tiles.csv"),
+    ]);
+
+    Notify.success("Файлы успешно экспортированы");
+  } catch (error) {
+    Notify.error("Ошибка сервера: не удалось экспортировать данные");
+    console.error(error);
+  }
+};
+
+const importData = async (walksFile, walkpointsFile) => {
+  const userId = userManager.get().id;
+
+  try {
+    const formData = new FormData();
+    formData.append("walks_file", walksFile);
+    formData.append("walkpoints_file", walkpointsFile);
+
+    const response = await fetch(
+      `http://127.0.0.1:10001/api/data/import/walks/?userId=${userId}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getToken()}`
+        },
+        credentials: "include",
+        body: formData
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Ошибка импорта");
+    }
+
+    Notify.success("Файл успешно импортирован");
+  } catch (error) {
+    Notify.error("Ошибка сервера: не удалось импортировать данные");
+    console.error(error);
+  }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   relocateToLogin();
 
@@ -119,9 +193,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const mapLayersBtns = Array.from(document.querySelectorAll('.map-layer-chip'));
   const modalOverlay = document.querySelector('.modal-overlay');
   const modal = document.querySelector('.modal');
+  const importBtn = document.getElementById('import-btn');
+  const exportBtn = document.getElementById('export-btn');
+
 
   const map = L.map('map', { zoomControl: true }).setView([59.9676, 30.3129], 14);
-  const coveredLayer   = L.layerGroup().addTo(map);
+  const coveredLayer = L.layerGroup().addTo(map);
   const parksLayer = L.layerGroup().addTo(map);
   const museumsLayer = L.layerGroup().addTo(map);
   const cafesLayer = L.layerGroup().addTo(map);
@@ -151,6 +228,34 @@ document.addEventListener('DOMContentLoaded', () => {
     subdomains: 'abcd', maxZoom: 19
   }).addTo(map);
 
+  importBtn.addEventListener('click', () => {
+    const walksInput = document.createElement('input');
+    walksInput.type = 'file';
+    walksInput.accept = '.csv';
+
+    walksInput.addEventListener('change', () => {
+      const walkpointsInput = document.createElement('input');
+      walkpointsInput.type = 'file';
+      walkpointsInput.accept = '.csv';
+
+      walkpointsInput.addEventListener('change', () => {
+        importData(walksInput.files[0], walkpointsInput.files[0]);
+      });
+
+      walkpointsInput.click();
+    });
+
+    walksInput.click();
+  });
+
+  exportBtn.addEventListener('click', () => {
+    console.log('export');
+    exportData()
+      .then((result) => {
+        console.log(result);
+      });
+  })
+
   radiusSlider.addEventListener('change', (evt) => {
     const value = evt.target.value;
     const radiusText = document.getElementById('radius-value');
@@ -160,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   poiInput.addEventListener('change', (evt) => {
     const isChecked = evt.target.checked;
-    Notify.warning(`Точки интереса ${isChecked ? 'включены': 'выключены'}`);
+    Notify.warning(`Точки интереса ${isChecked ? 'включены' : 'выключены'}`);
   });
 
   openModalBtn.addEventListener('click', () => {
