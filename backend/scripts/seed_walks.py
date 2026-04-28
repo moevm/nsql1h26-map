@@ -24,7 +24,7 @@ LON_MIN, LON_MAX = 30.28, 30.34
 
 # Конфигурация тестовых данных
 NUM_WALKS = 5
-POINTS_PER_WALK = 30
+POINTS_PER_WALK = 400
 DAYS_BACK = 14
 
 
