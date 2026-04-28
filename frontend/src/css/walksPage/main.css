@@ -1,0 +1,16 @@
+@import url(/src/css/total.css);
+@import url(header/header.css);
+@import url(page-header/page-header.css);
+@import url(filter-bar/filter-bar.css);
+@import url(table/table.css);
+@import url(table/pagination.css);
+@import url(dashboard/dashboard.css);
+@import url(map/map.css);
+
+.walks-main {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 75px);
+  background-image: url(/src/img/overlay.png);
+  background-size: cover;
+}

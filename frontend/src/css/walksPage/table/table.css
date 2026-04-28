@@ -1,0 +1,82 @@
+@import url(../../routesPage/table/table.css);
+
+.walks-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  background: #162C28CC;
+}
+
+.walks-table__th {
+  text-align: left;
+  padding: 16px 12px;
+  color: #94A3B8;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  border-bottom: 1px solid #273A37
+}
+
+.walks-table__th--checkbox {
+  width: 40px;
+}
+
+.walks-table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 14px;
+}
+
+.walks-table__row--selected {
+  background: #00E6C30D;
+  border-left: 2px solid #00E6C3;
+}
+
+.walk-num {
+  font-weight: 500;
+  line-height: 20px;
+  color: #64748B;
+}
+
+.walk-name {
+  font-weight: 700;
+  line-height: 20px;
+  letter-spacing: 0px;
+  color: var(--main-text-color);
+  margin-bottom: 4px;
+}
+
+.walk-id {
+  font-weight: 400;
+  font-size: 10px;
+  line-height: 20px;
+  letter-spacing: 0px;
+  color: #64748B;
+}
+
+.walk-date-time {
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0px;
+  color: #CBD5E1;
+}
+
+.walk-dist {
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0px;
+}
+
+.walk-duration {
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0px;
+  color: #CBD5E1;
+}
+
+.walk-places {
+  font-weight: 700;
+}
