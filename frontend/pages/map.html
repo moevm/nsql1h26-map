@@ -85,7 +85,7 @@
             </div>
           </div>
 
-          <div class="toggle-control">
+          <!-- <div class="toggle-control">
             <div class="toggle-control__left">
               <svg class="toggle-control__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M2 8h12M2 4h7M2 12h5" stroke="#8aa4b4" stroke-width="1.5" stroke-linecap="round"/>
@@ -100,7 +100,7 @@
               <input class="toggle__input" type="checkbox" id="avoid-visited-toggle" checked>
               <span class="toggle__track"></span>
             </label>
-          </div>
+          </div> -->
 
           <div class="toggle-control">
             <div class="toggle-control__left">
@@ -123,7 +123,7 @@
         <div class="map-layers">
           <p class="map-layers__title">Слои карты</p>
           <div class="map-layers__grid">
-            <button class="map-layer-chip map-layer-chip--active" data-layer="parks">
+            <button class="map-layer-chip" data-layer="parks">
               <span class="map-layer-chip__icon">🌳</span>
               <span>Парки</span>
             </button>
@@ -173,7 +173,61 @@
           </button>
         </div>
       </main>
-      
+    </div>
+
+    <div class="modal-overlay"></div>
+    <div class="modal">
+      <div class="modal__header">
+        <div class="modal__title-data">
+          <h1 class="modal__title">Построение оптимального маршрута </h1>
+          <h3 class="modal__sub-title">Шаг 1</h3>
+        </div>
+        <button class="modal-close"><img src="/src/svg/close-icon.svg" alt="close-btn"></button>
+      </div>
+      <div class="modal__content">
+
+        <section class="distance-control">
+          <div class="modal__tabs">
+            <h2 class="modal__tabs-title">Продолжительность маршрута</h2>
+            <div class="tabs">
+              <button class="tabs__item tabs__item--active">По расстоянию</button>
+              <button class="tabs__item">По времени</button>
+            </div>
+          </div>
+          <div class="distance-control__input-group">
+              <button class="distance-control__button">−</button>
+              <div class="distance-control__value">5.0 км</div>  
+              <button class="distance-control__button">+</button>
+          </div>
+              <input type="range" class="distance-control__slider" min="1" max="20" value="5" step="0.5">
+
+          <div class="distance-control__range">
+              <span class="distance-control__limit">1км</span>
+              <span class="distance-control__limit">20км</span>
+          </div>
+        </section>
+        
+        <section class="distance-control">
+          <div class="distance-control__input-group">
+              <button class="distance-control__button">−</button>
+              <div class="distance-control__value">Приоритет маршрута</div>  
+              <button class="distance-control__button">+</button>
+          </div>
+              <input type="range" class="distance-control__slider" min="1" max="20" value="5" step="0.5">
+
+          <div class="distance-control__range">
+              <span class="distance-control__limit">Новые тайлы</span>
+              <span class="distance-control__limit">Интересные места</span>
+          </div>
+        </section>
+
+        <div class="button-group">
+            <button class="modal__button modal__button--secondary">Отмена</button>
+            <button class="modal__button modal__button--primary">
+                Построить маршрут
+            </button>
+        </div>
+      </div>
     </div>
 
     <script type="module" src="/src/js/pages/mapPage.js"></script>
