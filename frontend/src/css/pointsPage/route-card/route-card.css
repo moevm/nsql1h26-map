@@ -1,0 +1,56 @@
+
+.route-card {
+  border: 1px solid var(--accent-color);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 10px 10px #fff;
+}
+
+.route-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.route-card__label {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.route-card__status {
+  width: 8px;
+  height: 8px;
+  background: var(--color-accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--color-accent);
+}
+
+.route-card__stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+
+
+.route-card__divider {
+  height: 1px;
+  margin-bottom: 12px;
+  background: #00e6c3;
+}
+
+.route-card__info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-accent);
+}
+
+.route-card__info-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}

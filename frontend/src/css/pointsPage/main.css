@@ -1,2 +1,85 @@
 @import url(/src/css/total.css);
 @import url(header/header.css);
+@import url(sidebar/sidebar.css);
+@import url(route-card/route-card.css);
+@import url(route-stat/route-stat.css);
+@import url(map-controls/map-controls.css);
+@import url(map-layers/map-layers.css);
+@import url(map-area/map-area.css);
+@import url(map-area/map-bottom-bar/map-bottom-bar.css);
+@import url(table/table.css);
+@import url(table/pagination.css);
+
+.map-layout {
+  display: flex;
+  position: relative;
+  width: 100%;
+  justify-content: center;
+  min-height: calc(100vh - 75px);
+  background-image: url(/src/img/overlay.png);
+  background-size: cover;
+  
+}
+
+.leaflet-control-zoom-in {
+  border-top-left-radius: 30px !important;
+}
+
+.leaflet-control-zoom-out {
+  border-bottom-right-radius: 30px !important;
+}
+
+.leaflet-touch .leaflet-bar a {
+  width: 50px !important;
+  height: 50px !important;
+  line-height: 50px !important;
+  background: #112727 !important;
+  color: white !important;
+  border: 1px solid #fff !important;
+}
+
+.map-control {
+  display: flex;
+  flex-direction: column;
+}
+
+.map-control__input {
+  flex: 1;
+}
+
+.sidebar--tables {
+  flex-basis: 40%;
+  border-right: 1px solid var(--accent-color);
+  display: flex;
+  align-items: center;
+}
+
+/* Кнопки пагинации */
+.pagination__btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: transparent;
+  color: inherit;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.pagination__btn:hover:not([disabled]) {
+  background: rgba(255,255,255,.08);
+}
+.pagination__btn--active {
+  background: #00e6c3;
+  border-color: #00e6c3;
+  color: #000;
+  font-weight: 600;
+}
+.pagination__btn[disabled] {
+  opacity: .35;
+  cursor: default;
+}
+.pagination__ellipsis {
+  padding: 0 4px;
+  opacity: .5;
+}
