@@ -7,7 +7,7 @@
 @import url(dashboard/dashboard.css);
 @import url(map/map.css);
 
-.routes-main {
+.walks-main {
   display: flex;
   flex-direction: column;
   min-height: calc(100vh - 75px);

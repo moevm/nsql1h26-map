@@ -1,5 +1,5 @@
 import { relocateToLogin } from "../auth.js";
-import { initFilters, buildFilterParams, activeFilters } from "../filters/routesFilter.js";
+import { initFilters, buildFilterParams, activeFilters } from "../filters/walksFilter.js";
 
 const API_BASE = "http://127.0.0.1:10001/api";
 const TEST_EMAIL = "testuser@example.com";
@@ -7,14 +7,14 @@ const TEST_PASSWORD = "test123";
 
 let currentPage = 1;
 let perPage = 5;
-let routes = [];
-let totalRoutes = 0;
+let walks = [];
+let totalWalks = 0;
 let selectedIds = [];
 let authToken = null;
 let userId = null;
 
 // для статистики
-let allRoutes = [];
+let allWalks = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   relocateToLogin();
@@ -26,11 +26,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   window.addEventListener('filters-updated', () => {
     currentPage = 1;
-    loadRoutes();
+    loadWalks();
   });
 
-  await loadRoutes();
-  await loadAllRoutesForStats();
+  await loadWalks();
+  await loadAllWalksForStats();
   
   initPerPage();
   initSelectAll();
@@ -48,22 +48,22 @@ async function login() {
   userId = data.user.id;
 }
 
-async function loadAllRoutesForStats() {
-  const url = `${API_BASE}/routes/?userId=${userId}&offset=0&limit=100`;
+async function loadAllWalksForStats() {
+  const url = `${API_BASE}/walks/?userId=${userId}&offset=0&limit=100`;
   
   const response = await fetch(url, {
     headers: { 'Authorization': `Bearer ${authToken}` }
   });
   
   const data = await response.json();
-  allRoutes = data.items || [];
+  allWalks = data.items || [];
   
   updateDashboardStats();
 }
 
-async function loadRoutes() {
+async function loadWalks() {
   const offset = (currentPage - 1) * perPage;
-  let url = `${API_BASE}/routes/?userId=${userId}&offset=${offset}&limit=${perPage}`;
+  let url = `${API_BASE}/walks/?userId=${userId}&offset=${offset}&limit=${perPage}`;
 
   const filterParams = buildFilterParams();
   if (filterParams) {
@@ -75,30 +75,30 @@ async function loadRoutes() {
   });
   
   const data = await response.json();
-  routes = data.items || [];
-  totalRoutes = data.total || 0;
+  walks = data.items || [];
+  totalWalks = data.total || 0;
   
   renderTable();
   updatePaginationInfo();
   
-  await loadAndDrawAllFilteredRoutes();
+  await loadAndDrawAllFilteredWalks();
 }
 
 function updateDashboardStats() {
-  if (!allRoutes || allRoutes.length === 0) {
+  if (!allWalks || allWalks.length === 0) {
     document.querySelector('.dashboard__card--dist .dashboard__card-number').textContent = '0';
     document.querySelector('.dashboard__card--time .dashboard__card-number').textContent = '0';
     return;
   }
   
-  const totalDistanceKm = allRoutes.reduce((sum, route) => {
-    const distance = route.totalDistanceMeters ? route.totalDistanceMeters / 1000 : 0;
+  const totalDistanceKm = allWalks.reduce((sum, walk) => {
+    const distance = walk.distanceMeters ? walk.distanceMeters / 1000 : 0;
     return sum + distance;
   }, 0);
   
-  const avgTimeMinutes = allRoutes.reduce((sum, route) => {
-    return sum + (route.estimatedMinutes || 0);
-  }, 0) / allRoutes.length;
+  const avgDurationMinutes = allWalks.reduce((sum, walk) => {
+    return sum + (walk.durationSeconds ? walk.durationSeconds / 60 : 0);
+  }, 0) / allWalks.length;
   
   const formattedDistance = totalDistanceKm.toLocaleString('ru-RU', { 
     minimumFractionDigits: 1, 
@@ -106,15 +106,14 @@ function updateDashboardStats() {
   });
   
   let formattedTime;
-  if (avgTimeMinutes >= 60) {
-    const hours = Math.floor(avgTimeMinutes / 60);
-    const mins = Math.round(avgTimeMinutes % 60);
+  if (avgDurationMinutes >= 60) {
+    const hours = Math.floor(avgDurationMinutes / 60);
+    const mins = Math.round(avgDurationMinutes % 60);
     formattedTime = `${hours} ч ${mins}мин`;
   } else {
-    formattedTime = `${Math.round(avgTimeMinutes)} мин`;
+    formattedTime = `${Math.round(avgDurationMinutes)} мин`;
   }
   
-
   const distanceElement = document.querySelector('.dashboard__card--dist .dashboard__card-number');
   const timeElement = document.querySelector('.dashboard__card--time .dashboard__card-number');
   
@@ -122,14 +121,15 @@ function updateDashboardStats() {
   if (timeElement) timeElement.textContent = formattedTime;
 }
 
-function formatDuration(estimatedMinutes) {
-  if (!estimatedMinutes && estimatedMinutes !== 0) return '—';
-  if (estimatedMinutes >= 60) {
-    const hours = Math.floor(estimatedMinutes / 60);
-    const mins = estimatedMinutes % 60;
+function formatDuration(seconds) {
+  if (!seconds && seconds !== 0) return '—';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
     return `${hours}ч ${mins}м`;
   }
-  return `${estimatedMinutes}м`;
+  return `${minutes}м`;
 }
 
 function formatDate(dateStr) {
@@ -146,51 +146,49 @@ function formatTime(dateStr) {
 }
 
 function renderTable() {
-  const tbody = document.getElementById('routes-table-body');
+  const tbody = document.getElementById('walks-table-body');
   if (!tbody) return;
 
-  if (routes.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;">Маршрутов не найдено</td></tr>';
+  if (walks.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;">Прогулок не найдено</td></tr>';
     updatePaginationInfo();
     return;
   }
 
-  tbody.innerHTML = routes.map((route, idx) => {
+  tbody.innerHTML = walks.map((walk, idx) => {
     const rowNumber = (currentPage - 1) * perPage + idx + 1;
-    const isSelected = selectedIds.includes(route.id);
-    const selectedRowClass = isSelected ? 'routes-table__row--selected' : '';
-    const durationText = formatDuration(route.estimatedMinutes);
-    const formattedDate = formatDate(route.createdAt);
-    const formattedTime = formatTime(route.createdAt);
-    const distanceKm = route.totalDistanceMeters ? (route.totalDistanceMeters / 1000).toFixed(1) : '—';
+    const isSelected = selectedIds.includes(walk.id);
+    const selectedRowClass = isSelected ? 'walks-table__row--selected' : '';
+    const durationText = formatDuration(walk.durationSeconds);
+    const formattedDate = formatDate(walk.startedAt);
+    const formattedTime = formatTime(walk.startedAt);
+    const distanceKm = walk.distanceMeters ? (walk.distanceMeters / 1000).toFixed(1) : '—';
     
     let coveragePercent = '—';
-    if (route.newTilesCount !== undefined && route.allTilesCount && route.allTilesCount > 0) {
-      coveragePercent = Math.round((route.newTilesCount / route.allTilesCount) * 100) + '%';
+    if (walk.newTilesCount !== undefined && walk.allTilesCount && walk.allTilesCount > 0) {
+      coveragePercent = Math.round((walk.newTilesCount / walk.allTilesCount) * 100) + '%';
     }
-    const poisCount = route.poiCount !== undefined ? route.poiCount : '-';
 
     return `
-      <tr class="${selectedRowClass}" data-id="${route.id}">
-        <td class="routes-table__td--checkbox">
-          <input type="checkbox" class="route-checkbox" data-id="${route.id}" ${isSelected ? 'checked' : ''}>
+      <tr class="${selectedRowClass}" data-id="${walk.id}">
+        <td class="walks-table__td--checkbox">
+          <input type="checkbox" class="walk-checkbox" data-id="${walk.id}" ${isSelected ? 'checked' : ''}>
         </td>
-        <td class="route-num">${rowNumber}</td>
+        <td class="walk-num">${rowNumber}</td>
         <td>
-          <div class="route-name">Маршрут ${route.id?.slice(0, 8)}</div>
-          <div class="route-id">${route.id}</div>
+          <div class="walk-name">Прогулка ${walk.id?.slice(0, 8)}</div>
+          <div class="walk-id">${walk.id}</div>
         </td>
-        <td class="route-date-time">${formattedDate} · ${formattedTime}</td>
-        <td class="route-dist">${distanceKm}</td>
-        <td class="route-duration">${durationText}</td>
+        <td class="walk-date-time">${formattedDate} · ${formattedTime}</td>
+        <td class="walk-dist">${distanceKm}</td>
+        <td class="walk-duration">${durationText}</td>
         <td><span class="coverage-badge">${coveragePercent}</span></td>
-        <td class="route-places">${poisCount}</td>
         <td>
-          <button class="action-btn" data-action="delete" data-id="${route.id}">
+          <button class="action-btn" data-action="delete" data-id="${walk.id}">
             <img src="/src/svg/routes/trash.svg" alt="удалить">
           </button>
         </td>
-       </tr>
+      </tr>
     `;
   }).join('');
 
@@ -200,7 +198,7 @@ function renderTable() {
 }
 
 function attachTableEvents() {
-  document.querySelectorAll('.route-checkbox').forEach(cb => {
+  document.querySelectorAll('.walk-checkbox').forEach(cb => {
     cb.removeEventListener('change', handleCheckboxChange);
     cb.addEventListener('change', handleCheckboxChange);
   });
@@ -217,18 +215,18 @@ function handleCheckboxChange(e) {
   
   if (e.target.checked) {
     if (!selectedIds.includes(id)) selectedIds.push(id);
-    if (row) row.classList.add('routes-table__row--selected');
+    if (row) row.classList.add('walks-table__row--selected');
   } else {
     selectedIds = selectedIds.filter(i => i !== id);
-    if (row) row.classList.remove('routes-table__row--selected');
+    if (row) row.classList.remove('walks-table__row--selected');
   }
   updateSelectAllCheckbox();
 }
 
 async function handleDeleteClick(e) {
   const id = e.currentTarget.dataset.id;
-  if (confirm(`Удалить маршрут ${id}?`)) {
-    const response = await fetch(`${API_BASE}/routes/${id}`, {
+  if (confirm(`Удалить прогулку ${id}?`)) {
+    const response = await fetch(`${API_BASE}/walks/${id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
@@ -241,26 +239,26 @@ async function handleDeleteClick(e) {
 function updateSelectAllCheckbox() {
   const selectAll = document.getElementById('select-all-checkbox');
   if (selectAll) {
-    const currentPageIds = routes.map(r => r.id);
+    const currentPageIds = walks.map(w => w.id);
     const allSelected = currentPageIds.length > 0 && currentPageIds.every(id => selectedIds.includes(id));
     selectAll.checked = allSelected;
   }
 }
 
 function updatePaginationInfo() {
-  const total = totalRoutes;
+  const total = totalWalks;
   const start = total === 0 ? 0 : (currentPage - 1) * perPage + 1;
   const end = Math.min(currentPage * perPage, total);
   const rangeSpan = document.getElementById('pagination-range');
-  const routesCountSpan = document.querySelector('.page-header__count');
+  const walksCountSpan = document.querySelector('.page-header__count');
   
   if (rangeSpan) {
     rangeSpan.textContent = total > 0 
-      ? `Показано ${start}-${end} из ${total} маршрутов`
-      : `Нет маршрутов`;
+      ? `Показано ${start}-${end} из ${total} прогулок`
+      : `Нет прогулок`;
   }
-  if (routesCountSpan) {
-    routesCountSpan.textContent = `${total} маршрутов`;
+  if (walksCountSpan) {
+    walksCountSpan.textContent = `${total} прогулок`;
   }
   
   renderPaginationControls(total);
@@ -323,21 +321,21 @@ function renderPaginationControls(total) {
 
 function handlePageClick(e) {
   currentPage = parseInt(e.currentTarget.dataset.page);
-  loadRoutes();
+  loadWalks();
 }
 
 function handlePrevClick() {
   if (currentPage > 1) {
     currentPage--;
-    loadRoutes();
+    loadWalks();
   }
 }
 
 function handleNextClick() {
-  const maxPage = Math.ceil(totalRoutes / perPage);
+  const maxPage = Math.ceil(totalWalks / perPage);
   if (currentPage < maxPage) {
     currentPage++;
-    loadRoutes();
+    loadWalks();
   }
 }
 
@@ -346,7 +344,7 @@ function initSelectAll() {
   if (selectAll) {
     selectAll.addEventListener('change', (e) => {
       if (e.target.checked) {
-        selectedIds = routes.map(r => r.id);
+        selectedIds = walks.map(w => w.id);
       } else {
         selectedIds = [];
       }
@@ -366,21 +364,21 @@ function initPerPage() {
     if (!isNaN(newValue) && newValue !== perPage) {
       perPage = newValue;
       currentPage = 1;
-      loadRoutes();
+      loadWalks();
     }
   });
 }
 
 // Инициализация карты
 let map;
-let allRouteLayers = [];
+let allWalkLayers = [];
 let currentHighlightedLayer = null;
 
 function initMap() {
-  const mapContainer = document.getElementById('routes-map');
+  const mapContainer = document.getElementById('walks-map');
   if (!mapContainer) return;
   
-  map = L.map('routes-map').setView([59.9676, 30.3129], 13);
+  map = L.map('walks-map').setView([59.9676, 30.3129], 13);
   
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
@@ -388,40 +386,39 @@ function initMap() {
   }).addTo(map);
 }
 
-function clearAllRoutesFromMap() {
-  allRouteLayers.forEach(layer => {
+function clearAllWalksFromMap() {
+  allWalkLayers.forEach(layer => {
     if (map) map.removeLayer(layer);
   });
-  allRouteLayers = [];
+  allWalkLayers = [];
   currentHighlightedLayer = null;
 }
 
-function drawAllRoutesOnMap(routesData) {
+function drawAllWalksOnMap(walksData) {
   if (!map) return;
-  clearAllRoutesFromMap();
+  clearAllWalksFromMap();
   
-  routesData.forEach(route => {
-    if (route.nodes && route.nodes.length > 0) {
-      const latlngs = route.nodes.map(n => [n.lat, n.lon]);
+  walksData.forEach(walk => {
+    if (walk.points && walk.points.length > 0) {
+      const latlngs = walk.points.map(p => [p.lat, p.lon]);
       const polyline = L.polyline(latlngs, {
         color: '#00e5a0',
         weight: 2,
-        opacity: 0.6,
-        originalColor: '#00e5a0'
+        opacity: 0.6
       }).addTo(map);
-      polyline.routeId = route.id;
-      allRouteLayers.push(polyline);
+      polyline.walkId = walk.id;
+      allWalkLayers.push(polyline);
     }
   });
   
-  if (allRouteLayers.length > 0 && map) {
-    const group = L.featureGroup(allRouteLayers);
+  if (allWalkLayers.length > 0 && map) {
+    const group = L.featureGroup(allWalkLayers);
     map.fitBounds(group.getBounds(), { padding: [50, 50] });
   }
 }
 
-async function loadAndDrawAllFilteredRoutes() {
-  let url = `${API_BASE}/routes/?userId=${userId}&offset=0&limit=100`;
+async function loadAndDrawAllFilteredWalks() {
+  let url = `${API_BASE}/walks/?userId=${userId}&offset=0&limit=100`;
   
   const filterParams = buildFilterParams();
   if (filterParams) {
@@ -435,33 +432,33 @@ async function loadAndDrawAllFilteredRoutes() {
     
     if (response.ok) {
       const data = await response.json();
-      const allFilteredRoutes = data.items || [];
+      const allFilteredWalks = data.items || [];
       
-      const routesWithNodes = [];
-      for (const route of allFilteredRoutes) {
+      const walksWithPoints = [];
+      for (const walk of allFilteredWalks) {
         try {
-          const routeDetailResponse = await fetch(`${API_BASE}/routes/${route.id}`, {
+          const walkDetailResponse = await fetch(`${API_BASE}/walks/${walk.id}`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
           });
-          if (routeDetailResponse.ok) {
-            const routeDetail = await routeDetailResponse.json();
-            if (routeDetail.nodes && routeDetail.nodes.length > 0) {
-              routesWithNodes.push(routeDetail);
+          if (walkDetailResponse.ok) {
+            const walkDetail = await walkDetailResponse.json();
+            if (walkDetail.points && walkDetail.points.length > 0) {
+              walksWithPoints.push(walkDetail);
             }
           }
         } catch (e) {
-          console.error('Ошибка загрузки деталей маршрута:', route.id);
+          console.error('Ошибка загрузки деталей прогулки:', walk.id);
         }
       }
       
-      drawAllRoutesOnMap(routesWithNodes);
+      drawAllWalksOnMap(walksWithPoints);
     }
   } catch (error) {
-    console.error('Ошибка загрузки отфильтрованных маршрутов:', error);
+    console.error('Ошибка загрузки отфильтрованных прогулок:', error);
   }
 }
 
-function highlightRouteOnMap(routeId) {
+function highlightWalkOnMap(walkId) {
   if (currentHighlightedLayer) {
     currentHighlightedLayer.setStyle({
       color: '#00e5a0',
@@ -471,8 +468,8 @@ function highlightRouteOnMap(routeId) {
     currentHighlightedLayer = null;
   }
   
-  for (const layer of allRouteLayers) {
-    if (layer.routeId === routeId) {
+  for (const layer of allWalkLayers) {
+    if (layer.walkId === walkId) {
       layer.setStyle({
         color: '#ff4d6d',
         weight: 4,
@@ -492,14 +489,14 @@ function handleRowClick(e) {
   }
   
   const row = e.currentTarget;
-  const routeId = row.dataset.id;
-  if (routeId) {
-    highlightRouteOnMap(routeId);
+  const walkId = row.dataset.id;
+  if (walkId) {
+    highlightWalkOnMap(walkId);
   }
 }
 
 function attachRowClickEvents() {
-  document.querySelectorAll('.routes-table tbody tr').forEach(row => {
+  document.querySelectorAll('.walks-table tbody tr').forEach(row => {
     row.removeEventListener('click', handleRowClick);
     row.addEventListener('click', handleRowClick);
   });

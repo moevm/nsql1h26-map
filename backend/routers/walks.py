@@ -46,6 +46,9 @@ async def create_walk(body: CreateWalkRequest, session=Depends(get_session)):
     )
 
     walk_id = str(uuid.uuid4())
+    
+    tiles = list({(lat_lon_to_tile(p.lat, p.lon)) for p in points})
+    
     await session.run(
         """
         MATCH (u:User {id: $userId})
@@ -54,7 +57,8 @@ async def create_walk(body: CreateWalkRequest, session=Depends(get_session)):
             startedAt: datetime($startedAt),
             finishedAt: datetime($finishedAt),
             distanceMeters: $distanceMeters,
-            durationSeconds: $durationSeconds
+            durationSeconds: $durationSeconds,
+            allTilesCount: $allTilesCount
         })
         CREATE (u)-[:PERFORMED]->(w)
         """,
@@ -64,6 +68,7 @@ async def create_walk(body: CreateWalkRequest, session=Depends(get_session)):
         finishedAt=finished_at.isoformat(),
         distanceMeters=round(distance_meters, 2),
         durationSeconds=duration_seconds,
+        allTilesCount=len(tiles),
     )
 
     walk_points = [
@@ -86,7 +91,6 @@ async def create_walk(body: CreateWalkRequest, session=Depends(get_session)):
         points=walk_points,
     )
 
-    tiles = list({(lat_lon_to_tile(p.lat, p.lon)) for p in points})
     await session.run(
         """
         UNWIND $tiles AS t
@@ -150,7 +154,9 @@ async def list_walks(
         f"""
         {match} {where}
         RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
-               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
+               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds,
+               size([(w)-[:FIRST_COVERED]->(ct) | ct]) AS newTilesCount,
+               w.allTilesCount AS allTilesCount
         ORDER BY w.startedAt DESC
         SKIP $offset LIMIT $limit
         """,
@@ -169,7 +175,8 @@ async def get_walk(walkId: str, session=Depends(get_session)):
         OPTIONAL MATCH (w)-[:FIRST_COVERED]->(ct:CoveredTile)
         RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
                w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds,
-               count(DISTINCT wp) AS pointsCount, count(DISTINCT ct) AS newTilesCount
+               count(DISTINCT wp) AS pointsCount, count(DISTINCT ct) AS newTilesCount,
+               w.allTilesCount AS allTilesCount
         """,
         walkId=walkId,
     )
@@ -209,7 +216,8 @@ async def update_walk(walkId: str, body: UpdateWalkRequest, session=Depends(get_
         """
         MATCH (w:Walk {id: $id})
         RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
-               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
+               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds,
+               w.allTilesCount AS allTilesCount
         """,
         id=walkId,
     )
