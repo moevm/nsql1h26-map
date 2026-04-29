@@ -135,3 +135,4 @@ POST /api/walks
 `bbox` передаётся в формате `min_lat,min_lon,max_lat,max_lon`.  
 Даты передаются в формате ISO 8601: `2026-04-01T00:00:00Z`.
 
+.
