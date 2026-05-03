@@ -1,6 +1,5 @@
 .table-container {
   padding: 0;
-  margin: 0 var(--block-padding) 20px;
   border-radius: 12px;
   border: 1px solid var(--accent-color);
   box-shadow: 10px 10px #fff;

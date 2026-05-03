@@ -2,13 +2,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 10px 20px;
   flex-wrap: wrap;
   gap: 16px;
   border-bottom-left-radius: 12px;
   border-bottom-right-radius: 12px;
-  /* background: #162C28CC; */
-  border: 1px solid var(--accent-color);
   color: #94A3B8;
 }
 
@@ -74,7 +72,8 @@
 }
 
 .pagination__btn:hover {
-  background: var(--accent-color);
+  background: white;
+  color: #000;
 }
 
 .pagination__btn--active {
