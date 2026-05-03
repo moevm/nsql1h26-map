@@ -43,7 +43,7 @@ async def list_users(
         f"""
         MATCH (u:User) {where}
         RETURN u.id AS id, u.username AS username, u.email AS email, u.avatarUrl AS avatarUrl,
-               toString(u.createdAt) AS createdAt
+               toString(u.createdAt) AS createdAt, toString(u.updatedAt) AS updatedAt
         ORDER BY u.username
         SKIP $offset LIMIT $limit
         """,
@@ -62,7 +62,7 @@ async def get_user(userId: str, session=Depends(get_session)):
         OPTIONAL MATCH (u)-[:COVERED]->(ct:CoveredTile)
         OPTIONAL MATCH (u)-[:REQUESTED_ROUTE]->(r:Route)
         RETURN u.id AS id, u.username AS username, u.email AS email, u.avatarUrl AS avatarUrl,
-               toString(u.createdAt) AS createdAt,
+               toString(u.createdAt) AS createdAt, toString(u.updatedAt) AS updatedAt,
                count(DISTINCT w) AS walksCount,
                count(DISTINCT ct) AS tilesCount,
                count(DISTINCT r) AS routesCount
@@ -90,7 +90,8 @@ async def create_user(body: CreateUserRequest, session=Depends(get_session)):
         CREATE (u:User {
             id: $id, username: $username, email: $email,
             password: $password, token: $token, avatarUrl: '',
-            createdAt: datetime()
+            createdAt: datetime(),
+            updatedAt: datetime()
         })
         """,
         id=user_id, username=body.username, email=body.email,
@@ -107,15 +108,15 @@ async def update_user(userId: str, body: UpdateUserRequest, session=Depends(get_
 
     if body.username is not None:
         await session.run(
-            "MATCH (u:User {id: $id}) SET u.username = $username", id=userId, username=body.username
+            "MATCH (u:User {id: $id}) SET u.username = $username, u.updatedAt = datetime()", id=userId, username=body.username
         )
     if body.avatarUrl is not None:
         await session.run(
-            "MATCH (u:User {id: $id}) SET u.avatarUrl = $avatarUrl", id=userId, avatarUrl=body.avatarUrl
+            "MATCH (u:User {id: $id}) SET u.avatarUrl = $avatarUrl, u.updatedAt = datetime()", id=userId, avatarUrl=body.avatarUrl
         )
 
     result = await session.run(
-        "MATCH (u:User {id: $id}) RETURN u.id AS id, u.username AS username, u.email AS email, u.avatarUrl AS avatarUrl, toString(u.createdAt) AS createdAt",
+        "MATCH (u:User {id: $id}) RETURN u.id AS id, u.username AS username, u.email AS email, u.avatarUrl AS avatarUrl, toString(u.createdAt) AS createdAt, toString(u.updatedAt) AS updatedAt",
         id=userId,
     )
     return (await result.single()).data()

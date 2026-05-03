@@ -27,6 +27,7 @@ class UserResponse(BaseModel):
     email: str
     avatarUrl: str
     createdAt: str | None = None
+    updatedAt: str | None = None
 
 
 class AuthResponse(BaseModel):
@@ -79,7 +80,8 @@ async def register(body: RegisterRequest, session=Depends(get_session)):
         CREATE (u:User {
             id: $id, username: $username, email: $email,
             password: $password, token: $token, avatarUrl: '',
-            createdAt: datetime()
+            createdAt: datetime(),
+            updatedAt: datetime()
         })
         """,
         id=user_id,
@@ -107,10 +109,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(_
 @router.get("/me", response_model=UserResponse)
 async def me(user=Depends(get_current_user)):
     created_at = user.get("createdAt")
+    updated_at = user.get("updatedAt")
     return UserResponse(
         id=user["id"],
         username=user["username"],
         email=user["email"],
         avatarUrl=user.get("avatarUrl", ""),
         createdAt=created_at.isoformat() if created_at else None,
+        updatedAt=updated_at.isoformat() if updated_at else None,
     )

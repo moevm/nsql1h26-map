@@ -101,7 +101,7 @@ async def run_seed(driver):
         await session.run(
             """
             MERGE (u:User {username: 'testuser'})
-            ON CREATE SET u.id = $id, u.password = 'test123', u.email = 'testuser@example.com', u.avatarUrl = '', u.createdAt = datetime()
+            ON CREATE SET u.id = $id, u.password = 'test123', u.email = 'testuser@example.com', u.avatarUrl = '', u.createdAt = datetime(), u.updatedAt = datetime()
             """,
             id=user_id,
         )
