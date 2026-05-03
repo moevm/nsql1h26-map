@@ -36,6 +36,7 @@ def _parse_bbox(bbox: str | None) -> tuple:
 async def list_pois(
     name: str | None = Query(None),
     category: str | None = Query(None),
+    categories: str | None = Query(None, example="bar,hotel,pub"),
     bbox: str | None = Query(None, example="59.95,30.28,59.98,30.34"),
     route_id: str | None = Query(None),
     offset: int = Query(0, ge=0),
@@ -43,16 +44,22 @@ async def list_pois(
     session=Depends(get_session),
 ):
     min_lat, min_lon, max_lat, max_lon = _parse_bbox(bbox)
+    categories_list = [c.strip() for c in categories.split(",")] if categories else None
+    if categories_list:
+        unknown = set(categories_list) - _ALLOWED_CATEGORIES
+        if unknown:
+            raise HTTPException(status_code=422, detail=f"Unknown categories: {', '.join(sorted(unknown))}. Allowed: {', '.join(sorted(_ALLOWED_CATEGORIES))}")
     where = """
-        WHERE ($name     IS NULL OR toLower(p.name)     CONTAINS toLower($name))
-          AND ($category IS NULL OR toLower(p.category) CONTAINS toLower($category))
-          AND ($minLat   IS NULL OR p.lat >= $minLat)
-          AND ($maxLat   IS NULL OR p.lat <= $maxLat)
-          AND ($minLon   IS NULL OR p.lon >= $minLon)
-          AND ($maxLon   IS NULL OR p.lon <= $maxLon)
-          AND ($route_id  IS NULL OR EXISTS { MATCH (r:Route {id: $route_id})-[:PASSES_THROUGH]->(mn:MapNode)-[:HAS_POI]->(p) })
+        WHERE ($name           IS NULL OR toLower(p.name)     CONTAINS toLower($name))
+          AND ($category       IS NULL OR toLower(p.category) CONTAINS toLower($category))
+          AND ($categories     IS NULL OR p.category IN $categories)
+          AND ($minLat         IS NULL OR p.lat >= $minLat)
+          AND ($maxLat         IS NULL OR p.lat <= $maxLat)
+          AND ($minLon         IS NULL OR p.lon >= $minLon)
+          AND ($maxLon         IS NULL OR p.lon <= $maxLon)
+          AND ($route_id       IS NULL OR EXISTS { MATCH (r:Route {id: $route_id})-[:PASSES_THROUGH]->(mn:MapNode)-[:HAS_POI]->(p) })
     """
-    params = dict(name=name, category=category, route_id=route_id,
+    params = dict(name=name, category=category, categories=categories_list, route_id=route_id,
                   minLat=min_lat, maxLat=max_lat, minLon=min_lon, maxLon=max_lon)
 
     count_result = await session.run(
@@ -72,6 +79,8 @@ async def list_pois(
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)
 
+
+_ALLOWED_CATEGORIES = {"bar", "cafe", "restaurant", "hotel", "fast_food", "library", "pub", "bakery", "memorial", "museum"}
 
 @router.get("/{poiId}")
 async def get_poi(poiId: str, session=Depends(get_session)):
