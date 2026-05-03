@@ -9,6 +9,13 @@ router = APIRouter()
 
 @router.get("/")
 async def get_stats(userId: str = Query(...), session=Depends(get_session)):
+    user_result = await session.run(
+        "MATCH (u:User {id: $userId}) RETURN toString(u.createdAt) AS createdAt",
+        userId=userId,
+    )
+    user_record = await user_result.single()
+    created_at = user_record["createdAt"] if user_record else None
+
     # 1. Агрегация по датам: расстояние и количество прогулок за каждый день
     days_result = await session.run(
         """
@@ -83,6 +90,7 @@ async def get_stats(userId: str = Query(...), session=Depends(get_session)):
     weekly_ratio = round(current_week / previous_week, 2) if previous_week else None
 
     return {
+        "createdAt": created_at,
         "totalDistance": round(total_distance, 1),
         "walkCount": walk_count,
         "activeDays": active_days,
