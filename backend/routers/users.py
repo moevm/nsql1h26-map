@@ -42,7 +42,8 @@ async def list_users(
     result = await session.run(
         f"""
         MATCH (u:User) {where}
-        RETURN u.id AS id, u.username AS username, u.email AS email, u.avatarUrl AS avatarUrl
+        RETURN u.id AS id, u.username AS username, u.email AS email, u.avatarUrl AS avatarUrl,
+               toString(u.createdAt) AS createdAt
         ORDER BY u.username
         SKIP $offset LIMIT $limit
         """,
@@ -61,6 +62,7 @@ async def get_user(userId: str, session=Depends(get_session)):
         OPTIONAL MATCH (u)-[:COVERED]->(ct:CoveredTile)
         OPTIONAL MATCH (u)-[:REQUESTED_ROUTE]->(r:Route)
         RETURN u.id AS id, u.username AS username, u.email AS email, u.avatarUrl AS avatarUrl,
+               toString(u.createdAt) AS createdAt,
                count(DISTINCT w) AS walksCount,
                count(DISTINCT ct) AS tilesCount,
                count(DISTINCT r) AS routesCount
@@ -87,7 +89,8 @@ async def create_user(body: CreateUserRequest, session=Depends(get_session)):
         """
         CREATE (u:User {
             id: $id, username: $username, email: $email,
-            password: $password, token: $token, avatarUrl: ''
+            password: $password, token: $token, avatarUrl: '',
+            createdAt: datetime()
         })
         """,
         id=user_id, username=body.username, email=body.email,
@@ -112,7 +115,7 @@ async def update_user(userId: str, body: UpdateUserRequest, session=Depends(get_
         )
 
     result = await session.run(
-        "MATCH (u:User {id: $id}) RETURN u.id AS id, u.username AS username, u.email AS email, u.avatarUrl AS avatarUrl",
+        "MATCH (u:User {id: $id}) RETURN u.id AS id, u.username AS username, u.email AS email, u.avatarUrl AS avatarUrl, toString(u.createdAt) AS createdAt",
         id=userId,
     )
     return (await result.single()).data()
