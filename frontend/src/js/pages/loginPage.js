@@ -3,10 +3,8 @@ import { Notify } from "../utils/notify";
 import { userManager } from "../localManagers/userManager"
 
 const login = async (email, password) => {
-
   if ([email, password].some(field => !field)) {
-    Notify.error("Поля должны быть заполнены");
-    return false;
+    throw new Error("Поля должны быть заполнены");
   }
 
   const response = await fetch('http://127.0.0.1:10001/api/auth/login', {
@@ -14,23 +12,14 @@ const login = async (email, password) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   }).catch((error) => {
-    Notify.error("Ошибка сервера");
-    return false;
+    throw new Error(`Ошибка сервера ${error}`);
   });
 
   const data = await response.json();
-  
-  if (response.ok && data.token) {
-    document.cookie = `token=${data.token}; Path=/; SameSite=Strict;`;
-    Notify.success("Успешный вход");
 
-    userManager.save(JSON.stringify(data.user));
-    
-    return true;
-  }
-  
-  Notify.error("Неверный логин или пароль");
-  return false;
+  if (response.ok && data.token) return data;
+
+  throw new Error("Неверный логин или пароль");
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -46,8 +35,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const email = emailInput.value.trim();
     const password = passwordInput.value;
 
-    const success = await login(email, password);
-    
-    if (success) relocateToLogin();
+    login(email, password)
+      .then((data) => {
+        document.cookie = `token=${data.token}; Path=/; SameSite=Strict; Max-Age=${30 * 24 * 60 * 60}`;
+        userManager.save(JSON.stringify(data.user));
+        Notify.success("Успешный вход");
+        relocateToLogin();
+      })
+      .catch((error) => {
+        Notify.error(error);
+      })
   });
 });
