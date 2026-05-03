@@ -2,8 +2,6 @@ import { relocateToLogin } from "../auth.js";
 import { initFilters, buildFilterParams, activeFilters } from "../filters/walksFilter.js";
 
 const API_BASE = "http://127.0.0.1:10001/api";
-const TEST_EMAIL = "testuser@example.com";
-const TEST_PASSWORD = "test123";
 
 let currentPage = 1;
 let perPage = 5;
@@ -19,8 +17,6 @@ let allWalks = [];
 document.addEventListener('DOMContentLoaded', async () => {
   relocateToLogin();
   initMap();
-  
-  await login();
 
   initFilters();
   
@@ -35,18 +31,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initPerPage();
   initSelectAll();
 });
-
-async function login() {
-  const response = await fetch(`${API_BASE}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: TEST_EMAIL, password: TEST_PASSWORD })
-  });
-  
-  const data = await response.json();
-  authToken = data.token;
-  userId = data.user.id;
-}
 
 async function loadAllWalksForStats() {
   const url = `${API_BASE}/walks/?userId=${userId}&offset=0&limit=100`;
