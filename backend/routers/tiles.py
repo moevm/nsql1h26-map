@@ -15,6 +15,10 @@ class CreateTileRequest(BaseModel):
     tileY: int
 
 
+class UpdateTileRequest(BaseModel):
+    firstCoveredAt: datetime | None = None
+
+
 @router.get("/")
 async def list_tiles(
     userId: str = Query(...),
@@ -99,6 +103,44 @@ async def create_tile(body: CreateTileRequest, session=Depends(get_session)):
         now=datetime.now(timezone.utc).isoformat(),
     )
     return {"userId": body.userId, "tileX": body.tileX, "tileY": body.tileY}
+
+
+@router.put("/")
+async def update_tile(
+    body: UpdateTileRequest,
+    userId: str = Query(...),
+    tileX: int = Query(...),
+    tileY: int = Query(...),
+    session=Depends(get_session),
+):
+    result = await session.run(
+        """
+        MATCH (u:User {id: $userId})-[:COVERED]->(ct:CoveredTile {tileX: $tileX, tileY: $tileY})
+        RETURN ct
+        """,
+        userId=userId, tileX=tileX, tileY=tileY,
+    )
+    if not await result.single():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tile not found")
+
+    if body.firstCoveredAt is not None:
+        await session.run(
+            """
+            MATCH (u:User {id: $userId})-[:COVERED]->(ct:CoveredTile {tileX: $tileX, tileY: $tileY})
+            SET ct.firstCoveredAt = datetime($v)
+            """,
+            userId=userId, tileX=tileX, tileY=tileY, v=body.firstCoveredAt.isoformat(),
+        )
+
+    result = await session.run(
+        """
+        MATCH (u:User {id: $userId})-[:COVERED]->(ct:CoveredTile {tileX: $tileX, tileY: $tileY})
+        RETURN ct.tileX AS tileX, ct.tileY AS tileY, toString(ct.firstCoveredAt) AS firstCoveredAt
+        """,
+        userId=userId, tileX=tileX, tileY=tileY,
+    )
+    record = await result.single()
+    return {"userId": userId, **record.data()}
 
 
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
