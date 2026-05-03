@@ -9,16 +9,16 @@
 @import url(map-area/map-bottom-bar/map-bottom-bar.css);
 @import url(table/table.css);
 @import url(table/pagination.css);
+@import url(slider/slider.css);
 
 .map-layout {
   display: flex;
+  flex-direction: column;
   position: relative;
   width: 100%;
-  justify-content: center;
   min-height: calc(100vh - 75px);
   background-image: url(/src/img/overlay.png);
   background-size: cover;
-  
 }
 
 .leaflet-control-zoom-in {
@@ -44,7 +44,18 @@
 }
 
 .map-control__input {
-  flex: 1;
+  width: 49%;
+  padding: 15px 20px;
+  border-radius: 12px;
+  background-color: #fff;
+  border: 1px solid var(--accent-color);
+  color: #000;
+  outline: none;
+  box-shadow: 5px 5px #fff;
+}
+
+.map-control__input::placeholder {
+  color: #000;
 }
 
 .sidebar--tables {
@@ -52,34 +63,4 @@
   border-right: 1px solid var(--accent-color);
   display: flex;
   align-items: center;
-}
-
-/* Кнопки пагинации */
-.pagination__btn {
-  min-width: 32px;
-  height: 32px;
-  padding: 0 8px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: transparent;
-  color: inherit;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background .15s, border-color .15s;
-}
-.pagination__btn:hover:not([disabled]) {
-  background: rgba(255,255,255,.08);
-}
-.pagination__btn--active {
-  background: #00e6c3;
-  border-color: #00e6c3;
-  color: #000;
-  font-weight: 600;
-}
-.pagination__btn[disabled] {
-  opacity: .35;
-  cursor: default;
-}
-.pagination__ellipsis {
-  padding: 0 4px;
-  opacity: .5;
 }

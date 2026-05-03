@@ -23,7 +23,7 @@ app = FastAPI(title="WalkMap API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if DEV_MODE else ["http://127.0.0.1:5678"],
+    allow_origins=["*"] if DEV_MODE else ["http://127.0.0.1:5678", "http://localhost:5678"],
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=not DEV_MODE,

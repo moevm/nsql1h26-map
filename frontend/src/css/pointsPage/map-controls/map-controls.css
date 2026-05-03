@@ -4,9 +4,7 @@
   flex-direction: column;
   gap: 10px;
   border-radius: 12px;
-  border: 1px solid var(--accent-color);
   padding: 14px;
-  box-shadow: 10px 10px #fff;
 
 }
 
@@ -155,4 +153,12 @@
 .toggle__input:checked+.toggle__track::after {
   transform: translateX(18px);
   background: #fff;
+}
+
+.map-control__inputs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  row-gap: 20px;
+  margin-bottom: 20px;
 }
