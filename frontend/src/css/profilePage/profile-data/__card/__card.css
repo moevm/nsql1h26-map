@@ -1,5 +1,6 @@
 .profile-data__card {
-  width: 127px;
+  min-width: 127px;
+  width: fit-content;
   height: 73px;
   background-color: rgba(0, 230, 195, 0.2);
   border-radius: 8px;

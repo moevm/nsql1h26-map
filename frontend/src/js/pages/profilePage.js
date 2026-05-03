@@ -10,18 +10,27 @@ const unlogin = () => {
   document.cookie = 'token=; Path=/; SameSite=Strict; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
 }
 
-const setChart = (chartCanvasElement, type, dataMetrics) => {
+const setChart = (chartCanvasElement, type, dataMetrics, metricType) => {
   const types = ["bar", "line", "radar"];
+  const metricTypeLabels = {
+    distance: "метра(ов)",
+    walks: "штук(кол-во)",
+    tiles: "штук(кол-во)"
+  }
   if ((types.includes(type)) === false) return;
   if (currentChart) currentChart.destroy();
 
-  const data = dataMetrics.length ? dataMetrics : [10, 20, 30, 40, 50, 60, 70];
+  const data = dataMetrics.length ? dataMetrics : Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return { date: d.toISOString().split('T')[0], value: (i+1)*10 };
+  });
 
   const labels = [];
   const metrics = [];
-  for (const item of dataMetrics) {
+  for (const item of data) {
     labels.push(item.date);
-    metrics.push(item.distance);
+    metrics.push(item.value);
   }
 
   currentChart = new Chart(chartCanvasElement, {
@@ -30,7 +39,7 @@ const setChart = (chartCanvasElement, type, dataMetrics) => {
       labels: labels,
       datasets: [
         {
-        label: 'метр',
+        label: metricTypeLabels[metricType],
         data: metrics,
         borderWidth: 3
       },
@@ -64,10 +73,8 @@ const setChart = (chartCanvasElement, type, dataMetrics) => {
 const setMetricsText = (metric) => {
   const metrics = {
     "distance": "Расстояние(м)",
-    "duration": "Длительность(мин)",
-    "new-zone": "Новый охват(%)",
-    "speed": "Скорость(км/ч)",
-    "places": "Посещённые места(кол)"
+    "walks": "Прогулки(кол)",
+    "tiles": "Новые тайлы(кол)"
   }
   if ((Object.keys(metrics).includes(metric)) === false) return;
   const metricsField = document.querySelector('.stats-graph__text--metrics');
@@ -77,11 +84,11 @@ const setMetricsText = (metric) => {
 const setDurationText = (duration) => {
   const durations = {
     "0days": "Это ваша будущая статистика",
-    "7days": "7 дней",
-    "30days": "30 дней",
-    "90days": "90 дней",
+    "7": "7 дней",
+    "30": "30 дней",
+    "90": "90 дней",
   }
-  if ((Object.keys(durations).includes(duration)) === false && motivation === false) return;
+  if ((Object.keys(durations).includes(duration)) === false) return;
   const durationField = document.querySelector('.stats-graph__text--duration');
   durationField.textContent = duration === "0days" ? "Это ваша будущая статистика": `Активность за ${durations[duration]}`;
 }
@@ -125,7 +132,23 @@ const getStats = async () => {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${getToken()}`,
-      'credentials': true
+    },
+    credentials: 'include',
+  }).catch((error) => {
+    Notify.error("Ошибка сервера");
+    return false;
+  });
+
+  const data = await response.json();
+  return data;
+}
+
+const getStatsByMetric = async (metric, days, startDay) => {
+  const userId = userManager.get().id;
+  const response = await fetch(`http://127.0.0.1:10001/api/stats/metrics/?userId=${userId}&metric=${metric}&days=${days}&date=${startDay}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${getToken()}`,
     },
     credentials: 'include',
   }).catch((error) => {
@@ -161,12 +184,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const graphTypeValue = graphType.value;
     const metricTypeValue = metricType.value;
     const duration = durationData.value;
+    const date = new Date().toISOString().split('T')[0];
+    
+    getStatsByMetric(metricTypeValue, duration, date)
+      .then((data) => {
+        const dataMap = Object.fromEntries(data.map(d => [d.date, d.value]));
+    
+        chartData = Array.from({ length: duration }, (_, i) => {
+          const d = new Date(date);
+          d.setDate(d.getDate() - (duration - 1 - i));
+          const key = d.toISOString().split('T')[0];
+          return { date: key, value: dataMap[key] ?? 0 };
+        });
 
-    setChart(chart, graphTypeValue, chartData);
-    setMetricsText(metricTypeValue);
-    setDurationText(duration);
+        setChart(chart, graphTypeValue, chartData, metricTypeValue);
+        setMetricsText(metricTypeValue);
+        setDurationText(duration);
 
-    Notify.success("Данные успешно обновлены");
+        Notify.success("Данные успешно обновлены");
+      });
   })
 
   setMetricsText(metricType.value);
@@ -187,10 +223,30 @@ document.addEventListener('DOMContentLoaded', () => {
     createProfileCard("Дни", `${result.activeDays}`);
 
     if (bestDay !== null) {
-      chartData = result.distanceByDate;
-      setChart(chart, graphType.value, result.distanceByDate);
+      const graphTypeValue = graphType.value;
+      const metricTypeValue = metricType.value;
+      const duration = durationData.value;
+      const date = new Date().toISOString().split('T')[0];
+    
+      getStatsByMetric(metricTypeValue, duration, date)
+        .then((data) => {
+          const dataMap = Object.fromEntries(data.map(d => [d.date, d.value]));
+      
+          chartData = Array.from({ length: duration }, (_, i) => {
+            const d = new Date(date);
+            d.setDate(d.getDate() - (duration - 1 - i));
+            const key = d.toISOString().split('T')[0];
+            return { date: key, value: dataMap[key] ?? 0 };
+          });
 
-      createStatCard(
+          setChart(chart, graphTypeValue, chartData, metricTypeValue);
+          setMetricsText(metricTypeValue);
+          setDurationText(duration);
+
+          Notify.success("Данные успешно обновлены");
+        });
+
+        createStatCard(
         "Лучший день",
         "/src/svg/stars.svg",
         `${bestDay.distance} м`,
@@ -205,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     }else {
 
-      setChart(chart, graphType.value, chartData);
+      setChart(chart, graphType.value, chartData, "distance");
       setDurationText("0days");
 
       createStatCard(
