@@ -19,7 +19,7 @@ class CreateWalkPointRequest(BaseModel):
 
 @router.get("/")
 async def list_walkpoints(
-    walkId: str = Query(...),
+    walkId: str | None = Query(None),
     latMin: float | None = Query(None),
     latMax: float | None = Query(None),
     lonMin: float | None = Query(None),
@@ -33,7 +33,8 @@ async def list_walkpoints(
     session=Depends(get_session),
 ):
     where = """
-        WHERE ($latMin         IS NULL OR wp.lat >= $latMin)
+        WHERE ($walkId         IS NULL OR w.id = $walkId)
+          AND ($latMin         IS NULL OR wp.lat >= $latMin)
           AND ($latMax         IS NULL OR wp.lat <= $latMax)
           AND ($lonMin         IS NULL OR wp.lon >= $lonMin)
           AND ($lonMax         IS NULL OR wp.lon <= $lonMax)
@@ -51,14 +52,14 @@ async def list_walkpoints(
     )
 
     count_result = await session.run(
-        f"MATCH (w:Walk {{id: $walkId}})-[:HAS_POINT]->(wp:WalkPoint) {where} RETURN count(wp) AS total",
+        f"MATCH (w:Walk)-[:HAS_POINT]->(wp:WalkPoint) {where} RETURN count(wp) AS total",
         **params,
     )
     total = (await count_result.single())["total"]
 
     result = await session.run(
         f"""
-        MATCH (w:Walk {{id: $walkId}})-[:HAS_POINT]->(wp:WalkPoint) {where}
+        MATCH (w:Walk)-[:HAS_POINT]->(wp:WalkPoint) {where}
         RETURN wp.lat AS lat, wp.lon AS lon, toString(wp.timestamp) AS timestamp, wp.order AS order
         ORDER BY wp.order
         SKIP $offset LIMIT $limit
