@@ -23,7 +23,7 @@ export const getPois = async () => {
   });
   const response = await fetch(`http://127.0.0.1:10001/api/pois/${query}`, {
     method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`, 'credentials': true },
+    headers: { 'Authorization': `Bearer ${getToken()}`},
     credentials: 'include',
   }).catch(() => { Notify.error("Ошибка сервера: не удалось получить POIs"); return false; });
   return await response.json();
@@ -33,7 +33,7 @@ export const getWalks = async () => {
   const userId = userManager.get().id;
   const response = await fetch(`http://127.0.0.1:10001/api/walks/?userId=${userId}`, {
     method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`, 'credentials': true },
+    headers: { 'Authorization': `Bearer ${getToken()}`},
     credentials: 'include',
   }).catch(() => { Notify.error("Ошибка сервера: не удалось получить Walks"); return false; });
   return await response.json();
@@ -55,7 +55,7 @@ export const getWalkPoints = async (walkId) => {
   });
   const response = await fetch(`http://127.0.0.1:10001/api/walkpoints/${query}`, {
     method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`, 'credentials': true },
+    headers: { 'Authorization': `Bearer ${getToken()}`},
     credentials: 'include',
   }).catch(() => { Notify.error("Ошибка сервера: не удалось получить WalkPoints"); return false; });
   return await response.json();
@@ -65,7 +65,7 @@ export const getTiles = async () => {
   const userId = userManager.get().id;
   const response = await fetch(`http://127.0.0.1:10001/api/map/tiles/?userId=${userId}`, {
     method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`, 'credentials': true },
+    headers: { 'Authorization': `Bearer ${getToken()}`},
     credentials: 'include',
   }).catch(() => { Notify.error("Ошибка сервера: не удалось получить Tiles"); return false; });
   return await response.json();
@@ -82,7 +82,7 @@ export const getMapNodes = async () => {
   });
   const response = await fetch(`http://127.0.0.1:10001/api/mapnodes/${query}`, {
     method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`, 'credentials': true },
+    headers: { 'Authorization': `Bearer ${getToken()}`},
     credentials: 'include',
   }).catch(() => { Notify.error("Ошибка сервера: не удалось получить MapNodes"); return false; });
   return await response.json();
