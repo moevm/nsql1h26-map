@@ -17,6 +17,12 @@ class CreateWalkPointRequest(BaseModel):
     order: int
 
 
+class UpdateWalkPointRequest(BaseModel):
+    lat: float | None = None
+    lon: float | None = None
+    timestamp: datetime | None = None
+
+
 @router.get("/")
 async def list_walkpoints(
     walkId: str | None = Query(None),
@@ -106,6 +112,58 @@ async def create_walkpoint(body: CreateWalkPointRequest, session=Depends(get_ses
         order=body.order,
     )
     return {"walkId": body.walkId, "order": body.order, "lat": body.lat, "lon": body.lon}
+
+
+@router.put("/")
+async def update_walkpoint(
+    body: UpdateWalkPointRequest,
+    walkId: str = Query(...),
+    order: int = Query(...),
+    session=Depends(get_session),
+):
+    result = await session.run(
+        """
+        MATCH (w:Walk {id: $walkId})-[:HAS_POINT]->(wp:WalkPoint {order: $order})
+        RETURN wp
+        """,
+        walkId=walkId, order=order,
+    )
+    if not await result.single():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="WalkPoint not found")
+
+    if body.lat is not None:
+        await session.run(
+            """
+            MATCH (w:Walk {id: $walkId})-[:HAS_POINT]->(wp:WalkPoint {order: $order})
+            SET wp.lat = $v
+            """,
+            walkId=walkId, order=order, v=body.lat,
+        )
+    if body.lon is not None:
+        await session.run(
+            """
+            MATCH (w:Walk {id: $walkId})-[:HAS_POINT]->(wp:WalkPoint {order: $order})
+            SET wp.lon = $v
+            """,
+            walkId=walkId, order=order, v=body.lon,
+        )
+    if body.timestamp is not None:
+        await session.run(
+            """
+            MATCH (w:Walk {id: $walkId})-[:HAS_POINT]->(wp:WalkPoint {order: $order})
+            SET wp.timestamp = datetime($v)
+            """,
+            walkId=walkId, order=order, v=body.timestamp.isoformat(),
+        )
+
+    result = await session.run(
+        """
+        MATCH (w:Walk {id: $walkId})-[:HAS_POINT]->(wp:WalkPoint {order: $order})
+        RETURN wp.lat AS lat, wp.lon AS lon, toString(wp.timestamp) AS timestamp, wp.order AS order
+        """,
+        walkId=walkId, order=order,
+    )
+    return (await result.single()).data()
 
 
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
