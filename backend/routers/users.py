@@ -18,6 +18,7 @@ class CreateUserRequest(BaseModel):
 class UpdateUserRequest(BaseModel):
     username: str | None = None
     avatarUrl: str | None = None
+    email: str | None = None
 
 
 @router.get("/")
@@ -106,6 +107,10 @@ async def update_user(userId: str, body: UpdateUserRequest, session=Depends(get_
     if not await result.single():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    if body.email is not None:
+        await session.run(
+            "MATCH (u:User {id: $id}) SET u.email = $email, u.updatedAt = datetime()", id=userId, email=body.email
+        )
     if body.username is not None:
         await session.run(
             "MATCH (u:User {id: $id}) SET u.username = $username, u.updatedAt = datetime()", id=userId, username=body.username

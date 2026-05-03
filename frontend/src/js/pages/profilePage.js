@@ -93,10 +93,40 @@ const setDurationText = (duration) => {
   durationField.textContent = duration === "0days" ? "Это ваша будущая статистика": `Активность за ${durations[duration]}`;
 }
 
-const setUserName = () => {
-  const userData = userManager.get();
+const setLogoModal = (logoUrl) => {
+  const logo = document.querySelector('.modal__img--logo');
+  logo.src = logoUrl;
+}
+
+const setAvatar = (avatarUrl) => {
+  const logo = document.querySelector('.profile-data__image--logo');
+  logo.src = avatarUrl;
+}
+
+const setUserName = (userName) => {
   const nickname = document.querySelector('.profile-data__nickname');
-  nickname.textContent = userData.username;
+  nickname.textContent = userName;
+}
+
+const setEmail = (email) => {
+  const emailElement = document
+                .querySelector('.profile-data__email')
+                .querySelector('.profile-data__text');
+  emailElement.textContent = email;
+}
+
+const setCreatedAtTime = (date) => {
+  const createdAt = document
+                    .querySelector('.profile-data__date--created')
+                    .querySelector('.profile-data__text--date-data');
+  createdAt.textContent = date;
+}
+
+const setUpdatedAtTime = (date) => {
+  const updatedAt = document
+                    .querySelector('.profile-data__date--updated')
+                    .querySelector('.profile-data__text--date-data');
+  updatedAt.textContent = date;
 }
 
 const createProfileCard = (title, data) => {
@@ -160,13 +190,57 @@ const getStatsByMetric = async (metric, days, startDay) => {
   return data;
 }
 
+const getUserInfo = async () => {
+  const response = await fetch(`http://127.0.0.1:10001/api/auth/me`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${getToken()}`,
+    },
+    credentials: 'include',
+  }).catch((error) => {
+    Notify.error("Ошибка сервера");
+    return false;
+  });
+
+  const data = await response.json();
+  return data;
+}
+
+const editProfile = async ({ username, avatarUrl, email } = {}) => {
+  const userId = userManager.get().id;
+
+  const body = {};
+  if (username !== undefined) body.username = username;
+  if (avatarUrl !== undefined) body.avatarUrl = avatarUrl;
+  if (email !== undefined) body.email = email;
+
+  const response = await fetch(`http://127.0.0.1:10001/api/users/${userId}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${getToken()}`,
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  }).catch(() => {
+    Notify.error("Ошибка сервера");
+    return null;
+  });
+
+  return await response.json();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   relocateToLogin();
 
   Chart.defaults.color = '#94A3B8';
   Chart.defaults.borderColor = '#00E6C3';
 
-  const unloginBtn = document.querySelector('.profile-data__button');
+  const unloginBtn = document.querySelector('.profile-data__button--unlogin');
+  const editProfileBtn = document.querySelector('.profile-data__button--edit');
+  const closeModalBtn = document.querySelector('.modal-close');
+  const cancelEditBtn = document.querySelector('.modal__btn--cancel');
+  const applyEditProfileBtn = document.querySelector('.modal__btn--save');
   const applySettingsBtn = document.querySelector('.stats-settings__button');
 
   const chart = document.getElementById('chart');
@@ -174,10 +248,78 @@ document.addEventListener('DOMContentLoaded', () => {
   const metricType = document.getElementById('metric-type');
   const durationData = document.getElementById('duration');
 
+  const modalOverlay = document.querySelector('.modal-overlay');
+  const modal = document.querySelector('.modal');
+
+  const newEmailInput = document.querySelector('.modal__input--email');
+  const newAvatarUrlInput = document.querySelector('.modal__input--avatar-url');
+  const newUserNameInput = document.querySelector('.modal__input--username');
+
+  newAvatarUrlInput.addEventListener('change', () => {
+    setLogoModal(newAvatarUrlInput.value);
+  })
+
   unloginBtn.addEventListener('click', () => {
     unlogin();
     relocateToLogin();
     userManager.delete();
+  })
+
+  editProfileBtn.addEventListener('click', () => {
+    console.log('edit');
+    modal.classList.add('modal--active');
+    modalOverlay.classList.add('modal-overlay--active');
+  })
+
+  closeModalBtn.addEventListener('click', () => {
+    modal.classList.remove('modal--active');
+    modalOverlay.classList.remove('modal-overlay--active');
+  })
+
+  cancelEditBtn.addEventListener('click', () => {
+    modal.classList.remove('modal--active');
+    modalOverlay.classList.remove('modal-overlay--active');
+  })
+
+  applyEditProfileBtn.addEventListener('click', (evt) => {
+    evt.preventDefault();
+
+    const body = {};
+
+    if (newUserNameInput.value) body.username = newUserNameInput.value;
+    if (newEmailInput.value) body.email = newEmailInput.value;
+    if (newAvatarUrlInput.value) body.avatarUrl = newAvatarUrlInput.value;
+
+    if (Object.keys(body).length === 0) {
+      Notify.warning("Поля пустые!");
+      return;
+    }
+
+    editProfile(body)
+    .then((userData) => {
+      const avatarUrl = userData.avatarUrl ? userData.avatarUrl : '/src/img/user-logo.png';
+      const userName = userData.username;
+      const createdAt = userData.createdAt.slice(0, 19).replace("T", " ");
+      const updatedAt = userData.updatedAt.slice(0, 19).replace("T", " ");
+      const email = userData.email;
+
+      setAvatar(avatarUrl);
+      setLogoModal(avatarUrl);
+      setUserName(userName);
+      setCreatedAtTime(createdAt);
+      setUpdatedAtTime(updatedAt);
+      setEmail(email);
+
+      Notify.success("Данные успешно обновлены!");
+    })
+    .finally(() => {
+      newUserNameInput.value = '';
+      newEmailInput.value = '';
+      newAvatarUrlInput = '';
+    });
+
+    modal.classList.remove('modal--active');
+    modalOverlay.classList.remove('modal-overlay--active');
   })
 
   applySettingsBtn.addEventListener('click', () => {
@@ -200,27 +342,43 @@ document.addEventListener('DOMContentLoaded', () => {
         setChart(chart, graphTypeValue, chartData, metricTypeValue);
         setMetricsText(metricTypeValue);
         setDurationText(duration);
-
-        Notify.success("Данные успешно обновлены");
       });
   })
 
   setMetricsText(metricType.value);
   setDurationText(durationData.value);
-  setUserName();
 
   createAchievment("Профи", "/src/svg/achievment--profi.svg");
   createAchievment("Марафон", "/src/svg/achievment--walk.svg");
   createAchievment("Скаут", "/src/svg/achievment--scout.svg");
   createAchievment("Легенда", "/src/svg/achievment--legend.svg");
 
+  getUserInfo()
+    .then((userData) => {
+
+      console.log(userData);
+
+      const avatarUrl = userData.avatarUrl ? userData.avatarUrl : '/src/img/user-logo.png';
+      const userName = userData.username;
+      const createdAt = userData.createdAt.slice(0, 19).replace("T", " ");
+      const updatedAt = userData.updatedAt.slice(0, 19).replace("T", " ");
+      const email = userData.email;
+
+      setAvatar(avatarUrl);
+      setLogoModal(avatarUrl);
+      setUserName(userName);
+      setCreatedAtTime(createdAt);
+      setUpdatedAtTime(updatedAt);
+      setEmail(email);
+    });
+
   getStats().then((result) => {
     const bestDay = result.bestDay;
 
-    createProfileCard("Расстояние", `${result.totalDistance} м`);
     createProfileCard("Охват", `${result.coveragePercent}%`);
     createProfileCard("Прогулки", `${result.walkCount}`);
     createProfileCard("Дни", `${result.activeDays}`);
+    createProfileCard("Расстояние", `${result.totalDistance} м`);
 
     if (bestDay !== null) {
       const graphTypeValue = graphType.value;
@@ -242,8 +400,6 @@ document.addEventListener('DOMContentLoaded', () => {
           setChart(chart, graphTypeValue, chartData, metricTypeValue);
           setMetricsText(metricTypeValue);
           setDurationText(duration);
-
-          Notify.success("Данные успешно обновлены");
         });
 
         createStatCard(
