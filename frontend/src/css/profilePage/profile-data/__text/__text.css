@@ -1,3 +1,13 @@
 .profile-data__text {
   color: #94A3B8;
 }
+
+.profile-data__text--date {
+  display: block;
+  color: #fff;
+  font-weight: 600;
+}
+
+.profile-data__text--date-data {
+  display: block;
+}

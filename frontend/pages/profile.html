@@ -6,14 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CityTrace</title>
 
-    <link rel="stylesheet" href="/src/css/profilePage/main.css">
-
+    <link rel="stylesheet" href="/src/css/profilePage/main.css" />
   </head>
   <body>
-
     <header class="header">
       <div class="header__logo">
-        <img class="header__image" src="/src/svg/logo.svg" alt="CityTrace logo">
+        <img
+          class="header__image"
+          src="/src/svg/logo.svg"
+          alt="CityTrace logo"
+        />
         <span class="header__logo-text">CityTrace</span>
       </div>
       <nav class="header__navigation">
@@ -31,86 +33,145 @@
             <a class="header__link" href="/pages/points.html">Точки карты</a>
           </li>
           <li class="header__menu-item">
-            <a class="header__link header__link--active" href="/pages/profile.html">Профиль</a>
+            <a
+              class="header__link header__link--active"
+              href="/pages/profile.html"
+              >Профиль</a
+            >
           </li>
         </ul>
       </nav>
     </header>
 
     <main class="profile-main">
-
       <section class="profile-data">
-
         <div class="profile-data__logo">
-          <img class="profile-data__image profile-data__image--logo" src="/src/img/user-logo.png" alt="user logo">
+          <img
+            class="profile-data__image profile-data__image--logo"
+            src=""
+            alt="user logo"
+          />
         </div>
-        
+
         <div class="profile-data__user-info">
           <h3 class="profile-data__nickname"></h3>
 
+          <div class="profile-data__email">
+            <span class="profile-data__text"></span>
+          </div>
+
           <div class="profile-data__location">
-            <img class="profile-data__image profile-data__image--geopoint" src="/src/svg/geopoint.svg" alt="svg location">
+            <img
+              class="profile-data__image profile-data__image--geopoint"
+              src="/src/svg/geopoint.svg"
+              alt="svg location"
+            />
             <span class="profile-data__text">Санкт-Петербург</span>
+          </div>
+
+          <div class="profile-data__date profile-data__date--created">
+            <span class="profile-data__text profile-data__text--date"
+              >Дата создания: <span class="profile-data__text--date-data"></span
+            ></span>
+          </div>
+
+          <div class="profile-data__date profile-data__date--updated">
+            <span class="profile-data__text profile-data__text--date"
+              >Дата последнего изменения:
+              <span class="profile-data__text--date-data"></span
+            ></span>
           </div>
         </div>
 
-        <ul class="profile-data__cards">
-
-        </ul>
+        <ul class="profile-data__cards"></ul>
 
         <div class="profile-data__achievments">
           <h3 class="profile-data__header">Достижения</h3>
-          <ul class="profile-data__list">
-
-          </ul>
+          <ul class="profile-data__list"></ul>
         </div>
 
-        <button class="profile-data__button">Выйти из аккаунта</button>
-
+        <button class="profile-data__button profile-data__button--edit">
+          Изменить профиль
+        </button>
+        <button class="profile-data__button profile-data__button--unlogin">
+          Выйти из аккаунта
+        </button>
       </section>
 
       <section class="profile-stats">
         <div class="stats-settings">
           <ul class="stats-settings__menu">
-            
             <li class="stats-settings__menu-item">
               <div class="stats-settings__select-wrapper">
-                <select class="stats-settings__select" name="duration" id="duration">
-                  <option class="stats-settings__option" value="7">Последние 7 дней</option>
-                  <option class="stats-settings__option" value="30">Последние 30 дней</option>
-                  <option class="stats-settings__option" value="90">Последние 90 дней</option>
-                </select>
-              </div>
-            </li>
-            
-            <li class="stats-settings__menu-item">
-              <div class="stats-settings__select-wrapper">
-                <select class="stats-settings__select" name="metric-type" id="metric-type">
-                  <option class="stats-settings__option" value="distance">Расстояние</option>
-                  <option class="stats-settings__option" value="walks">Количество прогулок</option>
-                  <option class="stats-settings__option" value="tiles">Новые тайлы</option>
+                <select
+                  class="stats-settings__select"
+                  name="duration"
+                  id="duration"
+                >
+                  <option class="stats-settings__option" value="7">
+                    Последние 7 дней
+                  </option>
+                  <option class="stats-settings__option" value="30">
+                    Последние 30 дней
+                  </option>
+                  <option class="stats-settings__option" value="90">
+                    Последние 90 дней
+                  </option>
                 </select>
               </div>
             </li>
 
             <li class="stats-settings__menu-item">
               <div class="stats-settings__select-wrapper">
-                <select class="stats-settings__select" name="graph-type" id="graph-type">
-                  <option class="stats-settings__option" value="bar">Столбчатый график</option>
-                  <option class="stats-settings__option" value="line">Линейный график</option>
-                  <option class="stats-settings__option" value="radar">Радар</option>
+                <select
+                  class="stats-settings__select"
+                  name="metric-type"
+                  id="metric-type"
+                >
+                  <option class="stats-settings__option" value="distance">
+                    Расстояние
+                  </option>
+                  <option class="stats-settings__option" value="walks">
+                    Количество прогулок
+                  </option>
+                  <option class="stats-settings__option" value="tiles">
+                    Новые тайлы
+                  </option>
                 </select>
               </div>
             </li>
-          
+
+            <li class="stats-settings__menu-item">
+              <div class="stats-settings__select-wrapper">
+                <select
+                  class="stats-settings__select"
+                  name="graph-type"
+                  id="graph-type"
+                >
+                  <option class="stats-settings__option" value="bar">
+                    Столбчатый график
+                  </option>
+                  <option class="stats-settings__option" value="line">
+                    Линейный график
+                  </option>
+                  <option class="stats-settings__option" value="radar">
+                    Радар
+                  </option>
+                </select>
+              </div>
+            </li>
           </ul>
           <button class="stats-settings__button">Применить</button>
         </div>
 
         <div class="stats-graph">
           <div class="stats-graph__description">
-            <p class="stats-graph__text stats-graph__text--duration">Активность за месяц</p>
-            <p class="stats-graph__text stats-graph__text--metrics">Расстояние (км)</p>
+            <p class="stats-graph__text stats-graph__text--duration">
+              Активность за месяц
+            </p>
+            <p class="stats-graph__text stats-graph__text--metrics">
+              Расстояние (км)
+            </p>
           </div>
           <div class="stats-graph__chart">
             <canvas id="chart"></canvas>
@@ -119,15 +180,58 @@
         </div>
 
         <div class="stats-cards">
-          <ul class="stats-cards__list">
-
-          </ul>
+          <ul class="stats-cards__list"></ul>
         </div>
       </section>
-
     </main>
 
-    <template id="profile-data-card-template"> 
+    <div class="modal-overlay"></div>
+    <div class="modal">
+      <div class="modal__header">
+        <div class="modal__title-data">
+          <h1 class="modal__title">Изменение профиля</h1>
+        </div>
+        <button class="modal-close">
+          <img src="/src/svg/close-icon.svg" alt="close-btn" />
+        </button>
+      </div>
+
+      <div class="modal__content">
+        <form class="modal__form">
+          <img class="modal__img--logo" src="" alt="logo" />
+
+          <div class="modal__field">
+            <label class="modal__label">Имя пользователя</label>
+            <input class="modal__input modal__input--username" type="text" placeholder="username" />
+          </div>
+
+          <div class="modal__field">
+            <label class="modal__label">Ссылка на аватар</label>
+            <input class="modal__input modal__input--avatar-url" type="text" placeholder="https://..." />
+          </div>
+
+          <div class="modal__field">
+            <label class="modal__label">Email</label>
+            <input
+              class="modal__input modal__input--email"
+              type="email"
+              placeholder="email@example.com"
+            />
+          </div>
+
+          <div class="modal__actions">
+            <button class="modal__btn modal__btn--cancel" type="button">
+              Отмена
+            </button>
+            <button class="modal__btn modal__btn--save" type="submit">
+              Сохранить
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <template id="profile-data-card-template">
       <li class="profile-data__card">
         <h4 class="profile-data__card-header"></h4>
         <h5 class="profile-data__card-data"></h5>
@@ -136,7 +240,11 @@
 
     <template id="achievment-template">
       <li class="profile-data__achievment">
-        <img class="profile-data__image profile-data__image--achievment" src="/src/svg/achievment--profi.svg" alt="achievment image">
+        <img
+          class="profile-data__image profile-data__image--achievment"
+          src="/src/svg/achievment--profi.svg"
+          alt="achievment image"
+        />
         <h4 class="profile-data__achievment-name">Профи</h4>
       </li>
     </template>
@@ -145,7 +253,7 @@
       <li class="stats-cards__card">
         <div class="stats-card__header">
           <span class="stats-card__title"></span>
-          <img class="stats-cards__image" src="" alt="card image">
+          <img class="stats-cards__image" src="" alt="card image" />
         </div>
         <h3 class="stats-card__data"></h3>
         <h4 class="stats-card__info"></h4>
