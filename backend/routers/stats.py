@@ -1,6 +1,6 @@
-from datetime import date, timedelta
+from datetime import date as date_cls, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from database import get_session
 
@@ -59,7 +59,7 @@ async def get_stats(userId: str = Query(...), session=Depends(get_session)):
     coverage_percent = round(covered_tiles / total_map_tiles * 100, 2) if total_map_tiles else 0.0
 
     # 6. Динамика недели: текущая vs предыдущая
-    today = date.today()
+    today = date_cls.today()
     current_week_start = today - timedelta(days=today.weekday())
     prev_week_start = current_week_start - timedelta(days=7)
 
@@ -106,3 +106,61 @@ async def get_stats(userId: str = Query(...), session=Depends(get_session)):
             for r in by_date
         ],
     }
+
+
+_SUPPORTED_METRICS = {"distance", "walks", "tiles"}
+
+
+@router.get("/metrics")
+async def get_metrics(
+    userId: str = Query(...),
+    metric: str = Query(...),
+    date: str = Query(...),
+    days: int = Query(..., ge=1, le=365),
+    session=Depends(get_session),
+):
+    if metric not in _SUPPORTED_METRICS:
+        raise HTTPException(status_code=422, detail=f"Unknown metric '{metric}'. Supported: {', '.join(sorted(_SUPPORTED_METRICS))}")
+
+    try:
+        end_date = date_cls.fromisoformat(date)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Invalid date format, expected YYYY-MM-DD")
+
+    start_date = end_date - timedelta(days=days - 1)
+
+    if metric == "distance":
+        result = await session.run(
+            """
+            MATCH (u:User {id: $userId})-[:PERFORMED]->(w:Walk)
+            WHERE date(w.startedAt) >= date($startDate) AND date(w.startedAt) <= date($endDate)
+            WITH date(w.startedAt) AS day, sum(w.distanceMeters) AS value
+            ORDER BY day
+            RETURN toString(day) AS date, value
+            """,
+            userId=userId, startDate=start_date.isoformat(), endDate=end_date.isoformat(),
+        )
+    elif metric == "walks":
+        result = await session.run(
+            """
+            MATCH (u:User {id: $userId})-[:PERFORMED]->(w:Walk)
+            WHERE date(w.startedAt) >= date($startDate) AND date(w.startedAt) <= date($endDate)
+            WITH date(w.startedAt) AS day, count(w) AS value
+            ORDER BY day
+            RETURN toString(day) AS date, value
+            """,
+            userId=userId, startDate=start_date.isoformat(), endDate=end_date.isoformat(),
+        )
+    elif metric == "tiles":
+        result = await session.run(
+            """
+            MATCH (u:User {id: $userId})-[:PERFORMED]->(w:Walk)-[:FIRST_COVERED]->(ct:CoveredTile)
+            WHERE date(w.startedAt) >= date($startDate) AND date(w.startedAt) <= date($endDate)
+            WITH date(w.startedAt) AS day, count(DISTINCT ct) AS value
+            ORDER BY day
+            RETURN toString(day) AS date, value
+            """,
+            userId=userId, startDate=start_date.isoformat(), endDate=end_date.isoformat(),
+        )
+
+    return [r.data() async for r in result]
