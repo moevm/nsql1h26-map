@@ -22,6 +22,11 @@ class RouteRequest(BaseModel):
     priority: float = Field(DEFAULT_PRIORITY, ge=0.0, le=1.0)
 
 
+class UpdateRouteRequest(BaseModel):
+    priority: float | None = Field(None, ge=0.0, le=1.0)
+    targetDistance: float | None = None
+
+
 async def _load_subgraph(session, start_lat: float, start_lon: float, search_radius: float):
     result = await session.run(
         """
@@ -503,6 +508,36 @@ async def get_route(routeId: str, session=Depends(get_session)):
     data.pop("newTilesX", None)
     data.pop("newTilesY", None)
     return {**data, "nodes": nodes, "highlights": highlights, "newTiles": new_tiles}
+
+
+@router.put("/{routeId}")
+async def update_route(routeId: str, body: UpdateRouteRequest, session=Depends(get_session)):
+    result = await session.run("MATCH (r:Route {id: $id}) RETURN r", id=routeId)
+    if not await result.single():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
+
+    if body.priority is not None:
+        await session.run(
+            "MATCH (r:Route {id: $id}) SET r.priority = $v", id=routeId, v=body.priority
+        )
+    if body.targetDistance is not None:
+        await session.run(
+            "MATCH (r:Route {id: $id}) SET r.targetDistance = $v", id=routeId, v=body.targetDistance
+        )
+
+    result = await session.run(
+        """
+        MATCH (r:Route {id: $id})
+        RETURN r.id AS id, toString(r.createdAt) AS createdAt,
+               r.totalDistanceMeters AS totalDistanceMeters,
+               r.estimatedMinutes AS estimatedMinutes,
+               r.priority AS priority,
+               r.targetDistance AS targetDistance,
+               r.allTilesCount AS allTilesCount
+        """,
+        id=routeId,
+    )
+    return (await result.single()).data()
 
 
 @router.delete("/{routeId}", status_code=status.HTTP_204_NO_CONTENT)
