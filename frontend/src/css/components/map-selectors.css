@@ -37,6 +37,7 @@
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
+  text-wrap-mode: nowrap;
   gap: 8px;
 }
 
