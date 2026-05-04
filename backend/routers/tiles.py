@@ -30,7 +30,7 @@ async def list_tiles(
     coveredFrom: str | None = Query(None),
     coveredTo: str | None = Query(None),
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=10000),
     session=Depends(get_session),
 ):
     where = """
@@ -58,7 +58,12 @@ async def list_tiles(
     result = await session.run(
         f"""
         MATCH (u:User {{id: $userId}})-[:COVERED]->(ct:CoveredTile) {where}
-        RETURN ct.tileX AS tileX, ct.tileY AS tileY, toString(ct.firstCoveredAt) AS firstCoveredAt
+        OPTIONAL MATCH (w:Walk)-[:FIRST_COVERED]->(ct)
+        WITH ct, collect(w.id) AS walkIds
+        RETURN ct.tileX AS tileX, ct.tileY AS tileY, toString(ct.firstCoveredAt) AS firstCoveredAt,
+               CASE WHEN $walkId IS NOT NULL THEN $walkId
+                    ELSE walkIds[0]
+               END AS walkId
         ORDER BY ct.firstCoveredAt
         SKIP $offset LIMIT $limit
         """,

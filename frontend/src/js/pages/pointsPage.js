@@ -20,6 +20,7 @@ import { getTiles } from "../utils/api";
 import { getWalkPoints } from "../utils/api";
 import { getMapNodes } from "../utils/api";
 import { fetchEntityData } from "../utils/api";
+import { getPoisCategories } from "../utils/api";
 
 document.addEventListener("DOMContentLoaded", () => {
   relocateToLogin();
@@ -158,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (layerName === "tiles") {
         getTiles().
           then((tiles) => {
-            drawTiles(layer, tiles);
+            drawTiles(layer, tiles.items);
             btn.style.background = "rgba(0, 230, 195, 0.5)";
             btn.style.color = "#fff";
           });
@@ -278,6 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     fetchEntityData(entity)
       .then((items) => {
+        console.log(items);
         tableState.entity = entity;
         tableState.items = items;
         tableState.page = 1;
@@ -304,4 +306,17 @@ document.addEventListener("DOMContentLoaded", () => {
     .catch((error) => {
       Notify.error(`${error}`);
     });
+  
+    getPoisCategories()
+      .then((res) => {
+        const select = document.querySelector('.map-control__input--select-category');
+        for (const item of res.categories) {
+          const option = document.createElement("option");
+          option.setAttribute("value", item);
+          option.textContent = item;
+          option.classList.add('map-control__input-option');
+          select.appendChild(option);
+        }
+    });
+
 });

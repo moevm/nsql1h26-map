@@ -68,6 +68,9 @@
                     type="text"
                     placeholder="poi name"
                   />
+                  <select id="poi-category" class="map-control__input map-control__input--select-category">
+                    <option class="map-control__input-option" value="">Выберите категорию</option>
+                  </select>
                   <input
                     id="poi-category"
                     class="map-control__input"
@@ -79,12 +82,6 @@
                     class="map-control__input"
                     type="text"
                     placeholder="poi bbox"
-                  />
-                  <input
-                    id="poi-route-id"
-                    class="map-control__input"
-                    type="text"
-                    placeholder="poi route_id"
                   />
                 </div>
 
@@ -110,12 +107,12 @@
                     id="poi-radius-slider"
                     type="range"
                     min="1"
-                    max="100"
+                    max="5000"
                     value="75"
                   />
                   <div class="range-slider__labels">
                     <span class="range-slider__label">1</span>
-                    <span class="range-slider__label">100</span>
+                    <span class="range-slider__label">5000</span>
                   </div>
                 </div>
               </div>
@@ -283,16 +280,46 @@
               <div class="map-control">
                 <div class="map-control__inputs">
                   <input
-                    id="tile-x"
+                    id="tile-x-min"
                     class="map-control__input"
                     type="text"
-                    placeholder="tileX"
+                    placeholder="tileXMin"
                   />
                   <input
-                    id="tile-y"
+                    id="tile-x-max"
                     class="map-control__input"
                     type="text"
-                    placeholder="tileY"
+                    placeholder="tileXMax"
+                  />
+                  <input
+                    id="tile-y-min"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="tileYMin"
+                  />
+                  <input
+                    id="tile-y-max"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="tileYMax"
+                  />
+                  <input
+                    id="tile-covered-from"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="tileCoveredFrom"
+                  />
+                  <input
+                    id="tile-covered-to"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="tileCoveredTO"
+                  />
+                  <input
+                    id="tile-walkId"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="walkId"
                   />
                 </div>
               </div>
@@ -312,18 +339,18 @@
                 </div>
               </div>
               <div class="range-slider">
-                <label for="tile-limit-slider">limit <span class="limit-value">75</span></label>
+                <label for="tile-limit-slider">limit <span class="limit-value">1500</span></label>
                 <input
                   class="range-slider__input"
                   id="tile-limit-slider"
                   type="range"
                   min="1"
-                  max="100"
-                  value="75"
+                  max="10000"
+                  value="1500"
                 />
                 <div class="range-slider__labels">
                   <span class="range-slider__label">1</span>
-                  <span class="range-slider__label">100</span>
+                  <span class="range-slider__label">10000</span>
                 </div>
               </div>
             </div>

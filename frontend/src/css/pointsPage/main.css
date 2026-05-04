@@ -165,3 +165,7 @@
 .slider-nav:active {
   transform: scale(0.96);
 }
+
+.map-control__input-option {
+  background-color: #0F2323;
+}
