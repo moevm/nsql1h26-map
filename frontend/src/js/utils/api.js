@@ -112,20 +112,16 @@ export const getMapNodes = async () => {
 export const fetchEntityData = async (entity) => {
   switch (entity) {
     case 'pois': {
-      const result = await getPois();
-      return result?.items ?? [];
+      return await getPois();
     }
     case 'walkpoints': {
-      const result = await getWalkPoints();
-      return result?.items ?? [];
+      return await getWalkPoints();
     }
     case 'mapnodes': {
-      const result = await getMapNodes();
-      return result?.items ?? [];
+      return await getMapNodes();
     }
     case 'tiles': {
-      const result = await getTiles();
-      return Array.isArray(result) ? result : (result?.items ?? []);
+      return await getTiles();
     }
     default:
       throw new Error('Выбранная сущность не поддерживается');
