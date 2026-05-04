@@ -3,6 +3,11 @@ import uuid
 from pathlib import Path
 
 from utils import haversine
+from routers.routes import _build_and_save_route
+import random
+from datetime import datetime, timezone
+from datetime import timedelta
+from routers.walks import _create_walk, WalkPoint
 
 SEED_FILE = Path(__file__).parent / "data" / "osm_seed.json"
 BATCH_SIZE = 500
@@ -55,7 +60,6 @@ async def run_seed(driver):
         pois = data["pois"]
         node_coords = [(n["osmId"], n["lat"], n["lon"]) for n in nodes]
 
-        # 50 м в градусах (приближение для широты ~60°)
         LAT_DELTA = POI_RADIUS_METERS / 111_000
         LON_DELTA = POI_RADIUS_METERS / 55_500
 
@@ -108,4 +112,76 @@ async def run_seed(driver):
         result = await session.run("MATCH (u:User {username: 'testuser'}) RETURN u.id AS id")
         record = await result.single()
         print(f"[seed] Debug user: email=testuser@example.com  password=test123  id={record['id']}")
+        print("[seed] Done.")
+        
+        user_id = record["id"]
+
+        START_POINTS = [
+            (59.9676, 30.3129),
+            (59.9589, 30.3072),
+            (59.9710, 30.3120),
+            (59.9545, 30.2905),
+            (59.9650, 30.3060),
+            (59.9630, 30.3150),
+            (59.9700, 30.2950),
+            (59.9600, 30.3000),
+        ]
+        NUM_ROUTES = 10
+
+        print("[seed] Creating seed routes...")
+        success = 0
+        for i in range(NUM_ROUTES):
+            start_lat, start_lon = random.choice(START_POINTS)
+            try:
+                await _build_and_save_route(
+                    session,
+                    user_id=user_id,
+                    start_lat=start_lat,
+                    start_lon=start_lon,
+                    target_distance=random.randint(1000, 10000),
+                    priority=round(random.uniform(0, 1), 2),
+                )
+                success += 1
+            except Exception as e:
+                print(f"[seed] Route {i+1} failed: {e}")
+        print(f"[seed] Created {success}/{NUM_ROUTES} routes.")
+
+        print("[seed] Done.")
+
+        LAT_MIN, LAT_MAX = 59.95, 59.98
+        LON_MIN, LON_MAX = 30.28, 30.34
+        NUM_WALKS = 10
+        POINTS_PER_WALK = random.randrange(400,700)
+        DAYS_BACK = 10
+
+        def _gen_points(num_points):
+            lat = random.uniform(LAT_MIN, LAT_MAX)
+            lon = random.uniform(LON_MIN, LON_MAX)
+            pts = [(lat, lon)]
+            for _ in range(num_points - 1):
+                lat = max(LAT_MIN, min(LAT_MAX, lat + random.uniform(-0.0005, 0.0005)))
+                lon = max(LON_MIN, min(LON_MAX, lon + random.uniform(-0.0005, 0.0005)))
+                pts.append((lat, lon))
+            return pts
+
+        print("[seed] Creating seed walks...")
+        success = 0
+        for i in range(NUM_WALKS):
+            started_at = datetime.now(timezone.utc) - timedelta(
+                days=random.randint(0, DAYS_BACK),
+                hours=random.randint(0, 23),
+                minutes=random.randint(0, 59),
+            )
+            raw_points = _gen_points(POINTS_PER_WALK)
+            walk_points = [
+                WalkPoint(lat=lat, lon=lon, timestamp=started_at + timedelta(seconds=j * 30))
+                for j, (lat, lon) in enumerate(raw_points)
+            ]
+            try:
+                await _create_walk(session, user_id, walk_points)
+                success += 1
+            except Exception as e:
+                print(f"[seed] Walk {i+1} failed: {e}")
+        print(f"[seed] Created {success}/{NUM_WALKS} walks.")
+
         print("[seed] Done.")

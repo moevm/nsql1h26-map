@@ -26,6 +26,95 @@ class UpdateWalkRequest(BaseModel):
     durationSeconds: int | None = None
 
 
+async def _create_walk(session, user_id: str, points: list[WalkPoint]) -> dict:
+    if len(points) < 2:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="At least 2 points required")
+
+    points = sorted(points, key=lambda p: p.timestamp)
+    started_at = points[0].timestamp
+    finished_at = points[-1].timestamp
+    duration_seconds = int((finished_at - started_at).total_seconds())
+
+    distance_meters = sum(
+        haversine(points[i].lat, points[i].lon, points[i + 1].lat, points[i + 1].lon)
+        for i in range(len(points) - 1)
+    )
+
+    walk_id = str(uuid.uuid4())
+    tiles = list({lat_lon_to_tile(p.lat, p.lon) for p in points})
+
+    await session.run(
+        """
+        MATCH (u:User {id: $userId})
+        CREATE (w:Walk {
+            id: $walkId,
+            startedAt: datetime($startedAt),
+            finishedAt: datetime($finishedAt),
+            distanceMeters: $distanceMeters,
+            durationSeconds: $durationSeconds,
+            allTilesCount: $allTilesCount
+        })
+        CREATE (u)-[:PERFORMED]->(w)
+        """,
+        userId=user_id,
+        walkId=walk_id,
+        startedAt=started_at.isoformat(),
+        finishedAt=finished_at.isoformat(),
+        distanceMeters=round(distance_meters, 2),
+        durationSeconds=duration_seconds,
+        allTilesCount=len(tiles),
+    )
+
+    walk_points_data = [
+        {"lat": p.lat, "lon": p.lon, "timestamp": p.timestamp.isoformat(), "order": i}
+        for i, p in enumerate(points)
+    ]
+    await session.run(
+        """
+        MATCH (w:Walk {id: $walkId})
+        UNWIND $points AS p
+        CREATE (wp:WalkPoint {lat: p.lat, lon: p.lon, timestamp: datetime(p.timestamp), order: p.order})
+        CREATE (w)-[:HAS_POINT]->(wp)
+        """,
+        walkId=walk_id,
+        points=walk_points_data,
+    )
+
+    await session.run(
+        """
+        UNWIND $tiles AS t
+        MATCH (u:User {id: $userId})
+        MERGE (u)-[:COVERED]->(ct:CoveredTile {tileX: t.tileX, tileY: t.tileY})
+        ON CREATE SET ct.firstCoveredAt = datetime($now)
+        WITH ct
+        MATCH (w:Walk {id: $walkId})
+        MERGE (w)-[:FIRST_COVERED]->(ct)
+        """,
+        userId=user_id,
+        walkId=walk_id,
+        tiles=[{"tileX": tx, "tileY": ty} for tx, ty in tiles],
+        now=datetime.now(timezone.utc).isoformat(),
+    )
+
+    return {
+        "walkId": walk_id,
+        "distanceMeters": round(distance_meters, 2),
+        "durationSeconds": duration_seconds,
+        "tilesCount": len(tiles),
+    }
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_walk(body: CreateWalkRequest, session=Depends(get_session)):
+    if len(body.points) < 2:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="At least 2 points required")
+
+    user = await session.run("MATCH (u:User {id: $id}) RETURN u", id=body.userId)
+    if not await user.single():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    return await _create_walk(session, body.userId, body.points)
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_walk(body: CreateWalkRequest, session=Depends(get_session)):
     if len(body.points) < 2:
