@@ -13,6 +13,7 @@ body {
   background-color: var(--main-bg-color);
   color: var(--main-text-color);
   font-family: var(--main-font-family), sans-serif;
+  position: relative;
 }
 
 button {
