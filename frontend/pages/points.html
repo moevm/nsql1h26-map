@@ -1,77 +1,326 @@
 <!doctype html>
 <html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CityTrace</title>
 
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CityTrace</title>
+    <link rel="stylesheet" href="/src/css/pointsPage/main.css" />
+  </head>
 
-  <link rel="stylesheet" href="/src/css/pointsPage/main.css" />
-</head>
-
-<body>
-  <header class="header">
-    <div class="header__logo">
-      <img class="header__image" src="/src/svg/logo.svg" alt="CityTrace logo" />
-      <span class="header__logo-text">CityTrace</span>
-    </div>
-    <nav class="header__navigation">
-      <ul class="header__menu">
-        <li class="header__menu-item">
-          <a class="header__link" href="/pages/map.html">Карта</a>
-        </li>
-        <li class="header__menu-item">
-          <a class="header__link" href="/pages/routes.html">Маршруты</a>
-        </li>
-        <li class="header__menu-item">
-          <a class="header__link" href="/pages/walks.html">Прогулки</a>
-        </li>
-        <li class="header__menu-item">
-          <a class="header__link header__link--active" href="/pages/points.html">Точки карты</a>
-        </li>
-        <li class="header__menu-item">
-          <a class="header__link" href="/pages/profile.html">Профиль</a>
-        </li>
-      </ul>
-    </nav>
-  </header>
-
-  <div class="map-layout">
-    <!-- Секция 1: Фильтры с кнопками переключения -->
-    <section class="filters-section">
-      <!-- Кнопки переключения фильтров -->
-      <div class="filter-tabs">
-        <button class="filter-tab filter-tab--active" data-filter="pois">Pois</button>
-        <button class="filter-tab" data-filter="walkpoints">WalkPoints</button>
-        <button class="filter-tab" data-filter="mapnodes">MapNodes</button>
-        <button class="filter-tab" data-filter="tiles">Tiles</button>
+  <body>
+    <header class="header">
+      <div class="header__logo">
+        <img
+          class="header__image"
+          src="/src/svg/logo.svg"
+          alt="CityTrace logo"
+        />
+        <span class="header__logo-text">CityTrace</span>
       </div>
+      <nav class="header__navigation">
+        <ul class="header__menu">
+          <li class="header__menu-item">
+            <a class="header__link" href="/pages/map.html">Карта</a>
+          </li>
+          <li class="header__menu-item">
+            <a class="header__link" href="/pages/routes.html">Маршруты</a>
+          </li>
+          <li class="header__menu-item">
+            <a class="header__link" href="/pages/walks.html">Прогулки</a>
+          </li>
+          <li class="header__menu-item">
+            <a
+              class="header__link header__link--active"
+              href="/pages/points.html"
+              >Точки карты</a
+            >
+          </li>
+          <li class="header__menu-item">
+            <a class="header__link" href="/pages/profile.html">Профиль</a>
+          </li>
+        </ul>
+      </nav>
+    </header>
 
-      <!-- Контейнер для всех filter-panel -->
-      <div class="filters-content">
-        <!-- Pois -->
-        <div class="filter-panel filter-panel--active" data-filter="pois">
-          <div class="map-controls">
-            <div class="map-control">
-              <div class="map-control__inputs">
-                <input id="poi-name" class="map-control__input" type="text" placeholder="poi name" />
-                <input id="poi-category" class="map-control__input" type="text" placeholder="poi category" />
-                <input id="poi-bbox" class="map-control__input" type="text" placeholder="poi bbox" />
-                <input id="poi-route-id" class="map-control__input" type="text" placeholder="poi route_id" />
+    <div class="map-layout">
+      <section class="filters-section">
+        <div class="filter-tabs">
+          <button class="filter-tab filter-tab--active" data-filter="pois">
+            Pois
+          </button>
+          <button class="filter-tab" data-filter="walkpoints">
+            WalkPoints
+          </button>
+          <button class="filter-tab" data-filter="mapnodes">MapNodes</button>
+          <button class="filter-tab" data-filter="tiles">Tiles</button>
+        </div>
+
+        <div class="filters-content">
+          <div class="filter-panel filter-panel--active" data-filter="pois">
+            <div class="map-controls">
+              <div class="map-control">
+                <div class="map-control__inputs">
+                  <input
+                    id="poi-name"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="poi name"
+                  />
+                  <input
+                    id="poi-category"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="poi category"
+                  />
+                  <input
+                    id="poi-bbox"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="poi bbox"
+                  />
+                  <input
+                    id="poi-route-id"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="poi route_id"
+                  />
+                </div>
+
+                <div class="range-slider">
+                  <label for="poi-offset-slider">offset <span class="offset-value">0</span></label>
+                  <input
+                    class="range-slider__input"
+                    id="poi-offset-slider"
+                    type="range"
+                    min="0"
+                    max="100"
+                    value="0"
+                  />
+                  <div class="range-slider__labels">
+                    <span class="range-slider__label">0</span>
+                    <span class="range-slider__label">100</span>
+                  </div>
+                </div>
+                <div class="range-slider">
+                  <label for="poi-radius-slider">limit <span class="limit-value">75</span></label>
+                  <input
+                    class="range-slider__input"
+                    id="poi-radius-slider"
+                    type="range"
+                    min="1"
+                    max="100"
+                    value="75"
+                  />
+                  <div class="range-slider__labels">
+                    <span class="range-slider__label">1</span>
+                    <span class="range-slider__label">100</span>
+                  </div>
+                </div>
               </div>
+            </div>
+          </div>
 
+          <div class="filter-panel" data-filter="walkpoints">
+            <div class="map-controls">
+              <div class="map-control">
+                <div class="map-control__inputs">
+                  <input
+                    id="wp-lat-min"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="latMin"
+                  />
+                  <input
+                    id="wp-lat-max"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="latMax"
+                  />
+                  <input
+                    id="wp-lon-min"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="lonMin"
+                  />
+                  <input
+                    id="wp-lon-max"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="lonMax"
+                  />
+                  <input
+                    id="wp-timestamp-from"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="timestampFrom"
+                  />
+                  <input
+                    id="wp-timestamp-to"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="timestampTo"
+                  />
+                  <input
+                    id="wp-order-min"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="orderMin"
+                  />
+                  <input
+                    id="wp-order-max"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="orderMax"
+                  />
+                  <input
+                    id="wp-walkId"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="walkId"
+                  />
+                </div>
+              </div>
               <div class="range-slider">
-                <label for="poi-offset-slider">offset</label>
-                <input class="range-slider__input" id="poi-offset-slider" type="range" min="0" max="100" value="0" />
+                <label for="wp-offset-slider">offset <span class="offset-value">0</span></label>
+                <input
+                  class="range-slider__input"
+                  id="wp-offset-slider"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value="0"
+                />
                 <div class="range-slider__labels">
                   <span class="range-slider__label">0</span>
                   <span class="range-slider__label">100</span>
                 </div>
               </div>
               <div class="range-slider">
-                <label for="poi-radius-slider">limit</label>
-                <input class="range-slider__input" id="poi-radius-slider" type="range" min="1" max="100" value="75" />
+                <label for="wp-radius-slider">limit <span class="limit-value">75</span></label>
+                <input
+                  class="range-slider__input"
+                  id="wp-radius-slider"
+                  type="range"
+                  min="1"
+                  max="100"
+                  value="75"
+                />
+                <div class="range-slider__labels">
+                  <span class="range-slider__label">1</span>
+                  <span class="range-slider__label">100</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-panel" data-filter="mapnodes">
+            <div class="map-controls">
+              <div class="map-control">
+                <div class="map-control__inputs">
+                  <input
+                    id="mn-osm-id"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="osmId"
+                  />
+                  <input
+                    id="mn-tile-x"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="tileX"
+                  />
+                  <input
+                    id="mn-tile-y"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="tileY"
+                  />
+                  <input
+                    id="mn-bbox"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="bbox"
+                  />
+                </div>
+              </div>
+              <div class="range-slider">
+                <label for="mn-offset-slider">offset <span class="offset-value">0</span></label>
+                <input
+                  class="range-slider__input"
+                  id="mn-offset-slider"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value="0"
+                />
+                <div class="range-slider__labels">
+                  <span class="range-slider__label">0</span>
+                  <span class="range-slider__label">100</span>
+                </div>
+              </div>
+              <div class="range-slider">
+                <label for="mn-radius-slider">limit <span class="limit-value">75</span></label>
+                <input
+                  class="range-slider__input"
+                  id="mn-radius-slider"
+                  type="range"
+                  min="1"
+                  max="100"
+                  value="75"
+                />
+                <div class="range-slider__labels">
+                  <span class="range-slider__label">1</span>
+                  <span class="range-slider__label">100</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-panel" data-filter="tiles">
+            <div class="map-controls">
+              <div class="map-control">
+                <div class="map-control__inputs">
+                  <input
+                    id="tile-x"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="tileX"
+                  />
+                  <input
+                    id="tile-y"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="tileY"
+                  />
+                </div>
+              </div>
+              <div class="range-slider">
+                <label for="tile-offset-slider">offset <span class="offset-value">0</span></label>
+                <input
+                  class="range-slider__input"
+                  id="tile-offset-slider"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value="0"
+                />
+                <div class="range-slider__labels">
+                  <span class="range-slider__label">0</span>
+                  <span class="range-slider__label">100</span>
+                </div>
+              </div>
+              <div class="range-slider">
+                <label for="tile-limit-slider">limit <span class="limit-value">75</span></label>
+                <input
+                  class="range-slider__input"
+                  id="tile-limit-slider"
+                  type="range"
+                  min="1"
+                  max="100"
+                  value="75"
+                />
                 <div class="range-slider__labels">
                   <span class="range-slider__label">1</span>
                   <span class="range-slider__label">100</span>
@@ -80,210 +329,157 @@
             </div>
           </div>
         </div>
+      </section>
 
-        <!-- WalkPoints -->
-        <div class="filter-panel" data-filter="walkpoints">
-          <div class="map-controls">
-            <div class="map-control">
-              <div class="map-control__inputs">
-                <input id="wp-lat-min" class="map-control__input" type="text" placeholder="latMin" />
-                <input id="wp-lat-max" class="map-control__input" type="text" placeholder="latMax" />
-                <input id="wp-lon-min" class="map-control__input" type="text" placeholder="lonMin" />
-                <input id="wp-lon-max" class="map-control__input" type="text" placeholder="lonMax" />
-                <input id="wp-timestamp-from" class="map-control__input" type="text" placeholder="timestampFrom" />
-                <input id="wp-timestamp-to" class="map-control__input" type="text" placeholder="timestampTo" />
-                <input id="wp-order-min" class="map-control__input" type="text" placeholder="orderMin" />
-                <input id="wp-order-max" class="map-control__input" type="text" placeholder="orderMax" />
-              </div>
-            </div>
-            <div class="range-slider">
-              <label for="wp-offset-slider">offset</label>
-              <input class="range-slider__input" id="wp-offset-slider" type="range" min="0" max="100" value="0" />
-              <div class="range-slider__labels">
-                <span class="range-slider__label">0</span>
-                <span class="range-slider__label">100</span>
-              </div>
-            </div>
-            <div class="range-slider">
-              <label for="wp-radius-slider">limit</label>
-              <input class="range-slider__input" id="wp-radius-slider" type="range" min="1" max="100" value="75" />
-              <div class="range-slider__labels">
-                <span class="range-slider__label">1</span>
-                <span class="range-slider__label">100</span>
+      <section class="content-section">
+        <div class="slider-container">
+          <div class="switcher-controls">
+            <div class="switcher-row">
+              <div class="switch-toggle">
+                <button class="switch-btn active" id="btn-table">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M3 3h18v18H3V3zm6 0v18M15 3v18M3 9h18M3 15h18"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                  Таблица
+                </button>
+                <button class="switch-btn" id="btn-map">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6-3V7m6 16l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 7V9"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  Карта
+                </button>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- MapNodes -->
-        <div class="filter-panel" data-filter="mapnodes">
-          <div class="map-controls">
-            <div class="map-control">
-              <div class="map-control__inputs">
-                <input id="mn-osm-id" class="map-control__input" type="text" placeholder="osmId" />
-                <input id="mn-tile-x" class="map-control__input" type="text" placeholder="tileX" />
-                <input id="mn-tile-y" class="map-control__input" type="text" placeholder="tileY" />
-                <input id="mn-bbox" class="map-control__input" type="text" placeholder="bbox" />
-              </div>
-            </div>
-            <div class="range-slider">
-              <label for="mn-offset-slider">offset</label>
-              <input class="range-slider__input" id="mn-offset-slider" type="range" min="0" max="100" value="0" />
-              <div class="range-slider__labels">
-                <span class="range-slider__label">0</span>
-                <span class="range-slider__label">100</span>
-              </div>
-            </div>
-            <div class="range-slider">
-              <label for="mn-radius-slider">limit</label>
-              <input class="range-slider__input" id="mn-radius-slider" type="range" min="1" max="100" value="75" />
-              <div class="range-slider__labels">
-                <span class="range-slider__label">1</span>
-                <span class="range-slider__label">100</span>
-              </div>
-            </div>
-          </div>
-        </div>
+          <div class="slider-wrapper">
+            <div class="slider-track" id="content-track">
+              <!-- Слайд 1: Таблица -->
+              <div class="slider-slide">
+                <div class="table-view">
+                  <form>
+                    <label for="entity-select"
+                      >Выберите сущность для отображения в таблице</label
+                    >
+                    <select name="city" id="entity-select">
+                      <option value="pois">POIS</option>
+                      <option value="walkpoints">walkpoints</option>
+                      <option value="mapnodes">mapnodes</option>
+                      <option value="tiles">tiles</option>
+                    </select>
+                    <button class="apply-btn" id="build-route-btn">
+                      <svg
+                        class="apply-btn__icon"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 18 18"
+                        fill="none"
+                      >
+                        <path
+                          d="M9 1.5v15M1.5 9h15"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                          stroke-linecap="round"
+                        />
+                        <path
+                          d="M4 4l1.5 1.5M12.5 12.5L14 14M14 4l-1.5 1.5M5.5 12.5L4 14"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                      <span>Применить</span>
+                    </button>
+                  </form>
+                  <div class="table-container">
+                    <table class="routes-table">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Название</th>
+                          <th>Тип</th>
+                          <th>Координаты</th>
+                        </tr>
+                      </thead>
+                      <tbody id="routes-table-body">
+                        <tr>
+                          <td colspan="4" class="table-placeholder">
+                            Выберите сущность для отображения
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
 
-        <!-- Tiles -->
-        <div class="filter-panel" data-filter="tiles">
-          <div class="map-controls">
-            <div class="map-control">
-              <div class="map-control__inputs">
-                <input id="tile-x" class="map-control__input" type="text" placeholder="tileX" />
-                <input id="tile-y" class="map-control__input" type="text" placeholder="tileY" />
-              </div>
-            </div>
-            <div class="range-slider">
-              <label for="tile-offset-slider">offset</label>
-              <input class="range-slider__input" id="tile-offset-slider" type="range" min="0" max="100" value="0" />
-              <div class="range-slider__labels">
-                <span class="range-slider__label">0</span>
-                <span class="range-slider__label">100</span>
-              </div>
-            </div>
-            <div class="range-slider">
-              <label for="tile-limit-slider">limit</label>
-              <input class="range-slider__input" id="tile-limit-slider" type="range" min="1" max="100" value="75" />
-              <div class="range-slider__labels">
-                <span class="range-slider__label">1</span>
-                <span class="range-slider__label">100</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Секция 2: Слайдер таблица/карта -->
-    <section class="content-section">
-      <div class="slider-container">
-        <button class="slider-nav slider-nav--prev" id="content-prev">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
-        </button>
-
-        <div class="slider-wrapper">
-          <div class="slider-track" id="content-track">
-            <!-- Слайд 1: Таблица -->
-            <div class="slider-slide">
-              <div class="table-view">
-                <form>
-                  <label for="entity-select">Выберите сущность для отображения в таблице</label>
-                  <select name="city" id="entity-select">
-                    <option value="pois">POIS</option>
-                    <option value="walkpoints">walkpoints</option>
-                    <option value="mapnodes">mapnodes</option>
-                    <option value="tiles">tiles</option>
-                  </select>
-                  <button class="apply-btn" id="build-route-btn">
-                    <svg class="apply-btn__icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                      <path d="M9 1.5v15M1.5 9h15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
-                      <path d="M4 4l1.5 1.5M12.5 12.5L14 14M14 4l-1.5 1.5M5.5 12.5L4 14" stroke="currentColor"
-                        stroke-width="1.5" stroke-linecap="round" />
-                    </svg>
-                    <span>Применить</span>
-                  </button>
-                </form>
-                <div class="table-container">
-                  <table class="routes-table">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Название</th>
-                        <th>Тип</th>
-                        <th>Координаты</th>
-                      </tr>
-                    </thead>
-                    <tbody id="routes-table-body">
-                      <tr>
-                        <td colspan="4" class="table-placeholder">Выберите сущность для отображения</td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  <div class="pagination">
-                    <div class="pagination__info">
-                      <div class="pagination__per-page">
-                        <span>Записей на экране</span>
-                        <select class="pagination__select" id="per-page-select">
-                          <option value="5">5</option>
-                          <option value="10">10</option>
-                          <option value="15">15</option>
-                          <option value="20">20</option>
-                          <option value="25">25</option>
-                          <option value="50">50</option>
-                        </select>
+                    <div class="pagination">
+                      <div class="pagination__info">
+                        <div class="pagination__per-page">
+                          <span>Записей на экране</span>
+                          <select
+                            class="pagination__select"
+                            id="per-page-select"
+                          >
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="15">15</option>
+                            <option value="20">20</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                          </select>
+                        </div>
+                        <span class="pagination__range" id="pagination-range"
+                          >0 - 0 из 0</span
+                        >
                       </div>
-                      <span class="pagination__range" id="pagination-range">0 - 0 из 0</span>
+                      <div class="pagination__controls"></div>
                     </div>
-                    <div class="pagination__controls"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Слайд 2: Карта -->
+              <div class="slider-slide">
+                <div class="map-layers">
+                  <p class="map-layers__title">
+                    Отображаемые сущности на карте
+                  </p>
+                  <div class="map-layers__grid">
+                    <button class="map-layer-chip" data-layer="walkpoints">
+                      <span>WalkPoints</span>
+                    </button>
+                    <button class="map-layer-chip" data-layer="pois">
+                      <span>Pois</span>
+                    </button>
+                    <button class="map-layer-chip" data-layer="mapnodes">
+                      <span>MapNodes</span>
+                    </button>
+                    <button class="map-layer-chip" data-layer="tiles">
+                      <span>Tiles</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="map-view">
+                  <div class="map-area__canvas">
+                    <div class="map-area__map" id="map"></div>
                   </div>
                 </div>
               </div>
             </div>
-
-            <!-- Слайд 2: Карта -->
-            <div class="slider-slide">
-              <div class="map-layers">
-                <p class="map-layers__title">Отображаемые сущности на карте</p>
-                <div class="map-layers__grid">
-                  <button class="map-layer-chip" data-layer="walkpoints">
-                    <span>WalkPoints</span>
-                  </button>
-                  <button class="map-layer-chip" data-layer="pois">
-                    <span>Pois</span>
-                  </button>
-                  <button class="map-layer-chip" data-layer="mapnodes">
-                    <span>MapNodes</span>
-                  </button>
-                  <button class="map-layer-chip" data-layer="tiles">
-                    <span>Tiles</span>
-                  </button>
-                </div>
-              </div>
-              <div class="map-view">
-                <div class="map-area__canvas">
-                  <div class="map-area__map" id="map"></div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
+      </section>
+    </div>
 
-        <button class="slider-nav slider-nav--next" id="content-next">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
-        </button>
-      </div>
-    </section>
-  </div>
-
-  <script type="module" src="/src/js/pages/pointsPage.js"></script>
-</body>
-
+    <script type="module" src="/src/js/pages/pointsPage.js"></script>
+  </body>
 </html>

@@ -14,3 +14,7 @@ body {
   color: var(--main-text-color);
   font-family: var(--main-font-family), sans-serif;
 }
+
+button {
+  outline: none;
+}

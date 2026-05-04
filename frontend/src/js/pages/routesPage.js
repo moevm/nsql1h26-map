@@ -1,5 +1,7 @@
 import { relocateToLogin } from "../auth.js";
 import { initFilters, buildFilterParams, activeFilters } from "../filters/routesFilter.js";
+import { getToken } from "../auth.js";
+import { userManager } from "../localManagers/userManager.js";
 
 const API_BASE = "http://127.0.0.1:10001/api";
 
@@ -8,8 +10,7 @@ let perPage = 5;
 let routes = [];
 let totalRoutes = 0;
 let selectedIds = [];
-let authToken = null;
-let userId = null;
+const userId = userManager.get().id;
 
 // для статистики
 let allRoutes = [];
@@ -37,7 +38,7 @@ async function loadAllRoutesForStats() {
   const url = `${API_BASE}/routes/?userId=${userId}&offset=0&limit=100`;
   
   const response = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${authToken}` }
+    headers: { 'Authorization': `Bearer ${getToken()}` }
   });
   
   const data = await response.json();
@@ -56,7 +57,7 @@ async function loadRoutes() {
   }
   
   const response = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${authToken}` }
+    headers: { 'Authorization': `Bearer ${getToken()}` }
   });
   
   const data = await response.json();
@@ -215,7 +216,7 @@ async function handleDeleteClick(e) {
   if (confirm(`Удалить маршрут ${id}?`)) {
     const response = await fetch(`${API_BASE}/routes/${id}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${authToken}` }
+      headers: { 'Authorization': `Bearer ${getToken()}` }
     });
     if (response.ok) {
       window.location.reload();
@@ -415,7 +416,7 @@ async function loadAndDrawAllFilteredRoutes() {
   
   try {
     const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${authToken}` }
+      headers: { 'Authorization': `Bearer ${getToken()}` }
     });
     
     if (response.ok) {
@@ -426,7 +427,7 @@ async function loadAndDrawAllFilteredRoutes() {
       for (const route of allFilteredRoutes) {
         try {
           const routeDetailResponse = await fetch(`${API_BASE}/routes/${route.id}`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
+            headers: { 'Authorization': `Bearer ${getToken()}` }
           });
           if (routeDetailResponse.ok) {
             const routeDetail = await routeDetailResponse.json();

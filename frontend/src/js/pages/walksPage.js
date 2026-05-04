@@ -1,4 +1,6 @@
 import { relocateToLogin } from "../auth.js";
+import { getToken } from "../auth.js";
+import { userManager } from "../localManagers/userManager.js";
 import { initFilters, buildFilterParams, activeFilters } from "../filters/walksFilter.js";
 
 const API_BASE = "http://127.0.0.1:10001/api";
@@ -8,8 +10,7 @@ let perPage = 5;
 let walks = [];
 let totalWalks = 0;
 let selectedIds = [];
-let authToken = null;
-let userId = null;
+const userId = userManager.get().id;
 
 // для статистики
 let allWalks = [];
@@ -36,7 +37,7 @@ async function loadAllWalksForStats() {
   const url = `${API_BASE}/walks/?userId=${userId}&offset=0&limit=100`;
   
   const response = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${authToken}` }
+    headers: { 'Authorization': `Bearer ${getToken()}` }
   });
   
   const data = await response.json();
@@ -55,7 +56,7 @@ async function loadWalks() {
   }
   
   const response = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${authToken}` }
+    headers: { 'Authorization': `Bearer ${getToken()}` }
   });
   
   const data = await response.json();
@@ -212,7 +213,7 @@ async function handleDeleteClick(e) {
   if (confirm(`Удалить прогулку ${id}?`)) {
     const response = await fetch(`${API_BASE}/walks/${id}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${authToken}` }
+      headers: { 'Authorization': `Bearer ${getToken()}` }
     });
     if (response.ok) {
       window.location.reload();
@@ -411,7 +412,7 @@ async function loadAndDrawAllFilteredWalks() {
   
   try {
     const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${authToken}` }
+      headers: { 'Authorization': `Bearer ${getToken()}` }
     });
     
     if (response.ok) {
@@ -422,7 +423,7 @@ async function loadAndDrawAllFilteredWalks() {
       for (const walk of allFilteredWalks) {
         try {
           const walkDetailResponse = await fetch(`${API_BASE}/walks/${walk.id}`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
+            headers: { 'Authorization': `Bearer ${getToken()}` }
           });
           if (walkDetailResponse.ok) {
             const walkDetail = await walkDetailResponse.json();

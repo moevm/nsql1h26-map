@@ -29,19 +29,9 @@ export const getPois = async () => {
   return await response.json();
 }
 
-export const getWalks = async () => {
-  const userId = userManager.get().id;
-  const response = await fetch(`http://127.0.0.1:10001/api/walks/?userId=${userId}`, {
-    method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`},
-    credentials: 'include',
-  }).catch(() => { Notify.error("Ошибка сервера: не удалось получить Walks"); return false; });
-  return await response.json();
-}
-
-export const getWalkPoints = async (walkId) => {
+export const getWalkPoints = async () => {
   const query = buildQuery({
-    walkId,
+    walkId: val('wp-walkId'),
     latMin: val('wp-lat-min'),
     latMax: val('wp-lat-max'),
     lonMin: val('wp-lon-min'),
@@ -95,16 +85,8 @@ export const fetchEntityData = async (entity) => {
       return result?.items ?? [];
     }
     case 'walkpoints': {
-      const walksResult = await getWalks();
-      const walks = walksResult?.items ?? [];
-
-      const results = await Promise.all(
-        walks.map(walk => getWalkPoints(walk.id))
-      );
-
-      return results
-        .map(result => result?.items ?? [])
-        .flat();
+      const result = await getWalkPoints();
+      return result?.items ?? [];
     }
     case 'mapnodes': {
       const result = await getMapNodes();

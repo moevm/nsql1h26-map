@@ -2,7 +2,8 @@
 .filters-section,
 .content-section {
   width: 100%;
-  padding: 20px;
+  max-width: 1280px;
+  margin: 0 auto;
 }
 
 .filters-section {
@@ -69,6 +70,7 @@
 .slider-container {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 16px;
   width: 100%;
@@ -80,6 +82,7 @@
   flex: 1;
   overflow: hidden;
   position: relative;
+  width: 100%;
   height: 100%;
 }
 
@@ -98,37 +101,6 @@
   flex-shrink: 0;
   padding: 0 20px;
   box-sizing: border-box;
-}
-
-/* Кнопки навигации */
-.slider-nav {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(0, 230, 195, 0.1);
-  border: 1px solid var(--accent-color);
-  color: var(--accent-color);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.slider-nav:hover:not(:disabled) {
-  background: rgba(0, 230, 195, 0.2);
-  transform: scale(1.05);
-}
-
-.slider-nav:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.slider-nav svg {
-  width: 24px;
-  height: 24px;
 }
 
 /* Кнопка применить */
@@ -215,7 +187,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 600px;
+  min-height: 1000px;
   border-radius: 8px;
   overflow: hidden;
   inset: auto;
@@ -224,7 +196,7 @@
 .slider-slide .map-area__map {
   width: 100%;
   height: 100%;
-  min-height: 600px;
+  min-height: 1000px;
 }
 
 /* Адаптация существующих стилей */
@@ -233,6 +205,7 @@
   flex-direction: column;
   height: 100%;
   min-height: 600px;
+  gap: 40px;
 }
 
 .content-section .slider-wrapper {
