@@ -94,8 +94,9 @@
 
 .modal--active {
   width: 50%;
-  height: 50%;
+  min-height: 50%;
   opacity: 1;
+  height: fit-content;
 }
 
 .modal-overlay--active {
@@ -108,6 +109,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-around;
+  gap: 30px;
   height: 100%;
 }
 
@@ -169,6 +171,7 @@
   background-color: rgba(23, 54, 53, 1);
   background-image: url(/src/img/overlay.png);
   background-size: cover;
+  margin-top: 30px;
 }
 
 .distance-control__input-group {
