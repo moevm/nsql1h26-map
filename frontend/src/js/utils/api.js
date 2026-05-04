@@ -4,7 +4,7 @@ import { userManager } from "../localManagers/userManager";
 const val = (id) => document.getElementById(id)?.value?.trim() ?? '';
 const num = (id) => Number(document.getElementById(id)?.value) || undefined;
 
-const buildQuery = (params) => {
+export const buildQuery = (params) => {
   const q = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') q.set(k, v);
