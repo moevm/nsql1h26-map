@@ -337,6 +337,59 @@ async def import_walks(
     return {"imported": imported_count, "skipped": skipped_count, "newTiles": new_tiles_total}
 
 
+@router.post("/import/tiles")
+async def import_tiles(
+    userId: str = Query(...),
+    tiles_file: UploadFile = File(...),
+    session=Depends(get_session),
+):
+    try:
+        rows = list(csv.DictReader(io.StringIO((await tiles_file.read()).decode("utf-8"))))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid CSV format")
+
+    user_result = await session.run("MATCH (u:User {id: $userId}) RETURN u", userId=userId)
+    if not await user_result.single():
+        raise HTTPException(status_code=404, detail="User not found")
+
+    covered_result = await session.run(
+        "MATCH (u:User {id: $userId})-[:COVERED]->(ct:CoveredTile) RETURN ct.tileX AS tileX, ct.tileY AS tileY",
+        userId=userId,
+    )
+    existing: set[tuple[int, int]] = {(r["tileX"], r["tileY"]) async for r in covered_result}
+
+    new_tiles = []
+    skipped = 0
+    for row in rows:
+        try:
+            tile_x = int(row["tileX"])
+            tile_y = int(row["tileY"])
+            covered_at = row["firstCoveredAt"]
+        except (KeyError, ValueError, TypeError):
+            raise HTTPException(status_code=422, detail="CSV must have columns: tileX, tileY, firstCoveredAt")
+
+        key = (tile_x, tile_y)
+        if key in existing:
+            skipped += 1
+            continue
+        new_tiles.append({"tileX": tile_x, "tileY": tile_y, "firstCoveredAt": covered_at})
+        existing.add(key)
+
+    if new_tiles:
+        await session.run(
+            """
+            MATCH (u:User {id: $userId})
+            UNWIND $tiles AS t
+            CREATE (ct:CoveredTile {tileX: t.tileX, tileY: t.tileY, firstCoveredAt: datetime(t.firstCoveredAt)})
+            CREATE (u)-[:COVERED]->(ct)
+            """,
+            userId=userId,
+            tiles=new_tiles,
+        )
+
+    return {"imported": len(new_tiles), "skipped": skipped}
+
+
 @router.get("/export/walks")
 async def export_walks(
     userId: str = Query(...),
