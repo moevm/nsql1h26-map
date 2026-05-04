@@ -40,7 +40,7 @@
 
       <aside class="sidebar">
 
-        <div class="route-card">
+        <!-- <div class="route-card">
           <div class="route-card__header">
             <span class="route-card__label">Текущий маршрут</span>
             <span class="route-card__status"></span>
@@ -63,85 +63,59 @@
             </svg>
             <span>1.4км новой территории исследовано</span>
           </div>
-        </div>
-
-        <div class="map-controls">
-
-          <div class="map-control">
-            <div class="map-control__header">
-              <span class="map-control__title">Радиус охвата</span>
-              <span class="map-control__value" id="radius-value">75m</span>
-            </div>
-            <div class="range-slider">
-              <input
-                class="range-slider__input"
-                id="radius-slider"
-                type="range"
-                min="50"
-                max="100"
-                value="75"
-              >
-              <div class="range-slider__labels">
-                <span class="range-slider__label">50M</span>
-                <span class="range-slider__label">100M</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- <div class="toggle-control">
-            <div class="toggle-control__left">
-              <svg class="toggle-control__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M2 8h12M2 4h7M2 12h5" stroke="#8aa4b4" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M12 2v12" stroke="#8aa4b4" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 2"/>
-              </svg>
-              <div class="toggle-control__text">
-                <span class="toggle-control__title">Избегать пройденных улиц</span>
-                <span class="toggle-control__subtitle">Только новые улицы</span>
-              </div>
-            </div>
-            <label class="toggle">
-              <input class="toggle__input" type="checkbox" id="avoid-visited-toggle" checked>
-              <span class="toggle__track"></span>
-            </label>
-          </div> -->
-
-          <div class="toggle-control">
-            <div class="toggle-control__left">
-              <svg class="toggle-control__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 1C5.239 1 3 3.239 3 6c0 3.75 5 9 5 9s5-5.25 5-9c0-2.761-2.239-5-5-5z" stroke="#8aa4b4" stroke-width="1.4"/>
-                <circle cx="8" cy="6" r="1.8" stroke="#8aa4b4" stroke-width="1.2"/>
-              </svg>
-              <div class="toggle-control__text">
-                <span class="toggle-control__title">Точки интереса</span>
-              </div>
-            </div>
-            <label class="toggle">
-              <input class="toggle__input" type="checkbox" id="poi-toggle" checked>
-              <span class="toggle__track"></span>
-            </label>
-          </div>
-
-        </div>
+        </div> -->
 
         <div class="map-layers">
           <p class="map-layers__title">Слои карты</p>
           <div class="map-layers__grid">
-            <button class="map-layer-chip" data-layer="parks">
-              <span class="map-layer-chip__icon">🌳</span>
-              <span>Парки</span>
+            <button class="map-layer-chip" data-layer="bar">
+              <span class="map-layer-chip__icon">🍸</span>
+              <span>Бары</span>
             </button>
-            <button class="map-layer-chip" data-layer="museums">
-              <span class="map-layer-chip__icon">🏛</span>
-              <span>Музеи</span>
-            </button>
-            <button class="map-layer-chip" data-layer="cafes">
+            <button class="map-layer-chip" data-layer="cafe">
               <span class="map-layer-chip__icon">☕</span>
               <span>Кафе</span>
             </button>
-            <button class="map-layer-chip" data-layer="monuments">
+            <button class="map-layer-chip" data-layer="restaurant">
+              <span class="map-layer-chip__icon">🍽️</span>
+              <span>Рестораны</span>
+            </button>
+            <button class="map-layer-chip" data-layer="hotel">
+              <span class="map-layer-chip__icon">🏨</span>
+              <span>Отели</span>
+            </button>
+            <button class="map-layer-chip" data-layer="fast_food">
+              <span class="map-layer-chip__icon">🍔</span>
+              <span>Фастфуд</span>
+            </button>
+            <button class="map-layer-chip" data-layer="library">
+              <span class="map-layer-chip__icon">📚</span>
+              <span>Библиотеки</span>
+            </button>
+            <button class="map-layer-chip" data-layer="pub">
+              <span class="map-layer-chip__icon">🍺</span>
+              <span>Пабы</span>
+            </button>
+            <button class="map-layer-chip" data-layer="bakery">
+              <span class="map-layer-chip__icon">🥐</span>
+              <span>Пекарни</span>
+            </button>
+            <button class="map-layer-chip" data-layer="memorial">
               <span class="map-layer-chip__icon">🗿</span>
               <span>Памятники</span>
             </button>
+            <button class="map-layer-chip" data-layer="museum">
+              <span class="map-layer-chip__icon">🏛️</span>
+              <span>Музеи</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="map-layers">
+          <p class="map-layers__title">Покрытые тайлы</p>
+          <div class="map-layers__grid">
+            <input class="map-layer__switch-input" type="checkbox" name="switch" id="switch">
+            <label class="map-layer__switch-label" for="switch"></label>
           </div>
         </div>
 
