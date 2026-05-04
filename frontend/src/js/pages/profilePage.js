@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .finally(() => {
       newUserNameInput.value = '';
       newEmailInput.value = '';
-      newAvatarUrlInput = '';
+      newAvatarUrlInput.value = '';
     });
 
     modal.classList.remove('modal--active');
