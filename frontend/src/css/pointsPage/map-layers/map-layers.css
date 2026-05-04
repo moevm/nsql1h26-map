@@ -41,18 +41,8 @@
   white-space: nowrap;
 }
 
-.map-layer-chip:hover {
-  filter:sepia(1);
-}
-
 .map-layer-chip--active {
-  background: #00e6c3;
-  border-color: #00e6c3;
-  color: #000;
-}
-
-.map-layer-chip--active:hover {
-  filter: sepia(0);
+  border: none;
 }
 
 .map-layer-chip__icon {

@@ -3,8 +3,15 @@
   display: flex;
   justify-content: center;
   min-height: calc(100vh - 75px);
-  background-image: url(/src/img/overlay.png);
-  background-size: cover;
   padding: 32px var(--block-padding);
   gap: 25px;
+  background-image: 
+    url(/src/img/overlay.png);
+  background-position: 
+    center;
+  background-repeat: 
+    no-repeat;
+  background-size: 
+    cover;
+  background-attachment: fixed;
 }

@@ -10,15 +10,20 @@
 @import url(table/table.css);
 @import url(table/pagination.css);
 @import url(slider/slider.css);
+@import url(../components/map-selectors.css);
 
 .map-layout {
+  padding: 32px;
   display: flex;
   flex-direction: column;
   position: relative;
   width: 100%;
   min-height: calc(100vh - 75px);
   background-image: url(/src/img/overlay.png);
+  background-position: center;
+  background-repeat: no-repeat;
   background-size: cover;
+  background-attachment: fixed;
 }
 
 .leaflet-control-zoom-in {
@@ -44,18 +49,20 @@
 }
 
 .map-control__input {
-  width: 49%;
+  min-width: 49%;
+  flex: 1;
   padding: 15px 20px;
-  border-radius: 12px;
   background-color: #fff;
-  border: 1px solid var(--accent-color);
-  color: #000;
+  background-color: transparent;
+  /* border: 1px solid var(--accent-color); */
+  color: #fff;
   outline: none;
-  box-shadow: 5px 5px #fff;
+  border: none;
+  border-bottom: 1px solid #fff;
 }
 
 .map-control__input::placeholder {
-  color: #000;
+  color: #fff;
 }
 
 .sidebar--tables {
@@ -63,4 +70,98 @@
   border-right: 1px solid var(--accent-color);
   display: flex;
   align-items: center;
+}
+
+.view-switcher {
+  width: 100%;
+}
+
+.switcher-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Toggle */
+.switch-toggle {
+  width: 100%;
+  display: flex;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+  height: 100%;
+}
+
+.switch-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #fff;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+  font-weight: bold;
+  height: 100%;
+}
+
+.switch-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.switch-btn.active {
+  /* background: var(--color-background-primary, #fff); */
+  background-color: var(--accent-text-color);
+  color: var(--color-text-primary);
+  border: 0.5px solid var(--color-border-secondary, rgba(0, 0, 0, 0.18));
+}
+
+/* Slider nav — ваши кнопки без изменений */
+.switcher-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  height: 50px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.slider-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0.5px solid var(--color-border-secondary, rgba(0, 0, 0, 0.2));
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.slider-nav:hover {
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+}
+
+.slider-nav:active {
+  transform: scale(0.96);
 }

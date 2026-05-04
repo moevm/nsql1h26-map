@@ -11,6 +11,7 @@ import { drawPOI } from "../utils/mapUtils";
 import { buildQuery } from "../utils/api"
 import { getTiles } from "../utils/api";
 import { drawTiles } from "../utils/mapUtils";
+import { initMapSelectors } from "../utils/mapUtils";
 
 const getPOI = async (category) => {
   const query = buildQuery({
@@ -99,6 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
     attribution: '© OpenStreetMap, © CARTO',
     subdomains: 'abcd', maxZoom: 19
   }).addTo(map);
+
+  initMapSelectors(map);
 
   openModalBtn.addEventListener('click', () => {
     modal.classList.add('modal--active');

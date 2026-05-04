@@ -1,0 +1,68 @@
+
+.bbox-btn {
+  position: absolute;
+  bottom: 80px;
+  right: 15px;
+  z-index: 1000;
+  width: 100px;
+  height: 50px;
+  background: #112727;
+  border: 1px solid #fff;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  box-shadow: 3px 3px;
+}
+
+.bbox-btn:last-child {
+  bottom: 150px;
+}
+
+.bbox-btn--active {
+  background: red;
+  color: var(--color-text-info);
+  border-color: var(--color-border-info);
+}
+
+.bbox-popup .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  padding: 0;
+}
+
+.bbox-popup-inner {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bbox-popup-inner code {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+
+.bbox-popup-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.bbox-popup-actions button {
+  flex: 1;
+  padding: 5px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 0.5px solid var(--color-border-secondary);
+  background: transparent;
+}
+
+.bbox-popup-actions button:first-child {
+  background: var(--color-background-info);
+  color: var(--color-text-info);
+  border-color: var(--color-border-info);
+}
