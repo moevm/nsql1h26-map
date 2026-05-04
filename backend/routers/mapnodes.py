@@ -35,7 +35,7 @@ async def list_mapnodes(
     tileY: int | None = Query(None),
     bbox: str | None = Query(None, example="59.95,30.28,59.98,30.34"),
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(100, ge=1, le=10000),
     session=Depends(get_session),
 ):
     min_lat, min_lon, max_lat, max_lon = _parse_bbox(bbox)
