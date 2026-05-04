@@ -14,15 +14,19 @@ const openModal = (item, entity) => {
 
   content.innerHTML = `
     <div class="modal__fields">
-      ${Object.entries(item).map(([key, val]) => `
-        <div class="modal__row">
-          <span class="modal__key">${key}</span>
-          ${isEditable
-            ? `<input class="modal__input" data-field="${key}" value="${val ?? ''}" />`
-            : `<span class="modal__val">${val ?? '—'}</span>`
-          }
-        </div>
-      `).join('')}
+      ${Object.entries(item).map(([key, val]) => {
+        if (key === 'osmId') return '';
+        
+        return `
+          <div class="modal__row">
+            <span class="modal__key">${key}</span>
+            ${isEditable
+              ? `<input class="modal__input" data-field="${key}" value="${val ?? ''}" />`
+              : `<span class="modal__val">${val ?? '—'}</span>`
+            }
+          </div>
+        `;
+      }).join('')}
     </div>
     ${isEditable ? `
       <div class="modal__actions">
