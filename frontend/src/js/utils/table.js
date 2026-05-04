@@ -1,5 +1,57 @@
 import { tableColumns } from "../configs/pointsTableConfig";
 
+const EDITABLE_ENTITIES = ['pois', 'mapnodes'];
+
+const openModal = (item, entity) => {
+  const overlay = document.querySelector('.modal-overlay');
+  const modal = document.querySelector('.modal');
+  const title = modal.querySelector('.modal__title');
+  const content = modal.querySelector('.modal__content');
+
+  title.textContent = item.osmId ? `${entity.toUpperCase()} #${item.osmId}` : `${entity.toUpperCase()}`;
+
+  const isEditable = EDITABLE_ENTITIES.includes(entity);
+
+  content.innerHTML = `
+    <div class="modal__fields">
+      ${Object.entries(item).map(([key, val]) => `
+        <div class="modal__row">
+          <span class="modal__key">${key}</span>
+          ${isEditable
+            ? `<input class="modal__input" data-field="${key}" value="${val ?? ''}" />`
+            : `<span class="modal__val">${val ?? '—'}</span>`
+          }
+        </div>
+      `).join('')}
+    </div>
+    ${isEditable ? `
+      <div class="modal__actions">
+        <button class="modal__btn modal__btn--save">Сохранить изменения</button>
+        <button class="modal__btn modal__btn--delete">Удалить</button>
+      </div>
+    ` : ''}
+  `;
+
+  if (isEditable) {
+    modal.querySelector('.modal__btn--save').addEventListener('click', () => {
+      const updated = { ...item };
+      modal.querySelectorAll('.modal__input').forEach(input => {
+        updated[input.dataset.field] = input.value;
+      });
+      console.log('Save:', updated);
+      // TODO: вызов API
+    });
+
+    modal.querySelector('.modal__btn--delete').addEventListener('click', () => {
+      console.log('Delete:', item);
+      // TODO: вызов API
+    });
+  }
+
+  overlay.classList.add('modal-overlay--active');
+  modal.classList.add('modal--active');
+};
+
 const renderTableHead = (tableState) => {
     const cols = tableColumns[tableState.entity] ?? [];
     const thead = document.querySelector('.routes-table thead tr');
@@ -35,28 +87,26 @@ const renderTableHead = (tableState) => {
     }
 
     tbody.innerHTML = pageItems.map((item, idx) => {
-      const rowId =
-        item.id ??
-        `${item.walkId ?? 'walk'}-${item.order ?? idx}`;
-
-      return `
-      <tr data-id="${rowId}">
+    const rowId = `${'trow'}-${start + idx + 1}`;
+    return `
+      <tr data-id="${rowId}" data-index="${start + idx}" class="routes-table__row">
         <td class="routes-table__td--checkbox">
-          <input
-            type="checkbox"
-            class="route-checkbox"
-            data-id="${rowId}"
-          />
+          <input type="checkbox" class="route-checkbox" data-id="${rowId}" />
         </td>
         <td class="route-num">${start + idx + 1}</td>
         ${cols.map(c => `
-          <td class="routes-table__td">
-            ${item[c.key] ?? '—'}
-          </td>
+          <td class="routes-table__td">${item[c.key] ?? '—'}</td>
         `).join('')}
       </tr>
     `;
-    }).join('');
+  }).join('');
+  tbody.querySelectorAll('tr[data-index]').forEach(row => {
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('input[type="checkbox"]')) return;
+      const index = Number(row.dataset.index);
+      openModal(tableState.items[index], tableState.entity);
+    });
+  });
   };
 
   const renderPagination = (tableState) => {

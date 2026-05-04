@@ -22,6 +22,16 @@ import { getMapNodes } from "../utils/api";
 import { fetchEntityData } from "../utils/api";
 import { getPoisCategories } from "../utils/api";
 
+const closeModal = () => {
+  document.querySelector('.modal-overlay').classList.remove('modal-overlay--active');
+  document.querySelector('.modal').classList.remove('modal--active');
+};
+
+const initModalListeners = () => {
+  document.querySelector('.modal-close')?.addEventListener('click', closeModal);
+  document.querySelector('.modal-overlay')?.addEventListener('click', closeModal);
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   relocateToLogin();
 
@@ -319,4 +329,5 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+  initModalListeners();
 });
