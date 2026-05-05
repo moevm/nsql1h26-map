@@ -150,10 +150,7 @@ function renderTable() {
     const formattedTime = formatTime(route.createdAt);
     const distanceKm = route.totalDistanceMeters ? (route.totalDistanceMeters / 1000).toFixed(1) : '—';
     
-    let coveragePercent = '—';
-    if (route.newTilesCount !== undefined && route.allTilesCount && route.allTilesCount > 0) {
-      coveragePercent = Math.round((route.newTilesCount / route.allTilesCount) * 100) + '%';
-    }
+    const newTiles = route.newTilesCount !== undefined ? route.newTilesCount : '—';
     const poisCount = route.poiCount !== undefined ? route.poiCount : '-';
 
     return `
@@ -169,7 +166,7 @@ function renderTable() {
         <td class="route-date-time">${formattedDate} · ${formattedTime}</td>
         <td class="route-dist">${distanceKm}</td>
         <td class="route-duration">${durationText}</td>
-        <td><span class="coverage-badge">${coveragePercent}</span></td>
+        <td class="route-new-tiles">${newTiles}</td>
         <td class="route-places">${poisCount}</td>
         <td>
           <button class="action-btn" data-action="delete" data-id="${route.id}">
