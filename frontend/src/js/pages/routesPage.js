@@ -159,10 +159,7 @@ function renderTable() {
           <input type="checkbox" class="route-checkbox" data-id="${route.id}" ${isSelected ? 'checked' : ''}>
         </td>
         <td class="route-num">${rowNumber}</td>
-        <td>
-          <div class="route-name">Маршрут ${route.id?.slice(0, 8)}</div>
-          <div class="route-id">${route.id}</div>
-        </td>
+        <td class="route-id">${route.id}</td>
         <td class="route-date-time">${formattedDate} · ${formattedTime}</td>
         <td class="route-dist">${distanceKm}</td>
         <td class="route-duration">${durationText}</td>
