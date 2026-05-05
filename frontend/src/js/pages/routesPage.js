@@ -11,6 +11,8 @@ let routes = [];
 let totalRoutes = 0;
 let selectedIds = [];
 const userId = userManager.get().id;
+let currentHighlightedRow = null;
+let mapRoutesLoaded = false;
 
 // для статистики
 let allRoutes = [];
@@ -179,6 +181,7 @@ function renderTable() {
   attachTableEvents();
   attachRowClickEvents();
   updateSelectAllCheckbox();
+  tryHighlightFirstRoute();
 }
 
 function attachTableEvents() {
@@ -400,6 +403,9 @@ function drawAllRoutesOnMap(routesData) {
     const group = L.featureGroup(allRouteLayers);
     map.fitBounds(group.getBounds(), { padding: [50, 50] });
   }
+
+  mapRoutesLoaded = true;
+  tryHighlightFirstRoute();
 }
 
 async function loadAndDrawAllFilteredRoutes() {
@@ -468,6 +474,32 @@ function highlightRouteOnMap(routeId) {
   }
 }
 
+function highlightRow(rowElement) {
+  if (currentHighlightedRow) {
+    currentHighlightedRow.classList.remove('routes-table__row--highlighted');
+  }
+
+  if (rowElement) {
+    rowElement.classList.add('routes-table__row--highlighted');
+    currentHighlightedRow = rowElement;
+  } else {
+    currentHighlightedRow = null;
+  }
+}
+
+function tryHighlightFirstRoute() {
+  if (mapRoutesLoaded && routes.length > 0) {
+    const firstRow = document.querySelector('.routes-table tbody tr');
+    if (firstRow) {
+      const routeId = firstRow.dataset.id;
+      if (routeId) {
+        highlightRow(firstRow);
+        highlightRouteOnMap(routeId);
+      }
+    }
+  }
+}
+
 function handleRowClick(e) {
   if (e.target.type === 'checkbox' || e.target.closest('.action-btn')) {
     return;
@@ -476,6 +508,7 @@ function handleRowClick(e) {
   const row = e.currentTarget;
   const routeId = row.dataset.id;
   if (routeId) {
+    highlightRow(row);
     highlightRouteOnMap(routeId);
   }
 }
