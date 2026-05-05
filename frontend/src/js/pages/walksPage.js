@@ -149,10 +149,7 @@ function renderTable() {
     const formattedTime = formatTime(walk.startedAt);
     const distanceKm = walk.distanceMeters ? (walk.distanceMeters / 1000).toFixed(1) : '—';
     
-    let coveragePercent = '—';
-    if (walk.newTilesCount !== undefined && walk.allTilesCount && walk.allTilesCount > 0) {
-      coveragePercent = Math.round((walk.newTilesCount / walk.allTilesCount) * 100) + '%';
-    }
+    const newTiles = walk.newTilesCount !== undefined ? walk.newTilesCount : '—';
 
     return `
       <tr class="${selectedRowClass}" data-id="${walk.id}">
@@ -167,7 +164,7 @@ function renderTable() {
         <td class="walk-date-time">${formattedDate} · ${formattedTime}</td>
         <td class="walk-dist">${distanceKm}</td>
         <td class="walk-duration">${durationText}</td>
-        <td><span class="coverage-badge">${coveragePercent}</span></td>
+        <td class="walk-new-tiles">${newTiles}</td>
         <td>
           <button class="action-btn" data-action="delete" data-id="${walk.id}">
             <img src="/src/svg/routes/trash.svg" alt="удалить">
