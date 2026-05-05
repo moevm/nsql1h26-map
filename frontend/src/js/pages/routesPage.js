@@ -11,6 +11,8 @@ let routes = [];
 let totalRoutes = 0;
 let selectedIds = [];
 const userId = userManager.get().id;
+let currentHighlightedRow = null;
+let mapRoutesLoaded = false;
 
 // для статистики
 let allRoutes = [];
@@ -150,11 +152,9 @@ function renderTable() {
     const formattedTime = formatTime(route.createdAt);
     const distanceKm = route.totalDistanceMeters ? (route.totalDistanceMeters / 1000).toFixed(1) : '—';
     
-    let coveragePercent = '—';
-    if (route.newTilesCount !== undefined && route.allTilesCount && route.allTilesCount > 0) {
-      coveragePercent = Math.round((route.newTilesCount / route.allTilesCount) * 100) + '%';
-    }
+    const newTiles = route.newTilesCount !== undefined ? route.newTilesCount : '—';
     const poisCount = route.poiCount !== undefined ? route.poiCount : '-';
+    const routeUserId = route.userId || '—';
 
     return `
       <tr class="${selectedRowClass}" data-id="${route.id}">
@@ -162,14 +162,12 @@ function renderTable() {
           <input type="checkbox" class="route-checkbox" data-id="${route.id}" ${isSelected ? 'checked' : ''}>
         </td>
         <td class="route-num">${rowNumber}</td>
-        <td>
-          <div class="route-name">Маршрут ${route.id?.slice(0, 8)}</div>
-          <div class="route-id">${route.id}</div>
-        </td>
+        <td class="route-id">${route.id}</td>
+        <td class="route-user-id">${routeUserId}</td>
         <td class="route-date-time">${formattedDate} · ${formattedTime}</td>
         <td class="route-dist">${distanceKm}</td>
         <td class="route-duration">${durationText}</td>
-        <td><span class="coverage-badge">${coveragePercent}</span></td>
+        <td class="route-new-tiles">${newTiles}</td>
         <td class="route-places">${poisCount}</td>
         <td>
           <button class="action-btn" data-action="delete" data-id="${route.id}">
@@ -183,6 +181,7 @@ function renderTable() {
   attachTableEvents();
   attachRowClickEvents();
   updateSelectAllCheckbox();
+  tryHighlightFirstRoute();
 }
 
 function attachTableEvents() {
@@ -404,6 +403,9 @@ function drawAllRoutesOnMap(routesData) {
     const group = L.featureGroup(allRouteLayers);
     map.fitBounds(group.getBounds(), { padding: [50, 50] });
   }
+
+  mapRoutesLoaded = true;
+  tryHighlightFirstRoute();
 }
 
 async function loadAndDrawAllFilteredRoutes() {
@@ -472,6 +474,32 @@ function highlightRouteOnMap(routeId) {
   }
 }
 
+function highlightRow(rowElement) {
+  if (currentHighlightedRow) {
+    currentHighlightedRow.classList.remove('routes-table__row--highlighted');
+  }
+
+  if (rowElement) {
+    rowElement.classList.add('routes-table__row--highlighted');
+    currentHighlightedRow = rowElement;
+  } else {
+    currentHighlightedRow = null;
+  }
+}
+
+function tryHighlightFirstRoute() {
+  if (mapRoutesLoaded && routes.length > 0) {
+    const firstRow = document.querySelector('.routes-table tbody tr');
+    if (firstRow) {
+      const routeId = firstRow.dataset.id;
+      if (routeId) {
+        highlightRow(firstRow);
+        highlightRouteOnMap(routeId);
+      }
+    }
+  }
+}
+
 function handleRowClick(e) {
   if (e.target.type === 'checkbox' || e.target.closest('.action-btn')) {
     return;
@@ -480,6 +508,7 @@ function handleRowClick(e) {
   const row = e.currentTarget;
   const routeId = row.dataset.id;
   if (routeId) {
+    highlightRow(row);
     highlightRouteOnMap(routeId);
   }
 }

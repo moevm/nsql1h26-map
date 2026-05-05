@@ -40,7 +40,7 @@
       <div class="page-header">
         <div class="page-header__left">
           <h1 class="page-header__title">Маршруты</h1>
-          <span class="page-header__count">142 маршрута</span>
+          <span class="page-header__count">0 маршрутов</span>
         </div>
         <div class="page-header__right">
           <button class="btn btn--secondary" id="import-routes-btn">
@@ -86,6 +86,11 @@
           </select>
         </div>
 
+        <div class="filter-bar__item filter-bar__item--user-id">
+          <label class="filter-bar__label">ID пользователя</label>
+          <input type="text" class="filter-bar__control filter-bar__user-id-input" id="user-id-filter" placeholder="Введите ID пользователя">
+        </div>
+
         <div class="filter-bar__actions">
           <button class="btn-reset" id="reset-filters-btn">Сброс фильтров</button>
           <button class="btn-export" id="export-selected-btn">
@@ -103,11 +108,12 @@
                 <input type="checkbox" id="select-all-checkbox">
               </th>
               <th class="routes-table__th">#</th>
-              <th class="routes-table__th">Имя маршрута / ID</th>
+              <th class="routes-table__th">ID маршрута</th>
+              <th class="routes-table__th">ID пользователя</th>
               <th class="routes-table__th">Дата и время</th>
               <th class="routes-table__th">Расстояние (км)</th>
               <th class="routes-table__th">Длительность</th>
-              <th class="routes-table__th">Новая зона</th>
+              <th class="routes-table__th">Новые тайлы</th>
               <th class="routes-table__th">Интересные места</th>
               <th class="routes-table__th">Действия</th>
             </tr>
