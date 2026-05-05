@@ -152,6 +152,7 @@ function renderTable() {
     
     const newTiles = route.newTilesCount !== undefined ? route.newTilesCount : '—';
     const poisCount = route.poiCount !== undefined ? route.poiCount : '-';
+    const routeUserId = route.userId || '—';
 
     return `
       <tr class="${selectedRowClass}" data-id="${route.id}">
@@ -160,6 +161,7 @@ function renderTable() {
         </td>
         <td class="route-num">${rowNumber}</td>
         <td class="route-id">${route.id}</td>
+        <td class="route-user-id">${routeUserId}</td>
         <td class="route-date-time">${formattedDate} · ${formattedTime}</td>
         <td class="route-dist">${distanceKm}</td>
         <td class="route-duration">${durationText}</td>

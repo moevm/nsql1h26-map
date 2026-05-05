@@ -444,7 +444,9 @@ async def list_routes(
     result = await session.run(
         f"""
         {match} {where}
-        RETURN r.id AS id, toString(r.createdAt) AS createdAt,
+        RETURN u.id AS userId,
+               r.id AS id, 
+               toString(r.createdAt) AS createdAt,
                r.totalDistanceMeters AS totalDistanceMeters,
                r.estimatedMinutes AS estimatedMinutes,
                size(r.newTilesX) AS newTilesCount,
