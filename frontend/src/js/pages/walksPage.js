@@ -157,10 +157,7 @@ function renderTable() {
           <input type="checkbox" class="walk-checkbox" data-id="${walk.id}" ${isSelected ? 'checked' : ''}>
         </td>
         <td class="walk-num">${rowNumber}</td>
-        <td>
-          <div class="walk-name">Прогулка ${walk.id?.slice(0, 8)}</div>
-          <div class="walk-id">${walk.id}</div>
-        </td>
+        <td class="walk-id">${walk.id}</td>
         <td class="walk-date-time">${formattedDate} · ${formattedTime}</td>
         <td class="walk-dist">${distanceKm}</td>
         <td class="walk-duration">${durationText}</td>
