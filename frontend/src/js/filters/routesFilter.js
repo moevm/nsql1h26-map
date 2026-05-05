@@ -5,7 +5,8 @@ export let activeFilters = {
   distanceMax: null,
   estimatedMin: null,
   estimatedMax: null,
-  search: null
+  search: null,
+  userId: null
 };
 
 export function initFilters() {
@@ -13,7 +14,7 @@ export function initFilters() {
   const dateToInput = document.getElementById('date-to');
   const distanceFilter = document.getElementById('distance-filter');
   const durationFilter = document.getElementById('duration-filter');
-  const searchInput = document.getElementById('search-input');
+  const userIdInput = document.getElementById('user-id-filter');
   const resetBtn = document.getElementById('reset-filters-btn');
 
   const applyFilters = () => {
@@ -60,7 +61,8 @@ export function initFilters() {
       distanceMax,
       estimatedMin,
       estimatedMax,
-      search: searchInput?.value || null
+      search: null,
+      userId: userIdInput?.value || null
     };
 
     window.dispatchEvent(new CustomEvent('filters-updated'));
@@ -71,7 +73,7 @@ export function initFilters() {
     if (dateToInput) dateToInput.value = '';
     if (distanceFilter) distanceFilter.value = 'any';
     if (durationFilter) durationFilter.value = 'any';
-    if (searchInput) searchInput.value = '';
+    if (userIdInput) userIdInput.value = '';
 
     activeFilters = {
       dateFrom: null,
@@ -80,7 +82,8 @@ export function initFilters() {
       distanceMax: null,
       estimatedMin: null,
       estimatedMax: null,
-      search: null
+      search: null,
+      userId: null
     };
 
     window.dispatchEvent(new CustomEvent('filters-updated'));
@@ -90,13 +93,14 @@ export function initFilters() {
   if (dateToInput) dateToInput.addEventListener('change', applyFilters);
   if (distanceFilter) distanceFilter.addEventListener('change', applyFilters);
   if (durationFilter) durationFilter.addEventListener('change', applyFilters);
-  if (searchInput) searchInput.addEventListener('input', applyFilters);
+  if (userIdInput) userIdInput.addEventListener('input', applyFilters);
   if (resetBtn) resetBtn.addEventListener('click', resetFilters);
 }
 
 export function buildFilterParams() {
   const params = new URLSearchParams();
   
+  if (activeFilters.userId) params.append('userId', activeFilters.userId);
   if (activeFilters.dateFrom) params.append('createdFrom', activeFilters.dateFrom);
   if (activeFilters.dateTo) params.append('createdTo', activeFilters.dateTo);
   if (activeFilters.distanceMin !== null) params.append('distanceMin', activeFilters.distanceMin);

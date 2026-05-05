@@ -120,6 +120,11 @@
   color: rgba(255, 255, 255, 0.3);
 }
 
+.filter-bar__user-id-input {
+  padding: 9px 12px;
+  color: var(--main-text-color);
+}
+
 .filter-bar__actions {
   display: flex;
   gap: 8px;
