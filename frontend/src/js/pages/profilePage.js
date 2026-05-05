@@ -342,6 +342,11 @@ document.addEventListener('DOMContentLoaded', () => {
         setChart(chart, graphTypeValue, chartData, metricTypeValue);
         setMetricsText(metricTypeValue);
         setDurationText(duration);
+
+        Notify.success("Данные успешно обновлены");
+      })
+      .catch((error) => {
+        Notify.error(error);
       });
   })
 
@@ -405,14 +410,14 @@ document.addEventListener('DOMContentLoaded', () => {
         createStatCard(
         "Лучший день",
         "/src/svg/stars.svg",
-        `${bestDay.distance} м`,
+        `${bestDay.distance.toFixed(2)} м`,
         `${bestDay.date}`
       );
 
       createStatCard(
         "Среднее за прогулку",
         "/src/svg/stats.svg",
-        `${result.avgDistancePerWalk} м`,
+        `${result.avgDistancePerWalk.toFixed(2)} м`,
         `${result.distanceByDate[0].date}---${result.distanceByDate[ result.distanceByDate.length - 1].date}`
       );
     }else {

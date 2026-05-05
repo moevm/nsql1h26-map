@@ -68,23 +68,14 @@
                     type="text"
                     placeholder="poi name"
                   />
-                  <input
-                    id="poi-category"
-                    class="map-control__input"
-                    type="text"
-                    placeholder="poi category"
-                  />
+                  <select id="poi-category" class="map-control__input map-control__input--select-category">
+                    <option class="map-control__input-option" value="">Вce категории</option>
+                  </select>
                   <input
                     id="poi-bbox"
                     class="map-control__input"
                     type="text"
                     placeholder="poi bbox"
-                  />
-                  <input
-                    id="poi-route-id"
-                    class="map-control__input"
-                    type="text"
-                    placeholder="poi route_id"
                   />
                 </div>
 
@@ -110,12 +101,12 @@
                     id="poi-radius-slider"
                     type="range"
                     min="1"
-                    max="100"
+                    max="5000"
                     value="75"
                   />
                   <div class="range-slider__labels">
                     <span class="range-slider__label">1</span>
-                    <span class="range-slider__label">100</span>
+                    <span class="range-slider__label">5000</span>
                   </div>
                 </div>
               </div>
@@ -198,18 +189,18 @@
                 </div>
               </div>
               <div class="range-slider">
-                <label for="wp-radius-slider">limit <span class="limit-value">75</span></label>
+                <label for="wp-radius-slider">limit <span class="limit-value">100</span></label>
                 <input
                   class="range-slider__input"
                   id="wp-radius-slider"
                   type="range"
                   min="1"
-                  max="100"
-                  value="75"
+                  max="5000"
+                  value="100"
                 />
                 <div class="range-slider__labels">
                   <span class="range-slider__label">1</span>
-                  <span class="range-slider__label">100</span>
+                  <span class="range-slider__label">5000</span>
                 </div>
               </div>
             </div>
@@ -261,18 +252,18 @@
                 </div>
               </div>
               <div class="range-slider">
-                <label for="mn-radius-slider">limit <span class="limit-value">75</span></label>
+                <label for="mn-radius-slider">limit <span class="limit-value">100</span></label>
                 <input
                   class="range-slider__input"
                   id="mn-radius-slider"
                   type="range"
                   min="1"
-                  max="100"
-                  value="75"
+                  max="10000"
+                  value="100"
                 />
                 <div class="range-slider__labels">
                   <span class="range-slider__label">1</span>
-                  <span class="range-slider__label">100</span>
+                  <span class="range-slider__label">10000</span>
                 </div>
               </div>
             </div>
@@ -283,16 +274,46 @@
               <div class="map-control">
                 <div class="map-control__inputs">
                   <input
-                    id="tile-x"
+                    id="tile-x-min"
                     class="map-control__input"
                     type="text"
-                    placeholder="tileX"
+                    placeholder="tileXMin"
                   />
                   <input
-                    id="tile-y"
+                    id="tile-x-max"
                     class="map-control__input"
                     type="text"
-                    placeholder="tileY"
+                    placeholder="tileXMax"
+                  />
+                  <input
+                    id="tile-y-min"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="tileYMin"
+                  />
+                  <input
+                    id="tile-y-max"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="tileYMax"
+                  />
+                  <input
+                    id="tile-covered-from"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="tileCoveredFrom"
+                  />
+                  <input
+                    id="tile-covered-to"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="tileCoveredTO"
+                  />
+                  <input
+                    id="tile-walkId"
+                    class="map-control__input"
+                    type="text"
+                    placeholder="walkId"
                   />
                 </div>
               </div>
@@ -312,18 +333,18 @@
                 </div>
               </div>
               <div class="range-slider">
-                <label for="tile-limit-slider">limit <span class="limit-value">75</span></label>
+                <label for="tile-limit-slider">limit <span class="limit-value">1500</span></label>
                 <input
                   class="range-slider__input"
                   id="tile-limit-slider"
                   type="range"
                   min="1"
-                  max="100"
-                  value="75"
+                  max="10000"
+                  value="1500"
                 />
                 <div class="range-slider__labels">
                   <span class="range-slider__label">1</span>
-                  <span class="range-slider__label">100</span>
+                  <span class="range-slider__label">10000</span>
                 </div>
               </div>
             </div>
@@ -479,7 +500,19 @@
         </div>
       </section>
     </div>
+    
+    <div class="modal-overlay"></div>
+    <div class="modal">
+      <div class="modal__header">
+        <div class="modal__title-data">
+          <h1 class="modal__title">TITLE</h1>
+        </div>
+        <button class="modal-close">
+          <img src="/src/svg/close-icon.svg" alt="close-btn" />
+        </button>
+      </div>
 
+      <div class="modal__content"></div>
     <script type="module" src="/src/js/pages/pointsPage.js"></script>
   </body>
 </html>

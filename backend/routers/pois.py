@@ -40,15 +40,11 @@ async def list_pois(
     bbox: str | None = Query(None, example="59.95,30.28,59.98,30.34"),
     route_id: str | None = Query(None),
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(100, ge=1, le=5000),
     session=Depends(get_session),
 ):
     min_lat, min_lon, max_lat, max_lon = _parse_bbox(bbox)
     categories_list = [c.strip() for c in categories.split(",")] if categories else None
-    if categories_list:
-        unknown = set(categories_list) - _ALLOWED_CATEGORIES
-        if unknown:
-            raise HTTPException(status_code=422, detail=f"Unknown categories: {', '.join(sorted(unknown))}. Allowed: {', '.join(sorted(_ALLOWED_CATEGORIES))}")
     where = """
         WHERE ($name           IS NULL OR toLower(p.name)     CONTAINS toLower($name))
           AND ($category       IS NULL OR toLower(p.category) CONTAINS toLower($category))
@@ -79,8 +75,13 @@ async def list_pois(
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)
 
-
-_ALLOWED_CATEGORIES = {"bar", "cafe", "restaurant", "hotel", "fast_food", "library", "pub", "bakery", "memorial", "museum"}
+@router.get("/categories")
+async def list_poi_categories(session=Depends(get_session)):
+    result = await session.run(
+        "MATCH (p:POI) RETURN DISTINCT p.category AS category ORDER BY category"
+    )
+    categories = [r["category"] async for r in result]
+    return {"categories": categories}
 
 @router.get("/{poiId}")
 async def get_poi(poiId: str, session=Depends(get_session)):

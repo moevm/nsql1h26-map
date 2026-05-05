@@ -20,6 +20,17 @@ import { getTiles } from "../utils/api";
 import { getWalkPoints } from "../utils/api";
 import { getMapNodes } from "../utils/api";
 import { fetchEntityData } from "../utils/api";
+import { getPoisCategories } from "../utils/api";
+
+const closeModal = () => {
+  document.querySelector('.modal-overlay').classList.remove('modal-overlay--active');
+  document.querySelector('.modal').classList.remove('modal--active');
+};
+
+const initModalListeners = () => {
+  document.querySelector('.modal-close')?.addEventListener('click', closeModal);
+  document.querySelector('.modal-overlay')?.addEventListener('click', closeModal);
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   relocateToLogin();
@@ -157,10 +168,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (layerName === "tiles") {
         getTiles().
-          then((tiles) => {
-            drawTiles(layer, tiles);
+          then((result) => {
+            drawTiles(layer, result.items);
             btn.style.background = "rgba(0, 230, 195, 0.5)";
             btn.style.color = "#fff";
+            Notify.success(`Успешно добавлено на карту ${result.items.length}/${result.total} tiles`);
+          })
+          .catch((error) => {
+            Notify.error(error);
           });
         map.addLayer(layer);
       }
@@ -175,11 +190,13 @@ document.addEventListener("DOMContentLoaded", () => {
             drawPOI(layer, points, "red");
             btn.style.background = "red";
             btn.style.color = "#fff";
+            Notify.success(`Успешно добавлено на карту ${result.items.length}/${result.total} pois`);
           })
-          .catch(() => {
+          .catch((error) => {
             btn.classList.toggle("map-layer-chip--active");
             btn.style.background = "transparent";
             btn.style.color = "#00e6c3";
+            Notify.error(error);
           });
         map.addLayer(layer);
       }
@@ -194,11 +211,13 @@ document.addEventListener("DOMContentLoaded", () => {
             drawPOI(layer, points, "blue");
             btn.style.background = "blue";
             btn.style.color = "#fff";
+            Notify.success(`Успешно добавлено на карту ${result.items.length}/${result.total} walkpoints`);
           })
-          .catch(() => {
+          .catch((error) => {
             btn.classList.toggle("map-layer-chip--active");
             btn.style.background = "transparent";
             btn.style.color = "#00e6c3";
+            Notify.error(error);
           });
         map.addLayer(layer);
       }
@@ -213,11 +232,13 @@ document.addEventListener("DOMContentLoaded", () => {
             drawPOI(layer, points, "green");
             btn.style.background = "green";
             btn.style.color = "#fff";
+            Notify.success(`Успешно добавлено на карту ${result.items.length}/${result.total} mapnodes`);
           })
-          .catch(() => {
+          .catch((error) => {
             btn.classList.toggle("map-layer-chip--active");
             btn.style.background = "transparent";
             btn.style.color = "#00e6c3";
+            Notify.error(error);
           });
         map.addLayer(layer);
       }
@@ -277,11 +298,12 @@ document.addEventListener("DOMContentLoaded", () => {
     applyBtn.querySelector("span").textContent = "Загрузка...";
 
     fetchEntityData(entity)
-      .then((items) => {
+      .then((result) => {
         tableState.entity = entity;
-        tableState.items = items;
+        tableState.items = result.items;
         tableState.page = 1;
         renderTable(tableState);
+        Notify.success(`Успешно загружено ${result.items.length}/${result.total} ${entity}`);
       })
       .catch((error) => {
         Notify.error(`Error ${error}`);
@@ -296,12 +318,28 @@ document.addEventListener("DOMContentLoaded", () => {
     .then((result) => {
       entitySelect.value = "pois";
 
-      tableState.items = result;
+      tableState.items = result.items;
       tableState.entity = "pois";
       tableState.page = 1;
       renderTable(tableState);
+
+      Notify.success(`Успешно загружено ${result.items.length}/${result.total} pois`);
     })
     .catch((error) => {
-      Notify.error(`${error}`);
+      Notify.error(`Error: ${error}`);
     });
+  
+    getPoisCategories()
+      .then((res) => {
+        const select = document.querySelector('.map-control__input--select-category');
+        for (const item of res.categories) {
+          const option = document.createElement("option");
+          option.setAttribute("value", item);
+          option.textContent = item;
+          option.classList.add('map-control__input-option');
+          select.appendChild(option);
+        }
+    });
+
+  initModalListeners();
 });

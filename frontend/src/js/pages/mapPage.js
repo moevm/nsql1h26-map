@@ -9,7 +9,7 @@ import { userManager } from "../localManagers/userManager";
 import { deleteTrashOnMap } from "../utils/mapUtils"
 import { drawPOI } from "../utils/mapUtils";
 import { buildQuery } from "../utils/api"
-import { getTiles } from "../utils/api";
+import { getAllTiles } from "../utils/api";
 import { drawTiles } from "../utils/mapUtils";
 import { initMapSelectors } from "../utils/mapUtils";
 
@@ -115,8 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   tileSwitch.addEventListener('change', () => {
     if (tileSwitch.checked) {
-      getTiles()
+      getAllTiles()
         .then((res) => {
+          console.log(res);
           drawTiles(coveredLayer, res);
           map.addLayer(coveredLayer);
         })
