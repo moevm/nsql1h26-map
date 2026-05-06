@@ -2,6 +2,7 @@ import { relocateToLogin } from "../auth.js";
 import { getToken } from "../auth.js";
 import { userManager } from "../localManagers/userManager.js";
 import { initFilters, buildFilterParams, activeFilters } from "../filters/walksFilter.js";
+import { exportSelectedWalks } from "../utils/walksExportUtils.js";
 
 const API_BASE = "http://127.0.0.1:10001/api";
 
@@ -33,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   initPerPage();
   initSelectAll();
+  initExport();
 });
 
 async function loadAllWalksForStats() {
@@ -513,5 +515,14 @@ function attachRowClickEvents() {
   document.querySelectorAll('.walks-table tbody tr').forEach(row => {
     row.removeEventListener('click', handleRowClick);
     row.addEventListener('click', handleRowClick);
+  });
+}
+
+function initExport() {
+  const exportBtn = document.getElementById('export-selected-btn');
+  if (!exportBtn) return;
+
+  exportBtn.addEventListener('click', async () => {
+    await exportSelectedWalks(userId, selectedIds, getToken());
   });
 }
