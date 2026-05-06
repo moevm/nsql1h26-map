@@ -132,7 +132,7 @@
 }
 
 .btn-reset {
-  background: rgba(46, 107, 105, 0.2);
+  background: transparent;
   border: 1px solid var(--accent-color);
   border-radius: 8px;
   color: var(--accent-text-color);
@@ -144,7 +144,7 @@
 }
 
 .btn-reset:hover {
-  color: var(--main-text-color);
+  background: rgba(46, 107, 105, 0.1);
 }
 
 .btn-export {

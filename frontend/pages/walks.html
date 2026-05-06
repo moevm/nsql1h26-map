@@ -61,8 +61,12 @@
           <span class="page-header__count">0 прогулок</span>
         </div>
         <div class="page-header__right">
+        </div>
+      </div>
 
-          <div class="import-section">
+      <div class="import-export-bar">
+        <div class="import-export-bar__walks">
+          <div class="import-export-bar__import-section import-section">
             <div class="import-field">
               <label class="import-field__label">Walks.csv</label>
               <input type="file" class="import-field__input" id="import-walks-file" accept=".csv">
@@ -72,20 +76,40 @@
               <input type="file" class="import-field__input" id="import-walkpoints-file" accept=".csv">
             </div>
           </div>
-
-          <button class="btn btn--secondary" id="import-walks-btn">
-            <img src="/src/svg/routes/import.svg" alt="" class="btn__icon">
-            <span>Импорт прогулок</span>
-          </button>
-
-          <button class="btn btn--primary" id="new-walk-btn">
-            <img src="/src/svg/routes/plus.svg" alt="" class="btn__icon">
-            <span>Новая прогулка</span>
-          </button>
+          <div class="import-export-bar__btns">
+            <button class="btn btn--secondary" id="import-walks-btn">
+              <img src="/src/svg/routes/import.svg" alt="" class="btn__icon">
+              <span>Импорт прогулок</span>
+            </button>
+            <button class="btn-export" id="export-selected-btn">
+              <img src="/src/svg/routes/export.svg" alt="" class="btn-export__icon">
+              <span>Экспорт выбранных</span>
+            </button>
+          </div>
+        </div>
+        <div class="import-export-bar__tiles">
+          <div class="import-export-bar__import-section import-section">
+            <div class="import-field">
+            <div class="import-field">
+              <label class="import-field__label">CoveredTiles.csv</label>
+              <input type="file" class="import-field__input" id="import-coveredtiles-file" accept=".csv">
+            </div>
+          </div>
+          </div>
+          <div class="import-export-bar__btns">
+            <button class="btn btn--secondary" id="import-tiles-btn">
+              <img src="/src/svg/routes/import.svg" alt="" class="btn__icon">
+              <span>Импорт исследованных территорий</span>
+            </button>
+            <button class="btn-export" id="export-tiles-btn">
+              <img src="/src/svg/routes/export.svg" alt="" class="btn-export__icon">
+              <span>Экспорт исследованных территорий</span>
+            </button>
+          </div>
         </div>
       </div>
 
-        <div class="filter-bar">
+      <div class="filter-bar">
         <div class="filter-bar__item filter-bar__item--date">
           <label class="filter-bar__label">Дата</label>
           <div class="filter-bar__control">
@@ -124,9 +148,9 @@
 
         <div class="filter-bar__actions">
           <button class="btn-reset" id="reset-filters-btn">Сброс фильтров</button>
-          <button class="btn-export" id="export-selected-btn">
-            <img src="/src/svg/routes/export.svg" alt="" class="btn-export__icon">
-            <span>Экспорт выбранных</span>
+          <button class="btn btn--primary" id="new-walk-btn">
+            <img src="/src/svg/routes/plus.svg" alt="" class="btn__icon">
+            <span>Новая прогулка</span>
           </button>
         </div>
       </div>

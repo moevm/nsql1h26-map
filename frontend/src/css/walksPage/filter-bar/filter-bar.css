@@ -1,1 +1,5 @@
 @import url(../../routesPage/filter-bar/filter-bar.css);
+
+#reset-filters-btn {
+    margin-right: 12px;
+}
