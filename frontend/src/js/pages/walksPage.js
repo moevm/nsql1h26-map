@@ -150,6 +150,7 @@ function renderTable() {
     const distanceKm = walk.distanceMeters ? (walk.distanceMeters / 1000).toFixed(1) : '—';
     
     const newTiles = walk.newTilesCount !== undefined ? walk.newTilesCount : '—';
+    const walkUserId = walk.userId || '—';
 
     return `
       <tr class="${selectedRowClass}" data-id="${walk.id}">
@@ -158,6 +159,7 @@ function renderTable() {
         </td>
         <td class="walk-num">${rowNumber}</td>
         <td class="walk-id">${walk.id}</td>
+        <td class="walk-user-id">${walkUserId}</td>
         <td class="walk-date-time">${formattedDate} · ${formattedTime}</td>
         <td class="walk-dist">${distanceKm}</td>
         <td class="walk-duration">${durationText}</td>
