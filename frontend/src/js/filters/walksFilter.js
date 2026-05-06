@@ -4,7 +4,8 @@ export let activeFilters = {
   distanceMin: null,
   distanceMax: null,
   durationMin: null,
-  durationMax: null
+  durationMax: null,
+  userId: null
 };
 
 export function initFilters() {
@@ -12,6 +13,7 @@ export function initFilters() {
   const dateToInput = document.getElementById('date-to');
   const distanceFilter = document.getElementById('distance-filter');
   const durationFilter = document.getElementById('duration-filter');
+  const userIdInput = document.getElementById('user-id-filter');
   const resetBtn = document.getElementById('reset-filters-btn');
 
   const applyFilters = () => {
@@ -52,7 +54,8 @@ export function initFilters() {
       distanceMin,
       distanceMax,
       durationMin,
-      durationMax
+      durationMax,
+      userId: userIdInput?.value || null
     };
 
     window.dispatchEvent(new CustomEvent('filters-updated'));
@@ -63,6 +66,7 @@ export function initFilters() {
     if (dateToInput) dateToInput.value = '';
     if (distanceFilter) distanceFilter.value = 'any';
     if (durationFilter) durationFilter.value = 'any';
+    if (userIdInput) userIdInput.value = '';
 
     activeFilters = {
       startedAtFrom: null,
@@ -70,7 +74,8 @@ export function initFilters() {
       distanceMin: null,
       distanceMax: null,
       durationMin: null,
-      durationMax: null
+      durationMax: null,
+      userId: null
     };
 
     window.dispatchEvent(new CustomEvent('filters-updated'));
@@ -80,12 +85,14 @@ export function initFilters() {
   if (dateToInput) dateToInput.addEventListener('change', applyFilters);
   if (distanceFilter) distanceFilter.addEventListener('change', applyFilters);
   if (durationFilter) durationFilter.addEventListener('change', applyFilters);
+  if (userIdInput) userIdInput.addEventListener('input', applyFilters);
   if (resetBtn) resetBtn.addEventListener('click', resetFilters);
 }
 
 export function buildFilterParams() {
   const params = new URLSearchParams();
   
+  if (activeFilters.userId) params.append('userId', activeFilters.userId);
   if (activeFilters.startedAtFrom) params.append('startedAtFrom', activeFilters.startedAtFrom);
   if (activeFilters.startedAtTo) params.append('startedAtTo', activeFilters.startedAtTo);
   if (activeFilters.distanceMin !== null) params.append('distanceMin', activeFilters.distanceMin);
