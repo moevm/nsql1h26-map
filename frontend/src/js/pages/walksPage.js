@@ -5,6 +5,7 @@ import { initFilters, buildFilterParams, activeFilters } from "../filters/walksF
 import { exportSelectedWalks } from "../utils/walksExportImport.js";
 import { importWalks } from "../utils/walksExportImport.js";
 import { exportTiles, importTiles } from "../utils/tileUtils.js";
+import { showNewWalkModal } from "./newWalkModal.js";
 
 const API_BASE = "http://127.0.0.1:10001/api";
 
@@ -42,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initExport();
   initImport();
   initTileImportExport();
+  initNewWalkButton();
 });
 
 async function loadAllWalksForStats() {
@@ -644,5 +646,16 @@ function checkTileImportReady() {
   const importTilesBtn = document.getElementById('import-tiles-btn');
   if (importTilesBtn) {
     importTilesBtn.disabled = !tilesFile;
+  }
+}
+
+function initNewWalkButton() {
+  const newWalkBtn = document.getElementById('new-walk-btn');
+  if (newWalkBtn) {
+    newWalkBtn.addEventListener('click', () => {
+      showNewWalkModal(userId, getToken, () => {
+        loadWalks();
+      });
+    });
   }
 }
