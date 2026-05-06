@@ -1,9 +1,12 @@
 .import-export-bar {
+  display: flex;
+  gap: 20px;
   padding: 0 var(--block-padding);
   margin-bottom: 20px;
 }
 
-.import-export-bar__walks {
+.import-export-bar__walks,
+.import-export-bar__tiles {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
