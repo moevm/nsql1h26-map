@@ -12,6 +12,41 @@ export const buildQuery = (params) => {
   return q.toString() ? `?${q.toString()}` : '';
 };
 
+export const getPOIbyCategory = async (category) => {
+  const query = buildQuery({
+    name: '',
+    category: category,
+    bbox: '',
+    route_id: '',
+    limit: 100,
+    offset: '',
+  });
+  const response = await fetch(`http://127.0.0.1:10001/api/pois/${query}`, {
+    method: 'GET',
+    headers: { 'Authorization': `Bearer ${getToken()}`},
+    credentials: 'include',
+  }).catch(() => { Notify.error("Ошибка сервера: не удалось получить POIs"); return false; });
+  return await response.json();
+}
+
+export const importDb = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`http://127.0.0.1:10001/api/data/db/import`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${getToken()}`
+    },
+    body: formData
+  }).catch((error) => {throw new Error(error)});
+
+  if (!response.ok) throw new Error("Не удалось импортировать бд");
+
+  const data = await response.json();
+  return data;
+}
+
 export const getPois = async () => {
   const query = buildQuery({
     name: val('poi-name'),
@@ -127,3 +162,23 @@ export const fetchEntityData = async (entity) => {
       throw new Error('Выбранная сущность не поддерживается');
   }
 };
+
+export async function downloadFile(url, filename) {
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${getToken()}` },
+      credentials: 'include'
+    });
+    
+    if (!response.ok) throw new Error(`Ошибка загрузки ${filename}: ${response.status}`);
+    
+    const blob = await response.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    return `${filename} успешно скачан`;
+  } catch (error) { throw new Error(`Ошибка при скачивании ${filename}:`, error) };
+}

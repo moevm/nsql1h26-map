@@ -12,26 +12,19 @@ import { buildQuery } from "../utils/api"
 import { getAllTiles } from "../utils/api";
 import { drawTiles } from "../utils/mapUtils";
 import { initMapSelectors } from "../utils/mapUtils";
+import { downloadFile } from "../utils/api";
 
-const getPOI = async (category) => {
-  const query = buildQuery({
-    name: '',
-    category: category,
-    bbox: '',
-    route_id: '',
-    limit: 100,
-    offset: '',
-  });
-  const response = await fetch(`http://127.0.0.1:10001/api/pois/${query}`, {
-    method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`},
-    credentials: 'include',
-  }).catch(() => { Notify.error("Ошибка сервера: не удалось получить POIs"); return false; });
-  return await response.json();
-}
+import { Loader } from "../utils/loader"; 
+import { hideLoader } from "../utils/loader";
+import { showLoader } from "../utils/loader";
+
+import { getPOIbyCategory } from "../utils/api";
+import { importDb } from "../utils/api";
 
 document.addEventListener('DOMContentLoaded', () => {
   relocateToLogin();
+
+  const loader = new Loader();
 
   const openModalBtn = document.getElementById('build-route-btn');
   const closeModalBtn = document.querySelector('.modal-close');
@@ -39,6 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const mapLayersBtns = Array.from(document.querySelectorAll('.map-layer-chip'));
   const modalOverlay = document.querySelector('.modal-overlay');
   const modal = document.querySelector('.modal');
+
+  const importBtn = document.getElementById('import-btn');
+  const exportBtn = document.getElementById('export-btn');
 
   const map = L.map('map', { zoomControl: true }).setView([59.9676, 30.3129], 14);
   const coveredLayer  = L.layerGroup().addTo(map);
@@ -101,7 +97,53 @@ document.addEventListener('DOMContentLoaded', () => {
     subdomains: 'abcd', maxZoom: 19
   }).addTo(map);
 
+  document.body.appendChild(loader);
+
   initMapSelectors(map);
+
+  importBtn.addEventListener('click', () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+
+    fileInput.onchange = (e) => {
+      const file = e.target.files[0];
+
+      if (!file) Notify.error("Файл не выбран");
+
+      showLoader(loader, 'Идёт импорт бд');
+
+      importDb(file)
+        .then((result) => {
+          const nodesCount = result.nodesRestored;
+          const relationsCount = result.relationshipsRestored; 
+          Notify.success(`База данных импортирована! узлы:${nodesCount} связи:${relationsCount}`);
+        })
+        .catch((error) => {
+          Notify.error(error);
+        })
+        .finally(() => {
+          hideLoader(loader);
+        })
+    };
+
+    fileInput.click();
+  });
+
+  exportBtn.addEventListener('click', async () => {
+    showLoader(loader, 'Идёт экспорт бд');
+
+    downloadFile('http://127.0.0.1:10001/api/data/db/export', 'bd_dump.json')
+      .then((result) => {
+        Notify.success(result);
+      })
+      .catch((error) => {
+        Notify.error(error);
+      })
+      .finally(() => {
+        hideLoader(loader);
+      })
+  });
 
   openModalBtn.addEventListener('click', () => {
     modal.classList.add('modal--active');
@@ -143,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.toggle('map-layer-chip--active');
 
       if (btn.classList.contains('map-layer-chip--active')) {
-        getPOI(layerName)
+        getPOIbyCategory(layerName)
           .then((result) => {
             const points = result.items.map(item => ({
               coords: [item.lat, item.lon],
