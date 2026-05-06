@@ -2,6 +2,8 @@ import { relocateToLogin } from "../auth.js";
 import { getToken } from "../auth.js";
 import { userManager } from "../localManagers/userManager.js";
 import { initFilters, buildFilterParams, activeFilters } from "../filters/walksFilter.js";
+import { exportSelectedWalks } from "../utils/walksExportImport.js";
+import { importWalks } from "../utils/walksExportImport.js";
 
 const API_BASE = "http://127.0.0.1:10001/api";
 
@@ -13,6 +15,8 @@ let selectedIds = [];
 const userId = userManager.get().id;
 let currentHighlightedRow = null;
 let mapWalksLoaded = false;
+let walksFile = null;
+let walkpointsFile = null;
 
 // для статистики
 let allWalks = [];
@@ -33,6 +37,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   initPerPage();
   initSelectAll();
+  initExport();
+  initImport();
 });
 
 async function loadAllWalksForStats() {
@@ -514,4 +520,66 @@ function attachRowClickEvents() {
     row.removeEventListener('click', handleRowClick);
     row.addEventListener('click', handleRowClick);
   });
+}
+
+function initExport() {
+  const exportBtn = document.getElementById('export-selected-btn');
+  if (!exportBtn) return;
+
+  exportBtn.addEventListener('click', async () => {
+    await exportSelectedWalks(userId, selectedIds, getToken());
+  });
+}
+
+function initImport() {
+  const walksFileInput = document.getElementById('import-walks-file');
+  const walkpointsFileInput = document.getElementById('import-walkpoints-file');
+  const importBtn = document.getElementById('import-walks-btn');
+  
+  if (walksFileInput) {
+    walksFileInput.addEventListener('change', (e) => {
+      walksFile = e.target.files[0];
+      checkImportReady();
+    });
+  }
+  
+  if (walkpointsFileInput) {
+    walkpointsFileInput.addEventListener('change', (e) => {
+      walkpointsFile = e.target.files[0];
+      checkImportReady();
+    });
+  }
+  
+  if (importBtn) {
+    importBtn.addEventListener('click', async () => {
+      if (!walksFile || !walkpointsFile) {
+        alert('Выберите оба файла: walks.csv и walkpoints.csv');
+        return;
+      }
+      
+      importBtn.disabled = true;
+      
+      const result = await importWalks(userId, walksFile, walkpointsFile, getToken());
+      
+      if (result.success) {
+        alert(result.message);
+        walksFile = null;
+        walkpointsFile = null;
+        if (walksFileInput) walksFileInput.value = '';
+        if (walkpointsFileInput) walkpointsFileInput.value = '';
+        await loadWalks();
+      } else {
+        alert(`Ошибка импорта: ${result.message}`);
+      }
+      
+      importBtn.disabled = false;
+    });
+  }
+}
+
+function checkImportReady() {
+  const importBtn = document.getElementById('import-walks-btn');
+  if (importBtn) {
+    importBtn.disabled = !(walksFile && walkpointsFile);
+  }
 }
