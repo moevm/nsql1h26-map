@@ -61,10 +61,23 @@
           <span class="page-header__count">0 прогулок</span>
         </div>
         <div class="page-header__right">
+
+          <div class="import-section">
+            <div class="import-field">
+              <label class="import-field__label">Walks.csv</label>
+              <input type="file" class="import-field__input" id="import-walks-file" accept=".csv">
+            </div>
+            <div class="import-field">
+              <label class="import-field__label">Walkpoints.csv</label>
+              <input type="file" class="import-field__input" id="import-walkpoints-file" accept=".csv">
+            </div>
+          </div>
+
           <button class="btn btn--secondary" id="import-walks-btn">
             <img src="/src/svg/routes/import.svg" alt="" class="btn__icon">
             <span>Импорт прогулок</span>
           </button>
+
           <button class="btn btn--primary" id="new-walk-btn">
             <img src="/src/svg/routes/plus.svg" alt="" class="btn__icon">
             <span>Новая прогулка</span>

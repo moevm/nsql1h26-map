@@ -40,3 +40,40 @@ export async function exportSelectedWalks(userId, walkIds, token) {
   const walkpointsUrl = `${API_BASE}/data/export/walkpoints?userId=${userId}&walkIds=${walkIdsParam}`;
   await downloadFile(walkpointsUrl, 'walkpoints.csv', token);
 }
+
+export async function importWalks(userId, walksFile, walkpointsFile, token) {
+  if (!walksFile || !walkpointsFile) {
+    return { success: false, message: 'Необходимо выбрать оба файла: walks.csv и walkpoints.csv' };
+  }
+
+  const formData = new FormData();
+  formData.append('walks_file', walksFile);
+  formData.append('walkpoints_file', walkpointsFile);
+
+  try {
+    const response = await fetch(`${API_BASE}/data/import/walks?userId=${userId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return { success: false, message: `Ошибка ${response.status}: ${errorText}` };
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      message: `Импорт завершён: добавлено ${data.imported}, пропущено ${data.skipped}, новых тайлов: ${data.newTiles}`,
+      imported: data.imported,
+      skipped: data.skipped,
+      newTiles: data.newTiles
+    };
+  } catch (error) {
+    console.error('Ошибка импорта:', error);
+    return { success: false, message: `Ошибка сети: ${error.message}` };
+  }
+}
