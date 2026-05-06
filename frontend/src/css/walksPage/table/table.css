@@ -35,6 +35,11 @@
   border-left: 2px solid #00E6C3;
 }
 
+.walks-table__row--highlighted {
+  background: rgba(0, 229, 160, 0.15);
+  border-left: 3px solid var(--accent);
+}
+
 .walk-num {
   font-weight: 500;
   line-height: 20px;

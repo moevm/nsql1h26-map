@@ -11,6 +11,8 @@ let walks = [];
 let totalWalks = 0;
 let selectedIds = [];
 const userId = userManager.get().id;
+let currentHighlightedRow = null;
+let mapWalksLoaded = false;
 
 // для статистики
 let allWalks = [];
@@ -176,6 +178,7 @@ function renderTable() {
   attachTableEvents();
   attachRowClickEvents();
   updateSelectAllCheckbox();
+  tryHighlightFirstWalk();
 }
 
 function attachTableEvents() {
@@ -396,6 +399,9 @@ function drawAllWalksOnMap(walksData) {
     const group = L.featureGroup(allWalkLayers);
     map.fitBounds(group.getBounds(), { padding: [50, 50] });
   }
+
+  mapWalksLoaded = true;
+  tryHighlightFirstWalk();
 }
 
 async function loadAndDrawAllFilteredWalks() {
@@ -464,6 +470,32 @@ function highlightWalkOnMap(walkId) {
   }
 }
 
+function highlightRow(rowElement) {
+  if (currentHighlightedRow) {
+    currentHighlightedRow.classList.remove('walks-table__row--highlighted');
+  }
+  
+  if (rowElement) {
+    rowElement.classList.add('walks-table__row--highlighted');
+    currentHighlightedRow = rowElement;
+  } else {
+    currentHighlightedRow = null;
+  }
+}
+
+function tryHighlightFirstWalk() {
+  if (mapWalksLoaded && walks.length > 0) {
+    const firstRow = document.querySelector('.walks-table tbody tr');
+    if (firstRow) {
+      const walkId = firstRow.dataset.id;
+      if (walkId) {
+        highlightRow(firstRow);
+        highlightWalkOnMap(walkId);
+      }
+    }
+  }
+}
+
 function handleRowClick(e) {
   if (e.target.type === 'checkbox' || e.target.closest('.action-btn')) {
     return;
@@ -472,6 +504,7 @@ function handleRowClick(e) {
   const row = e.currentTarget;
   const walkId = row.dataset.id;
   if (walkId) {
+    highlightRow(row);
     highlightWalkOnMap(walkId);
   }
 }
