@@ -6,6 +6,7 @@
 @import url(table/pagination.css);
 @import url(dashboard/dashboard.css);
 @import url(map/map.css);
+@import url(import-export-bar/import-export-bar.css);
 
 .walks-main {
   display: flex;

@@ -1,0 +1,98 @@
+.import-export-bar {
+  padding: 0 var(--block-padding);
+  margin-bottom: 20px;
+}
+
+.import-export-bar__walks {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #162C2880;
+  border: 1px solid #273A37;
+  border-radius: 12px;
+  padding: 16px 20px;
+  gap: 20px;
+}
+
+.import-section {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.01);
+  padding: 16px 20px;
+  border-radius: 12px;
+}
+
+.import-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.import-field__label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.import-field__input {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--main-text-color);
+  background: #0F2320;
+  border: 1px solid #273A37;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 170px;
+}
+
+.import-field__input:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.import-field__input::-webkit-file-upload-button {
+  display: none;
+}
+
+.import-field__input::file-selector-button {
+  display: none;
+}
+
+.import-export-bar__btns {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.btn-export {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid var(--accent-color);
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: var(--accent-text-color);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-export__icon {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-export:hover {
+  background: rgba(46, 107, 105, 0.1);
+}
