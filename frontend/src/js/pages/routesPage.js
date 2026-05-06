@@ -158,9 +158,6 @@ function renderTable() {
 
     return `
       <tr class="${selectedRowClass}" data-id="${route.id}">
-        <td class="routes-table__td--checkbox">
-          <input type="checkbox" class="route-checkbox" data-id="${route.id}" ${isSelected ? 'checked' : ''}>
-        </td>
         <td class="route-num">${rowNumber}</td>
         <td class="route-id">${route.id}</td>
         <td class="route-user-id">${routeUserId}</td>

@@ -42,16 +42,6 @@
           <h1 class="page-header__title">Маршруты</h1>
           <span class="page-header__count">0 маршрутов</span>
         </div>
-        <div class="page-header__right">
-          <button class="btn btn--secondary" id="import-routes-btn">
-            <img src="/src/svg/routes/import.svg" alt="" class="btn__icon">
-            <span>Импорт маршрутов</span>
-          </button>
-          <button class="btn btn--primary" id="new-route-btn">
-            <img src="/src/svg/routes/plus.svg" alt="" class="btn__icon">
-            <span>Новый маршрут</span>
-          </button>
-        </div>
       </div>
 
         <div class="filter-bar">
@@ -93,10 +83,6 @@
 
         <div class="filter-bar__actions">
           <button class="btn-reset" id="reset-filters-btn">Сброс фильтров</button>
-          <button class="btn-export" id="export-selected-btn">
-            <img src="/src/svg/routes/export.svg" alt="" class="btn-export__icon">
-            <span>Экспорт выбранных</span>
-          </button>
         </div>
       </div>
 
@@ -104,9 +90,6 @@
         <table class="routes-table">
           <thead>
             <tr>
-              <th class="routes-table__th routes-table__th--checkbox">
-                <input type="checkbox" id="select-all-checkbox">
-              </th>
               <th class="routes-table__th">#</th>
               <th class="routes-table__th">ID маршрута</th>
               <th class="routes-table__th">ID пользователя</th>

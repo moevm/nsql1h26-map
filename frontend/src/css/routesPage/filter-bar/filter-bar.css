@@ -132,12 +132,13 @@
 }
 
 .btn-reset {
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 12px;
+  background: rgba(46, 107, 105, 0.2);
+  border: 1px solid var(--accent-color);
+  border-radius: 8px;
+  color: var(--accent-text-color);
+  font-size: 14px;
   font-weight: 700;
-  line-height: 16px;
+  line-height: 20px;
   cursor: pointer;
   padding: 9px 12px;
 }
@@ -156,7 +157,7 @@
   padding: 9px 16px;
   color: var(--accent-text-color);
   font-size: 14px;
-    font-weight: 700;
+  font-weight: 700;
   line-height: 20px;
   cursor: pointer;
 }
