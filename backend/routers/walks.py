@@ -240,17 +240,21 @@ async def list_walks(
     total = (await count_result.single())["total"]
 
     result = await session.run(
-        f"""
-        {match} {where}
-        RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
-               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds,
-               size([(w)-[:FIRST_COVERED]->(ct) | ct]) AS newTilesCount,
-               w.allTilesCount AS allTilesCount
-        ORDER BY w.startedAt DESC
-        SKIP $offset LIMIT $limit
-        """,
-        offset=offset, limit=limit, **params,
-    )
+    f"""
+    {match} {where}
+    RETURN u.id AS userId,
+           w.id AS id, 
+           toString(w.startedAt) AS startedAt, 
+           toString(w.finishedAt) AS finishedAt,
+           w.distanceMeters AS distanceMeters, 
+           w.durationSeconds AS durationSeconds,
+           size([(w)-[:FIRST_COVERED]->(ct) | ct]) AS newTilesCount,
+           w.allTilesCount AS allTilesCount
+    ORDER BY w.startedAt DESC
+    SKIP $offset LIMIT $limit
+    """,
+    offset=offset, limit=limit, **params,
+)
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)
 

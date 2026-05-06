@@ -58,7 +58,7 @@
       <div class="page-header">
         <div class="page-header__left">
           <h1 class="page-header__title">Прогулки</h1>
-          <span class="page-header__count">142 прогулки</span>
+          <span class="page-header__count">0 прогулок</span>
         </div>
         <div class="page-header__right">
           <button class="btn btn--secondary" id="import-walks-btn">
@@ -104,6 +104,11 @@
           </select>
         </div>
 
+        <div class="filter-bar__item filter-bar__item--user-id">
+          <label class="filter-bar__label">ID пользователя</label>
+          <input type="text" class="filter-bar__control filter-bar__user-id-input" id="user-id-filter" placeholder="Введите ID пользователя">
+        </div>
+
         <div class="filter-bar__actions">
           <button class="btn-reset" id="reset-filters-btn">Сброс фильтров</button>
           <button class="btn-export" id="export-selected-btn">
@@ -121,11 +126,12 @@
                 <input type="checkbox" id="select-all-checkbox">
               </th>
               <th class="walks-table__th">#</th>
-              <th class="walks-table__th">Имя прогулки / ID</th>
+              <th class="walks-table__th">ID прогулки</th>
+              <th class="walks-table__th">ID пользователя</th>
               <th class="walks-table__th">Дата и время</th>
               <th class="walks-table__th">Расстояние (км)</th>
               <th class="walks-table__th">Длительность</th>
-              <th class="walks-table__th">Новая зона</th>
+              <th class="walks-table__th">Новые тайлы</th>
               <th class="walks-table__th">Действия</th>
             </tr>
           </thead>

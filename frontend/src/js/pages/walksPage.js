@@ -11,6 +11,8 @@ let walks = [];
 let totalWalks = 0;
 let selectedIds = [];
 const userId = userManager.get().id;
+let currentHighlightedRow = null;
+let mapWalksLoaded = false;
 
 // для статистики
 let allWalks = [];
@@ -149,10 +151,8 @@ function renderTable() {
     const formattedTime = formatTime(walk.startedAt);
     const distanceKm = walk.distanceMeters ? (walk.distanceMeters / 1000).toFixed(1) : '—';
     
-    let coveragePercent = '—';
-    if (walk.newTilesCount !== undefined && walk.allTilesCount && walk.allTilesCount > 0) {
-      coveragePercent = Math.round((walk.newTilesCount / walk.allTilesCount) * 100) + '%';
-    }
+    const newTiles = walk.newTilesCount !== undefined ? walk.newTilesCount : '—';
+    const walkUserId = walk.userId || '—';
 
     return `
       <tr class="${selectedRowClass}" data-id="${walk.id}">
@@ -160,14 +160,12 @@ function renderTable() {
           <input type="checkbox" class="walk-checkbox" data-id="${walk.id}" ${isSelected ? 'checked' : ''}>
         </td>
         <td class="walk-num">${rowNumber}</td>
-        <td>
-          <div class="walk-name">Прогулка ${walk.id?.slice(0, 8)}</div>
-          <div class="walk-id">${walk.id}</div>
-        </td>
+        <td class="walk-id">${walk.id}</td>
+        <td class="walk-user-id">${walkUserId}</td>
         <td class="walk-date-time">${formattedDate} · ${formattedTime}</td>
         <td class="walk-dist">${distanceKm}</td>
         <td class="walk-duration">${durationText}</td>
-        <td><span class="coverage-badge">${coveragePercent}</span></td>
+        <td class="walk-new-tiles">${newTiles}</td>
         <td>
           <button class="action-btn" data-action="delete" data-id="${walk.id}">
             <img src="/src/svg/routes/trash.svg" alt="удалить">
@@ -180,6 +178,7 @@ function renderTable() {
   attachTableEvents();
   attachRowClickEvents();
   updateSelectAllCheckbox();
+  tryHighlightFirstWalk();
 }
 
 function attachTableEvents() {
@@ -400,6 +399,9 @@ function drawAllWalksOnMap(walksData) {
     const group = L.featureGroup(allWalkLayers);
     map.fitBounds(group.getBounds(), { padding: [50, 50] });
   }
+
+  mapWalksLoaded = true;
+  tryHighlightFirstWalk();
 }
 
 async function loadAndDrawAllFilteredWalks() {
@@ -468,6 +470,32 @@ function highlightWalkOnMap(walkId) {
   }
 }
 
+function highlightRow(rowElement) {
+  if (currentHighlightedRow) {
+    currentHighlightedRow.classList.remove('walks-table__row--highlighted');
+  }
+  
+  if (rowElement) {
+    rowElement.classList.add('walks-table__row--highlighted');
+    currentHighlightedRow = rowElement;
+  } else {
+    currentHighlightedRow = null;
+  }
+}
+
+function tryHighlightFirstWalk() {
+  if (mapWalksLoaded && walks.length > 0) {
+    const firstRow = document.querySelector('.walks-table tbody tr');
+    if (firstRow) {
+      const walkId = firstRow.dataset.id;
+      if (walkId) {
+        highlightRow(firstRow);
+        highlightWalkOnMap(walkId);
+      }
+    }
+  }
+}
+
 function handleRowClick(e) {
   if (e.target.type === 'checkbox' || e.target.closest('.action-btn')) {
     return;
@@ -476,6 +504,7 @@ function handleRowClick(e) {
   const row = e.currentTarget;
   const walkId = row.dataset.id;
   if (walkId) {
+    highlightRow(row);
     highlightWalkOnMap(walkId);
   }
 }
