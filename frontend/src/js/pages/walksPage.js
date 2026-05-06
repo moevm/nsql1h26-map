@@ -4,6 +4,7 @@ import { userManager } from "../localManagers/userManager.js";
 import { initFilters, buildFilterParams, activeFilters } from "../filters/walksFilter.js";
 import { exportSelectedWalks } from "../utils/walksExportImport.js";
 import { importWalks } from "../utils/walksExportImport.js";
+import { exportTiles, importTiles } from "../utils/tileUtils.js";
 
 const API_BASE = "http://127.0.0.1:10001/api";
 
@@ -17,6 +18,7 @@ let currentHighlightedRow = null;
 let mapWalksLoaded = false;
 let walksFile = null;
 let walkpointsFile = null;
+let tilesFile = null;
 
 // для статистики
 let allWalks = [];
@@ -39,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSelectAll();
   initExport();
   initImport();
+  initTileImportExport();
 });
 
 async function loadAllWalksForStats() {
@@ -581,5 +584,65 @@ function checkImportReady() {
   const importBtn = document.getElementById('import-walks-btn');
   if (importBtn) {
     importBtn.disabled = !(walksFile && walkpointsFile);
+  }
+}
+
+function initTileImportExport() {
+  // Экспорт тайлов
+  const exportTilesBtn = document.getElementById('export-tiles-btn');
+  if (exportTilesBtn) {
+    exportTilesBtn.addEventListener('click', async () => {
+      exportTilesBtn.disabled = true;
+      
+      await exportTiles(userId, getToken());
+      
+      exportTilesBtn.disabled = false;
+    });
+  }
+
+  // Выбор файла для импорта тайлов
+  const tilesFileInput = document.getElementById('import-coveredtiles-file');
+  if (tilesFileInput) {
+    tilesFileInput.addEventListener('change', (e) => {
+      tilesFile = e.target.files[0];
+      const importTilesBtn = document.getElementById('import-tiles-btn');
+      if (importTilesBtn) {
+        importTilesBtn.disabled = !tilesFile;
+      }
+    });
+  }
+
+  // Импорт тайлов
+  const importTilesBtn = document.getElementById('import-tiles-btn');
+  if (importTilesBtn) {
+    importTilesBtn.disabled = true;
+    
+    importTilesBtn.addEventListener('click', async () => {
+      if (!tilesFile) {
+        alert('Выберите файл tiles.csv');
+        return;
+      }
+      
+      importTilesBtn.disabled = true;
+      
+      const result = await importTiles(userId, tilesFile, getToken());
+      
+      if (result.success) {
+        alert(result.message);
+        tilesFile = null;
+        if (tilesFileInput) tilesFileInput.value = '';
+        importTilesBtn.disabled = true;
+      } else {
+        alert(`Ошибка импорта: ${result.message}`);
+        importTilesBtn.disabled = false;
+      }
+    });
+  }
+}
+
+function checkTileImportReady() {
+  const importTilesBtn = document.getElementById('import-tiles-btn');
+  if (importTilesBtn) {
+    importTilesBtn.disabled = !tilesFile;
   }
 }
