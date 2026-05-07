@@ -4,7 +4,8 @@
   bottom: 80px;
   right: 15px;
   z-index: 1000;
-  width: 100px;
+  min-width: 100px;
+  padding: 5px 10px;
   height: 50px;
   background: #112727;
   border: 1px solid #fff;
@@ -16,6 +17,7 @@
   cursor: pointer;
   color: var(--color-text-secondary);
   box-shadow: 3px 3px;
+  text-wrap-mode: nowrap;
 }
 
 .bbox-btn:last-child {
@@ -66,4 +68,8 @@
   background: var(--color-background-info);
   color: var(--color-text-info);
   border-color: var(--color-border-info);
+}
+
+.bbox-btn--set-start {
+  bottom: 50px !important;  
 }
