@@ -93,7 +93,7 @@
 }
 
 .modal--active {
-  width: 50%;
+  width: 90%;
   min-height: 50%;
   opacity: 1;
   height: fit-content;
