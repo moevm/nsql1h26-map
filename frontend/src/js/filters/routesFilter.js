@@ -18,12 +18,17 @@ export function initFilters() {
   const resetBtn = document.getElementById('reset-filters-btn');
 
   const applyFilters = () => {
-    const dateFrom = dateFromInput?.value || null;
+    let dateFrom = dateFromInput?.value || null;
     let dateTo = dateToInput?.value || null;
+
+    if (dateFrom) {
+      const date = new Date(dateFrom);
+      dateFrom = date.toISOString();
+    }
+    
     if (dateTo) {
-      const nextDay = new Date(dateTo);
-      nextDay.setDate(nextDay.getDate() + 1);
-      dateTo = nextDay.toISOString().split('T')[0];
+      const date = new Date(dateTo);
+      dateTo = date.toISOString();
     }
 
     let distanceMin = null;

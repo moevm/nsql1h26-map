@@ -20,6 +20,16 @@ export function initFilters() {
     let startedAtFrom = dateFromInput?.value || null;
     let startedAtTo = dateToInput?.value || null;
 
+    if (startedAtFrom) {
+      const date = new Date(startedAtFrom);
+      startedAtFrom = date.toISOString();
+    }
+    
+    if (startedAtTo) {
+      const date = new Date(startedAtTo);
+      startedAtTo = date.toISOString();
+    }
+
     let distanceMin = null;
     let distanceMax = null;
     const distanceValue = distanceFilter?.value;
