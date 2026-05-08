@@ -83,3 +83,10 @@
   bottom: 120px !important;
   width: 150px;
 }
+
+.map-control-btn--active {
+  background-color: #00e6c3;
+  border: var(--accent-color);
+  color:#fff;
+  transform: scale(1.1);
+}
