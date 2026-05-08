@@ -1,11 +1,16 @@
 import { relocateToLogin } from "../auth.js";
 import { getToken } from "../auth.js";
 import { userManager } from "../localManagers/userManager.js";
-import { initFilters, buildFilterParams, activeFilters } from "../filters/walksFilter.js";
+import {
+  initFilters,
+  buildFilterParams,
+  activeFilters,
+} from "../filters/walksFilter.js";
 import { exportSelectedWalks } from "../utils/walksExportImport.js";
 import { importWalks } from "../utils/walksExportImport.js";
 import { exportTiles, importTiles } from "../utils/tileUtils.js";
 import { showNewWalkModal } from "./newWalkModal.js";
+import { Notify } from "../utils/notify.js";
 
 const API_BASE = "http://127.0.0.1:10001/api";
 
@@ -21,23 +26,22 @@ let walksFile = null;
 let walkpointsFile = null;
 let tilesFile = null;
 
-// для статистики
 let allWalks = [];
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener("DOMContentLoaded", async () => {
   relocateToLogin();
   initMap();
 
   initFilters();
-  
-  window.addEventListener('filters-updated', () => {
+
+  window.addEventListener("filters-updated", () => {
     currentPage = 1;
     loadWalks();
   });
 
   await loadWalks();
   await loadAllWalksForStats();
-  
+
   initPerPage();
   initSelectAll();
   initExport();
@@ -48,14 +52,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadAllWalksForStats() {
   const url = `${API_BASE}/walks/?userId=${userId}&offset=0&limit=100`;
-  
+
   const response = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${getToken()}` }
+    headers: { Authorization: `Bearer ${getToken()}` },
   });
-  
+
   const data = await response.json();
   allWalks = data.items || [];
-  
+
   updateDashboardStats();
 }
 
@@ -67,42 +71,47 @@ async function loadWalks() {
   if (filterParams) {
     url += `&${filterParams}`;
   }
-  
+
   const response = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${getToken()}` }
+    headers: { Authorization: `Bearer ${getToken()}` },
   });
-  
+
   const data = await response.json();
   walks = data.items || [];
   totalWalks = data.total || 0;
-  
+
   renderTable();
   updatePaginationInfo();
-  
+
   await loadAndDrawAllFilteredWalks();
 }
 
 function updateDashboardStats() {
   if (!allWalks || allWalks.length === 0) {
-    document.querySelector('.dashboard__card--dist .dashboard__card-number').textContent = '0';
-    document.querySelector('.dashboard__card--time .dashboard__card-number').textContent = '0';
+    document.querySelector(
+      ".dashboard__card--dist .dashboard__card-number",
+    ).textContent = "0";
+    document.querySelector(
+      ".dashboard__card--time .dashboard__card-number",
+    ).textContent = "0";
     return;
   }
-  
+
   const totalDistanceKm = allWalks.reduce((sum, walk) => {
     const distance = walk.distanceMeters ? walk.distanceMeters / 1000 : 0;
     return sum + distance;
   }, 0);
-  
-  const avgDurationMinutes = allWalks.reduce((sum, walk) => {
-    return sum + (walk.durationSeconds ? walk.durationSeconds / 60 : 0);
-  }, 0) / allWalks.length;
-  
-  const formattedDistance = totalDistanceKm.toLocaleString('ru-RU', { 
-    minimumFractionDigits: 1, 
-    maximumFractionDigits: 1 
+
+  const avgDurationMinutes =
+    allWalks.reduce((sum, walk) => {
+      return sum + (walk.durationSeconds ? walk.durationSeconds / 60 : 0);
+    }, 0) / allWalks.length;
+
+  const formattedDistance = totalDistanceKm.toLocaleString("ru-RU", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
   });
-  
+
   let formattedTime;
   if (avgDurationMinutes >= 60) {
     const hours = Math.floor(avgDurationMinutes / 60);
@@ -111,16 +120,20 @@ function updateDashboardStats() {
   } else {
     formattedTime = `${Math.round(avgDurationMinutes)} мин`;
   }
-  
-  const distanceElement = document.querySelector('.dashboard__card--dist .dashboard__card-number');
-  const timeElement = document.querySelector('.dashboard__card--time .dashboard__card-number');
-  
+
+  const distanceElement = document.querySelector(
+    ".dashboard__card--dist .dashboard__card-number",
+  );
+  const timeElement = document.querySelector(
+    ".dashboard__card--time .dashboard__card-number",
+  );
+
   if (distanceElement) distanceElement.textContent = formattedDistance;
   if (timeElement) timeElement.textContent = formattedTime;
 }
 
 function formatDuration(seconds) {
-  if (!seconds && seconds !== 0) return '—';
+  if (!seconds && seconds !== 0) return "—";
   const minutes = Math.floor(seconds / 60);
   if (minutes >= 60) {
     const hours = Math.floor(minutes / 60);
@@ -131,44 +144,62 @@ function formatDuration(seconds) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return '—';
+  if (!dateStr) return "—";
   const date = new Date(dateStr);
-  const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+  const months = [
+    "Янв",
+    "Фев",
+    "Мар",
+    "Апр",
+    "Май",
+    "Июн",
+    "Июл",
+    "Авг",
+    "Сен",
+    "Окт",
+    "Ноя",
+    "Дек",
+  ];
   return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 }
 
 function formatTime(dateStr) {
-  if (!dateStr) return '—';
+  if (!dateStr) return "—";
   const date = new Date(dateStr);
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function renderTable() {
-  const tbody = document.getElementById('walks-table-body');
+  const tbody = document.getElementById("walks-table-body");
   if (!tbody) return;
 
   if (walks.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;">Прогулок не найдено</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="9" style="text-align: center; padding: 20px;">Прогулок не найдено</td></tr>';
     updatePaginationInfo();
     return;
   }
 
-  tbody.innerHTML = walks.map((walk, idx) => {
-    const rowNumber = (currentPage - 1) * perPage + idx + 1;
-    const isSelected = selectedIds.includes(walk.id);
-    const selectedRowClass = isSelected ? 'walks-table__row--selected' : '';
-    const durationText = formatDuration(walk.durationSeconds);
-    const formattedDate = formatDate(walk.startedAt);
-    const formattedTime = formatTime(walk.startedAt);
-    const distanceKm = walk.distanceMeters ? (walk.distanceMeters / 1000).toFixed(1) : '—';
-    
-    const newTiles = walk.newTilesCount !== undefined ? walk.newTilesCount : '—';
-    const walkUserId = walk.userId || '—';
+  tbody.innerHTML = walks
+    .map((walk, idx) => {
+      const rowNumber = (currentPage - 1) * perPage + idx + 1;
+      const isSelected = selectedIds.includes(walk.id);
+      const selectedRowClass = isSelected ? "walks-table__row--selected" : "";
+      const durationText = formatDuration(walk.durationSeconds);
+      const formattedDate = formatDate(walk.startedAt);
+      const formattedTime = formatTime(walk.startedAt);
+      const distanceKm = walk.distanceMeters
+        ? (walk.distanceMeters / 1000).toFixed(1)
+        : "—";
 
-    return `
+      const newTiles =
+        walk.newTilesCount !== undefined ? walk.newTilesCount : "—";
+      const walkUserId = walk.userId || "—";
+
+      return `
       <tr class="${selectedRowClass}" data-id="${walk.id}">
         <td class="walks-table__td--checkbox">
-          <input type="checkbox" class="walk-checkbox" data-id="${walk.id}" ${isSelected ? 'checked' : ''}>
+          <input type="checkbox" class="walk-checkbox" data-id="${walk.id}" ${isSelected ? "checked" : ""}>
         </td>
         <td class="walk-num">${rowNumber}</td>
         <td class="walk-id">${walk.id}</td>
@@ -184,7 +215,8 @@ function renderTable() {
         </td>
       </tr>
     `;
-  }).join('');
+    })
+    .join("");
 
   attachTableEvents();
   attachRowClickEvents();
@@ -193,27 +225,27 @@ function renderTable() {
 }
 
 function attachTableEvents() {
-  document.querySelectorAll('.walk-checkbox').forEach(cb => {
-    cb.removeEventListener('change', handleCheckboxChange);
-    cb.addEventListener('change', handleCheckboxChange);
+  document.querySelectorAll(".walk-checkbox").forEach((cb) => {
+    cb.removeEventListener("change", handleCheckboxChange);
+    cb.addEventListener("change", handleCheckboxChange);
   });
 
-  document.querySelectorAll('[data-action="delete"]').forEach(btn => {
-    btn.removeEventListener('click', handleDeleteClick);
-    btn.addEventListener('click', handleDeleteClick);
+  document.querySelectorAll('[data-action="delete"]').forEach((btn) => {
+    btn.removeEventListener("click", handleDeleteClick);
+    btn.addEventListener("click", handleDeleteClick);
   });
 }
 
 function handleCheckboxChange(e) {
   const id = e.target.dataset.id;
-  const row = e.target.closest('tr');
-  
+  const row = e.target.closest("tr");
+
   if (e.target.checked) {
     if (!selectedIds.includes(id)) selectedIds.push(id);
-    if (row) row.classList.add('walks-table__row--selected');
+    if (row) row.classList.add("walks-table__row--selected");
   } else {
-    selectedIds = selectedIds.filter(i => i !== id);
-    if (row) row.classList.remove('walks-table__row--selected');
+    selectedIds = selectedIds.filter((i) => i !== id);
+    if (row) row.classList.remove("walks-table__row--selected");
   }
   updateSelectAllCheckbox();
 }
@@ -222,8 +254,8 @@ async function handleDeleteClick(e) {
   const id = e.currentTarget.dataset.id;
   if (confirm(`Удалить прогулку ${id}?`)) {
     const response = await fetch(`${API_BASE}/walks/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${getToken()}` }
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${getToken()}` },
     });
     if (response.ok) {
       window.location.reload();
@@ -232,10 +264,12 @@ async function handleDeleteClick(e) {
 }
 
 function updateSelectAllCheckbox() {
-  const selectAll = document.getElementById('select-all-checkbox');
+  const selectAll = document.getElementById("select-all-checkbox");
   if (selectAll) {
-    const currentPageIds = walks.map(w => w.id);
-    const allSelected = currentPageIds.length > 0 && currentPageIds.every(id => selectedIds.includes(id));
+    const currentPageIds = walks.map((w) => w.id);
+    const allSelected =
+      currentPageIds.length > 0 &&
+      currentPageIds.every((id) => selectedIds.includes(id));
     selectAll.checked = allSelected;
   }
 }
@@ -244,28 +278,29 @@ function updatePaginationInfo() {
   const total = totalWalks;
   const start = total === 0 ? 0 : (currentPage - 1) * perPage + 1;
   const end = Math.min(currentPage * perPage, total);
-  const rangeSpan = document.getElementById('pagination-range');
-  const walksCountSpan = document.querySelector('.page-header__count');
-  
+  const rangeSpan = document.getElementById("pagination-range");
+  const walksCountSpan = document.querySelector(".page-header__count");
+
   if (rangeSpan) {
-    rangeSpan.textContent = total > 0 
-      ? `Показано ${start}-${end} из ${total} прогулок`
-      : `Нет прогулок`;
+    rangeSpan.textContent =
+      total > 0
+        ? `Показано ${start}-${end} из ${total} прогулок`
+        : `Нет прогулок`;
   }
   if (walksCountSpan) {
     walksCountSpan.textContent = `${total} прогулок`;
   }
-  
+
   renderPaginationControls(total);
 }
 
 function renderPaginationControls(total) {
   const maxPage = Math.ceil(total / perPage);
-  const controlsContainer = document.querySelector('.pagination__controls');
+  const controlsContainer = document.querySelector(".pagination__controls");
   if (!controlsContainer) return;
 
   if (maxPage <= 1) {
-    controlsContainer.innerHTML = '';
+    controlsContainer.innerHTML = "";
     return;
   }
 
@@ -274,43 +309,61 @@ function renderPaginationControls(total) {
     pages = Array.from({ length: maxPage }, (_, i) => i + 1);
   } else {
     if (currentPage <= 4) {
-      pages = [1, 2, 3, 4, 5, '...', maxPage];
+      pages = [1, 2, 3, 4, 5, "...", maxPage];
     } else if (currentPage >= maxPage - 3) {
-      pages = [1, '...', maxPage - 4, maxPage - 3, maxPage - 2, maxPage - 1, maxPage];
+      pages = [
+        1,
+        "...",
+        maxPage - 4,
+        maxPage - 3,
+        maxPage - 2,
+        maxPage - 1,
+        maxPage,
+      ];
     } else {
-      pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', maxPage];
+      pages = [
+        1,
+        "...",
+        currentPage - 1,
+        currentPage,
+        currentPage + 1,
+        "...",
+        maxPage,
+      ];
     }
   }
 
   controlsContainer.innerHTML = `
-    <button class="pagination__btn pagination__btn--prev" ${currentPage === 1 ? 'disabled' : ''}>
+    <button class="pagination__btn pagination__btn--prev" ${currentPage === 1 ? "disabled" : ""}>
       <img src="/src/svg/routes/arrow-left.svg" alt="">
     </button>
-    ${pages.map(page => {
-      if (page === '...') {
-        return '<span class="pagination__dots">...</span>';
-      }
-      return `<button class="pagination__btn pagination__btn--page ${currentPage === page ? 'pagination__btn--active' : ''}" data-page="${page}">${page}</button>`;
-    }).join('')}
-    <button class="pagination__btn pagination__btn--next" ${currentPage === maxPage ? 'disabled' : ''}>
+    ${pages
+      .map((page) => {
+        if (page === "...") {
+          return '<span class="pagination__dots">...</span>';
+        }
+        return `<button class="pagination__btn pagination__btn--page ${currentPage === page ? "pagination__btn--active" : ""}" data-page="${page}">${page}</button>`;
+      })
+      .join("")}
+    <button class="pagination__btn pagination__btn--next" ${currentPage === maxPage ? "disabled" : ""}>
       <img src="/src/svg/routes/arrow-right.svg" alt="">
     </button>
   `;
 
-  document.querySelectorAll('.pagination__btn--page').forEach(btn => {
-    btn.removeEventListener('click', handlePageClick);
-    btn.addEventListener('click', handlePageClick);
+  document.querySelectorAll(".pagination__btn--page").forEach((btn) => {
+    btn.removeEventListener("click", handlePageClick);
+    btn.addEventListener("click", handlePageClick);
   });
 
-  const prevBtn = controlsContainer.querySelector('.pagination__btn--prev');
-  const nextBtn = controlsContainer.querySelector('.pagination__btn--next');
+  const prevBtn = controlsContainer.querySelector(".pagination__btn--prev");
+  const nextBtn = controlsContainer.querySelector(".pagination__btn--next");
   if (prevBtn) {
-    prevBtn.removeEventListener('click', handlePrevClick);
-    prevBtn.addEventListener('click', handlePrevClick);
+    prevBtn.removeEventListener("click", handlePrevClick);
+    prevBtn.addEventListener("click", handlePrevClick);
   }
   if (nextBtn) {
-    nextBtn.removeEventListener('click', handleNextClick);
-    nextBtn.addEventListener('click', handleNextClick);
+    nextBtn.removeEventListener("click", handleNextClick);
+    nextBtn.addEventListener("click", handleNextClick);
   }
 }
 
@@ -335,11 +388,11 @@ function handleNextClick() {
 }
 
 function initSelectAll() {
-  const selectAll = document.getElementById('select-all-checkbox');
+  const selectAll = document.getElementById("select-all-checkbox");
   if (selectAll) {
-    selectAll.addEventListener('change', (e) => {
+    selectAll.addEventListener("change", (e) => {
       if (e.target.checked) {
-        selectedIds = walks.map(w => w.id);
+        selectedIds = walks.map((w) => w.id);
       } else {
         selectedIds = [];
       }
@@ -349,12 +402,12 @@ function initSelectAll() {
 }
 
 function initPerPage() {
-  const perPageSelect = document.getElementById('per-page-select');
+  const perPageSelect = document.getElementById("per-page-select");
   if (!perPageSelect) return;
 
   perPageSelect.value = perPage.toString();
 
-  perPageSelect.addEventListener('change', (e) => {
+  perPageSelect.addEventListener("change", (e) => {
     const newValue = parseInt(e.target.value);
     if (!isNaN(newValue) && newValue !== perPage) {
       perPage = newValue;
@@ -364,25 +417,24 @@ function initPerPage() {
   });
 }
 
-// Инициализация карты
 let map;
 let allWalkLayers = [];
 let currentHighlightedLayer = null;
 
 function initMap() {
-  const mapContainer = document.getElementById('walks-map');
+  const mapContainer = document.getElementById("walks-map");
   if (!mapContainer) return;
-  
-  map = L.map('walks-map').setView([59.9676, 30.3129], 13);
-  
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd',
-    maxZoom: 19
+
+  map = L.map("walks-map").setView([59.9676, 30.3129], 13);
+
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    subdomains: "abcd",
+    maxZoom: 19,
   }).addTo(map);
 }
 
 function clearAllWalksFromMap() {
-  allWalkLayers.forEach(layer => {
+  allWalkLayers.forEach((layer) => {
     if (map) map.removeLayer(layer);
   });
   allWalkLayers = [];
@@ -392,20 +444,20 @@ function clearAllWalksFromMap() {
 function drawAllWalksOnMap(walksData) {
   if (!map) return;
   clearAllWalksFromMap();
-  
-  walksData.forEach(walk => {
+
+  walksData.forEach((walk) => {
     if (walk.points && walk.points.length > 0) {
-      const latlngs = walk.points.map(p => [p.lat, p.lon]);
+      const latlngs = walk.points.map((p) => [p.lat, p.lon]);
       const polyline = L.polyline(latlngs, {
-        color: '#00e5a0',
+        color: "#00e5a0",
         weight: 2,
-        opacity: 0.6
+        opacity: 0.6,
       }).addTo(map);
       polyline.walkId = walk.id;
       allWalkLayers.push(polyline);
     }
   });
-  
+
   if (allWalkLayers.length > 0 && map) {
     const group = L.featureGroup(allWalkLayers);
     map.fitBounds(group.getBounds(), { padding: [50, 50] });
@@ -417,27 +469,30 @@ function drawAllWalksOnMap(walksData) {
 
 async function loadAndDrawAllFilteredWalks() {
   let url = `${API_BASE}/walks/?userId=${userId}&offset=0&limit=100`;
-  
+
   const filterParams = buildFilterParams();
   if (filterParams) {
     url += `&${filterParams}`;
   }
-  
+
   try {
     const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${getToken()}` }
+      headers: { Authorization: `Bearer ${getToken()}` },
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       const allFilteredWalks = data.items || [];
-      
+
       const walksWithPoints = [];
       for (const walk of allFilteredWalks) {
         try {
-          const walkDetailResponse = await fetch(`${API_BASE}/walks/${walk.id}`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-          });
+          const walkDetailResponse = await fetch(
+            `${API_BASE}/walks/${walk.id}`,
+            {
+              headers: { Authorization: `Bearer ${getToken()}` },
+            },
+          );
           if (walkDetailResponse.ok) {
             const walkDetail = await walkDetailResponse.json();
             if (walkDetail.points && walkDetail.points.length > 0) {
@@ -445,36 +500,36 @@ async function loadAndDrawAllFilteredWalks() {
             }
           }
         } catch (e) {
-          console.error('Ошибка загрузки деталей прогулки:', walk.id);
+          console.error("Ошибка загрузки деталей прогулки:", walk.id);
         }
       }
-      
+
       drawAllWalksOnMap(walksWithPoints);
     }
   } catch (error) {
-    console.error('Ошибка загрузки отфильтрованных прогулок:', error);
+    console.error("Ошибка загрузки отфильтрованных прогулок:", error);
   }
 }
 
 function highlightWalkOnMap(walkId) {
   if (currentHighlightedLayer) {
     currentHighlightedLayer.setStyle({
-      color: '#00e5a0',
+      color: "#00e5a0",
       weight: 2,
-      opacity: 0.6
+      opacity: 0.6,
     });
     currentHighlightedLayer = null;
   }
-  
+
   for (const layer of allWalkLayers) {
     if (layer.walkId === walkId) {
       layer.setStyle({
-        color: '#ff4d6d',
+        color: "#ff4d6d",
         weight: 4,
-        opacity: 0.9
+        opacity: 0.9,
       });
       currentHighlightedLayer = layer;
-      
+
       map.fitBounds(layer.getBounds(), { padding: [50, 50] });
       break;
     }
@@ -483,11 +538,11 @@ function highlightWalkOnMap(walkId) {
 
 function highlightRow(rowElement) {
   if (currentHighlightedRow) {
-    currentHighlightedRow.classList.remove('walks-table__row--highlighted');
+    currentHighlightedRow.classList.remove("walks-table__row--highlighted");
   }
-  
+
   if (rowElement) {
-    rowElement.classList.add('walks-table__row--highlighted');
+    rowElement.classList.add("walks-table__row--highlighted");
     currentHighlightedRow = rowElement;
   } else {
     currentHighlightedRow = null;
@@ -496,7 +551,7 @@ function highlightRow(rowElement) {
 
 function tryHighlightFirstWalk() {
   if (mapWalksLoaded && walks.length > 0) {
-    const firstRow = document.querySelector('.walks-table tbody tr');
+    const firstRow = document.querySelector(".walks-table tbody tr");
     if (firstRow) {
       const walkId = firstRow.dataset.id;
       if (walkId) {
@@ -508,134 +563,137 @@ function tryHighlightFirstWalk() {
 }
 
 function handleRowClick(e) {
-  if (e.target.type === 'checkbox' || e.target.closest('.action-btn')) {
+  if (e.target.type === "checkbox" || e.target.closest(".action-btn")) {
     return;
   }
-  
+
   const row = e.currentTarget;
   const walkId = row.dataset.id;
   if (walkId) {
     highlightRow(row);
     highlightWalkOnMap(walkId);
+    openWalkModal(walkId);
   }
 }
 
 function attachRowClickEvents() {
-  document.querySelectorAll('.walks-table tbody tr').forEach(row => {
-    row.removeEventListener('click', handleRowClick);
-    row.addEventListener('click', handleRowClick);
+  document.querySelectorAll(".walks-table tbody tr").forEach((row) => {
+    row.removeEventListener("click", handleRowClick);
+    row.addEventListener("click", handleRowClick);
   });
 }
 
 function initExport() {
-  const exportBtn = document.getElementById('export-selected-btn');
+  const exportBtn = document.getElementById("export-selected-btn");
   if (!exportBtn) return;
 
-  exportBtn.addEventListener('click', async () => {
+  exportBtn.addEventListener("click", async () => {
     await exportSelectedWalks(userId, selectedIds, getToken());
   });
 }
 
 function initImport() {
-  const walksFileInput = document.getElementById('import-walks-file');
-  const walkpointsFileInput = document.getElementById('import-walkpoints-file');
-  const importBtn = document.getElementById('import-walks-btn');
-  
+  const walksFileInput = document.getElementById("import-walks-file");
+  const walkpointsFileInput = document.getElementById("import-walkpoints-file");
+  const importBtn = document.getElementById("import-walks-btn");
+
   if (walksFileInput) {
-    walksFileInput.addEventListener('change', (e) => {
+    walksFileInput.addEventListener("change", (e) => {
       walksFile = e.target.files[0];
       checkImportReady();
     });
   }
-  
+
   if (walkpointsFileInput) {
-    walkpointsFileInput.addEventListener('change', (e) => {
+    walkpointsFileInput.addEventListener("change", (e) => {
       walkpointsFile = e.target.files[0];
       checkImportReady();
     });
   }
-  
+
   if (importBtn) {
-    importBtn.addEventListener('click', async () => {
+    importBtn.addEventListener("click", async () => {
       if (!walksFile || !walkpointsFile) {
-        alert('Выберите оба файла: walks.csv и walkpoints.csv');
+        Notify.error("Выберите оба файла: walks.csv и walkpoints.csv");
         return;
       }
-      
+
       importBtn.disabled = true;
-      
-      const result = await importWalks(userId, walksFile, walkpointsFile, getToken());
-      
+
+      const result = await importWalks(
+        userId,
+        walksFile,
+        walkpointsFile,
+        getToken(),
+      );
+
       if (result.success) {
-        alert(result.message);
+        Notify.success(result.message);
         walksFile = null;
         walkpointsFile = null;
-        if (walksFileInput) walksFileInput.value = '';
-        if (walkpointsFileInput) walkpointsFileInput.value = '';
+        if (walksFileInput) walksFileInput.value = "";
+        if (walkpointsFileInput) walkpointsFileInput.value = "";
         await loadWalks();
       } else {
-        alert(`Ошибка импорта: ${result.message}`);
+        Notify.error(`Ошибка импорта: ${result.message}`);
       }
-      
+
       importBtn.disabled = false;
     });
   }
 }
 
 function checkImportReady() {
-  const importBtn = document.getElementById('import-walks-btn');
+  const importBtn = document.getElementById("import-walks-btn");
   if (importBtn) {
     importBtn.disabled = !(walksFile && walkpointsFile);
   }
 }
 
 function initTileImportExport() {
-  // Экспорт тайлов
-  const exportTilesBtn = document.getElementById('export-tiles-btn');
+  const exportTilesBtn = document.getElementById("export-tiles-btn");
   if (exportTilesBtn) {
-    exportTilesBtn.addEventListener('click', async () => {
+    exportTilesBtn.addEventListener("click", async () => {
       exportTilesBtn.disabled = true;
-      
+
       await exportTiles(userId, getToken());
-      
+
       exportTilesBtn.disabled = false;
     });
   }
 
-  // Выбор файла для импорта тайлов
-  const tilesFileInput = document.getElementById('import-coveredtiles-file');
+  const tilesFileInput = document.getElementById("import-coveredtiles-file");
   if (tilesFileInput) {
-    tilesFileInput.addEventListener('change', (e) => {
+    tilesFileInput.addEventListener("change", (e) => {
       tilesFile = e.target.files[0];
-      const importTilesBtn = document.getElementById('import-tiles-btn');
+      const importTilesBtn = document.getElementById("import-tiles-btn");
       if (importTilesBtn) {
         importTilesBtn.disabled = !tilesFile;
       }
     });
   }
 
-  // Импорт тайлов
-  const importTilesBtn = document.getElementById('import-tiles-btn');
+  const importTilesBtn = document.getElementById("import-tiles-btn");
   if (importTilesBtn) {
     importTilesBtn.disabled = true;
-    
-    importTilesBtn.addEventListener('click', async () => {
+
+    importTilesBtn.addEventListener("click", async () => {
       if (!tilesFile) {
-        alert('Выберите файл tiles.csv');
+        Notify.error("Выберите файл tiles.csv");
         return;
       }
-      
+
       importTilesBtn.disabled = true;
-      
+
       const result = await importTiles(userId, tilesFile, getToken());
-      
+
       if (result.success) {
-        alert(result.message);
+        Notify.success(result.message);
         tilesFile = null;
-        if (tilesFileInput) tilesFileInput.value = '';
+        if (tilesFileInput) tilesFileInput.value = "";
         importTilesBtn.disabled = true;
       } else {
-        alert(`Ошибка импорта: ${result.message}`);
+        Notify.error(`Ошибка импорта: ${result.message}`);
         importTilesBtn.disabled = false;
       }
     });
@@ -643,19 +701,193 @@ function initTileImportExport() {
 }
 
 function checkTileImportReady() {
-  const importTilesBtn = document.getElementById('import-tiles-btn');
+  const importTilesBtn = document.getElementById("import-tiles-btn");
   if (importTilesBtn) {
     importTilesBtn.disabled = !tilesFile;
   }
 }
 
 function initNewWalkButton() {
-  const newWalkBtn = document.getElementById('new-walk-btn');
+  const newWalkBtn = document.getElementById("new-walk-btn");
   if (newWalkBtn) {
-    newWalkBtn.addEventListener('click', () => {
+    newWalkBtn.addEventListener("click", () => {
       showNewWalkModal(userId, getToken, () => {
         loadWalks();
       });
     });
   }
 }
+
+let walkModalMap = null;
+let walkModalLayer = null;
+let editableMarkers = [];
+let currentModalWalk = null;
+
+async function openWalkModal(walkId) {
+  const modal = document.getElementById("walk-modal");
+  modal.classList.remove("hidden");
+
+  try {
+    const res = await fetch(`${API_BASE}/walks/${walkId}`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    const walk = await res.json();
+
+    currentModalWalk = structuredClone(walk);
+    fillWalkModal(walk);
+
+    setTimeout(() => initWalkPreviewMap(walk), 0);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function fillWalkModal(walk) {
+  document.getElementById("walk-modal-title").textContent = `Прогулка #${walk.id}`;
+
+  const toLocalInput = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  document.getElementById("walk-started-at").innerHTML = `
+    <input type="datetime-local" class="route-modal__input" id="walk-started-at-input" value="${toLocalInput(walk.startedAt)}" />
+  `;
+
+  document.getElementById("walk-finished-at").innerHTML = `
+    <input type="datetime-local" class="route-modal__input" id="walk-finished-at-input" value="${toLocalInput(walk.finishedAt)}" />
+  `;
+
+  const distKm = walk.distanceMeters ? (walk.distanceMeters / 1000).toFixed(2) : "";
+  document.getElementById("walk-distance").innerHTML = `
+    <input type="number" class="route-modal__input" id="walk-distance-input" value="${distKm}" step="0.01" min="0" /> км
+  `;
+
+  const dur = walk.durationSeconds ?? 0;
+  const totalMinutes = Math.floor(dur / 60);
+  document.getElementById("walk-duration").innerHTML = `
+    <input type="number" class="route-modal__input" id="walk-duration-input" value="${totalMinutes}" step="1" min="0" /> мин
+  `;
+}
+
+function initWalkPreviewMap(walk) {
+  if (walkModalMap) walkModalMap.remove();
+  editableMarkers = [];
+
+  walkModalMap = L.map("walk-preview-map");
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    subdomains: "abcd",
+    maxZoom: 19,
+  }).addTo(walkModalMap);
+
+  const latlngs = walk.points.map((p) => [p.lat, p.lon]);
+
+  walkModalLayer = L.polyline(latlngs, { color: "#00e5a0", weight: 4 }).addTo(
+    walkModalMap,
+  );
+
+  walk.points.forEach((pt, idx) => {
+    const marker = L.marker([pt.lat, pt.lon], { draggable: true }).addTo(
+      walkModalMap,
+    );
+
+    marker.on("drag", (e) => {
+      const { lat, lng } = e.target.getLatLng();
+      currentModalWalk.points[idx].lat = lat;
+      currentModalWalk.points[idx].lon = lng;
+      updateWalkPolyline();
+    });
+
+    editableMarkers.push(marker);
+  });
+
+  walkModalMap.fitBounds(walkModalLayer.getBounds(), { padding: [30, 30] });
+}
+
+function updateWalkPolyline() {
+  if (!walkModalLayer) return;
+  walkModalLayer.setLatLngs(currentModalWalk.points.map((p) => [p.lat, p.lon]));
+}
+
+document.getElementById("walk-save-btn").addEventListener("click", async () => {
+  try {
+    const startedAtInput = document.getElementById("walk-started-at-input")?.value;
+    const finishedAtInput = document.getElementById("walk-finished-at-input")?.value;
+    const distanceKm = parseFloat(document.getElementById("walk-distance-input")?.value);
+    const durationMin = parseInt(document.getElementById("walk-duration-input")?.value);
+
+    const points = currentModalWalk.points.map((p, i) => ({
+      lat: p.lat,
+      lon: p.lon,
+      timestamp: p.timestamp,
+      order: i,
+    }));
+
+    const body = { points };
+
+    if (startedAtInput) body.startedAt = new Date(startedAtInput).toISOString();
+    if (finishedAtInput) body.finishedAt = new Date(finishedAtInput).toISOString();
+    if (!isNaN(distanceKm)) body.distanceMeters = distanceKm * 1000;
+    if (!isNaN(durationMin)) body.durationSeconds = durationMin * 60;
+
+    const res = await fetch(`${API_BASE}/walks/${currentModalWalk.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) throw new Error("Failed to update walk");
+
+    Notify.success("Прогулка обновлена");
+    closeWalkModal();
+    await loadWalks();
+    await loadAllWalksForStats();
+  } catch (e) {
+    Notify.error("Не удалось обновить прогулку");
+  }
+});
+
+document
+  .getElementById("walk-delete-btn")
+  .addEventListener("click", async () => {
+    if (!confirm("Удалить прогулку?")) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/walks/${currentModalWalk.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+
+      if (!res.ok) throw new Error("Failed to delete walk");
+
+      Notify.success("Прогулка удалена");
+      closeWalkModal();
+      await loadWalks();
+      await loadAllWalksForStats();
+      clearAllWalksFromMap();
+      await loadAndDrawAllFilteredWalks();
+    } catch (e) {
+      Notify.error("Не удалось удалить прогулку");
+    }
+  });
+
+function closeWalkModal() {
+  document.getElementById("walk-modal").classList.add("hidden");
+  if (walkModalMap) {
+    walkModalMap.remove();
+    walkModalMap = null;
+  }
+}
+
+document
+  .getElementById("walk-modal-close")
+  .addEventListener("click", closeWalkModal);
+
+document
+  .querySelector(".walk-modal__overlay")
+  .addEventListener("click", closeWalkModal);

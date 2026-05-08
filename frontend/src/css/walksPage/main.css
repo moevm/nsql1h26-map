@@ -16,3 +16,168 @@
   background-image: url(/src/img/overlay.png);
   background-size: cover;
 }
+
+.route-modal.hidden {
+  display: none;
+}
+
+.route-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.walk-modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+}
+
+.route-modal__content {
+  position: relative;
+  width: 1100px;
+  max-width: calc(100vw - 40px);
+  height: 700px;
+  background: #121212;
+  border-radius: 20px;
+  margin: 40px auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+      border: 1px solid var(--accent-color);
+    background-color: rgba(23, 54, 53, 1);
+    background-image: url(/src/img/overlay.png);
+}
+
+.route-modal__body {
+  flex: 1;
+  display: flex;
+  gap: 24px;
+  overflow: hidden;
+  padding-top: 20px;
+}
+
+.route-modal__map {
+  flex: 1;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.route-modal__form {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.route-modal__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: white;
+}
+
+.route-modal__stat {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0;
+  /* border-bottom: 1px solid rgba(255,255,255,0.1); */
+  align-items: center;
+  height: 70px;
+}
+
+.modal__key {
+  opacity: 0.6;
+  min-width: 100px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.route-modal input {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid rgba(255,255,255,0.1);
+  color: #fff;
+  padding: 4px 6px;
+  flex: 1;
+  font-size: 16px;
+  outline: none;
+  /* width: 40%; */
+}
+
+.modal__input:focus {
+  border-bottom-color: #fff;
+}
+
+.route-modal__footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.primary-btn,
+.danger-btn {
+  height: 44px;
+  border: none;
+  padding: 0 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.primary-btn {
+  background-color: #00e6c3;
+  color: #fff;
+  font-weight: 700;
+}
+
+.danger-btn {
+  background-color: transparent;
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+  font-weight: 700;
+  border: 1px solid #ff6b6b;
+}
+
+.route-modal__header {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--accent-color);
+}
+
+.route-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.trow {
+  cursor: pointer;
+}
+
+.leaflet-control-zoom-in {
+  border-top-left-radius: 30px !important;
+}
+
+.leaflet-control-zoom-out {
+  border-bottom-right-radius: 30px !important;
+}
+
+.leaflet-touch .leaflet-bar a {
+  width: 50px !important;
+  height: 50px !important;
+  line-height: 50px !important;
+  background: #112727 !important;
+  color: white !important;
+  border: 1px solid #fff !important;
+}
+
+tr {
+  cursor: pointer;
+}

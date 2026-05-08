@@ -1,173 +1,207 @@
 <!doctype html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CityTrace</title>
-    <link rel="stylesheet" href="/src/css/routesPage/main.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  </head>
-  <body>
-    <header class="header">
-      <div class="header__logo">
-        <img class="header__image" src="/src/svg/logo.svg" alt="CityTrace logo">
-        <span class="header__logo-text">CityTrace</span>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CityTrace</title>
+  <link rel="stylesheet" href="/src/css/routesPage/main.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body>
+  <header class="header">
+    <div class="header__logo">
+      <img class="header__image" src="/src/svg/logo.svg" alt="CityTrace logo">
+      <span class="header__logo-text">CityTrace</span>
+    </div>
+    <nav class="header__navigation">
+      <ul class="header__menu">
+        <li class="header__menu-item">
+          <a class="header__link" href="/pages/map.html">Карта</a>
+        </li>
+        <li class="header__menu-item">
+          <a class="header__link header__link--active" href="/pages/routes.html">Маршруты</a>
+        </li>
+        <li class="header__menu-item">
+          <a class="header__link" href="/pages/walks.html">Прогулки</a>
+        </li>
+        <li class="header__menu-item">
+          <a class="header__link" href="/pages/points.html">Точки карты</a>
+        </li>
+        <li class="header__menu-item">
+          <a class="header__link" href="/pages/profile.html">Профиль</a>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="routes-main">
+    <div class="page-header">
+      <div class="page-header__left">
+        <h1 class="page-header__title">Маршруты</h1>
+        <span class="page-header__count">0 маршрутов</span>
       </div>
-      <nav class="header__navigation">
-        <ul class="header__menu">
-          <li class="header__menu-item">
-            <a class="header__link" href="/pages/map.html">Карта</a>
-          </li>
-          <li class="header__menu-item">
-            <a class="header__link header__link--active" href="/pages/routes.html">Маршруты</a>
-          </li>
-          <li class="header__menu-item">
-            <a class="header__link" href="/pages/walks.html">Прогулки</a>
-          </li>
-          <li class="header__menu-item">
-            <a class="header__link" href="/pages/points.html">Точки карты</a>
-          </li>
-          <li class="header__menu-item">
-            <a class="header__link" href="/pages/profile.html">Профиль</a>
-          </li>
-        </ul>
-      </nav>
-    </header>
+    </div>
 
-    <main class="routes-main">
-      <div class="page-header">
-        <div class="page-header__left">
-          <h1 class="page-header__title">Маршруты</h1>
-          <span class="page-header__count">0 маршрутов</span>
-        </div>
-      </div>
-
-        <div class="filter-bar">
-        <div class="filter-bar__item filter-bar__item--date">
-          <label class="filter-bar__label">Дата</label>
-          <div class="filter-bar__control">
-            <input type="datetime-local" class="filter-bar__date-input" id="date-from" placeholder="дд.мм.гггг чч:мм">
-            <span class="filter-bar__date-separator">—</span>
-            <input type="datetime-local" class="filter-bar__date-input" id="date-to" placeholder="дд.мм.гггг чч:мм">
-          </div>
-        </div>
-
-        <div class="filter-bar__item">
-          <label class="filter-bar__label">Расстояние</label>
-          <select class="filter-bar__select" id="distance-filter">
-            <option value="any">Любое</option>
-            <option value="0-5">до 5 км</option>
-            <option value="5-10">5-10 км</option>
-            <option value="10-15">10-15 км</option>
-            <option value="15+">более 15 км</option>
-          </select>
-        </div>
-
-        <div class="filter-bar__item">
-          <label class="filter-bar__label">Длительность</label>
-          <select class="filter-bar__select" id="duration-filter">
-            <option value="any">Любая</option>
-            <option value="0-30">до 30 мин</option>
-            <option value="30-60">30-60 мин</option>
-            <option value="60-120">1-2 часа</option>
-            <option value="120+">более 2 часов</option>
-          </select>
-        </div>
-
-        <div class="filter-bar__item filter-bar__item--user-id">
-          <label class="filter-bar__label">ID пользователя</label>
-          <input type="text" class="filter-bar__control filter-bar__user-id-input" id="user-id-filter" placeholder="Введите ID пользователя">
-        </div>
-
-        <div class="filter-bar__actions">
-          <button class="btn-reset" id="reset-filters-btn">Сброс фильтров</button>
+    <div class="filter-bar">
+      <div class="filter-bar__item filter-bar__item--date">
+        <label class="filter-bar__label">Дата</label>
+        <div class="filter-bar__control">
+          <input type="datetime-local" class="filter-bar__date-input" id="date-from" placeholder="дд.мм.гггг чч:мм">
+          <span class="filter-bar__date-separator">—</span>
+          <input type="datetime-local" class="filter-bar__date-input" id="date-to" placeholder="дд.мм.гггг чч:мм">
         </div>
       </div>
 
-      <div class="table-container">
-        <table class="routes-table">
-          <thead>
-            <tr>
-              <th class="routes-table__th">#</th>
-              <th class="routes-table__th">ID маршрута</th>
-              <th class="routes-table__th">ID пользователя</th>
-              <th class="routes-table__th">Дата и время</th>
-              <th class="routes-table__th">Расстояние (км)</th>
-              <th class="routes-table__th">Длительность</th>
-              <th class="routes-table__th">Новые тайлы</th>
-              <th class="routes-table__th">Интересные места</th>
-              <th class="routes-table__th">Действия</th>
-            </tr>
-          </thead>
-          <tbody id="routes-table-body">
-          </tbody>
-        </table>
-
-        <div class="pagination">
-          <div class="pagination__info">
-            <div class="pagination__per-page">
-              <span>Записей на экране</span>
-              <select class="pagination__select" id="per-page-select">
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="15">15</option>
-                <option value="20">25</option>
-                <option value="50">50</option>
-              </select>
-            </div>
-            <span class="pagination__range" id="pagination-range">Показано 1-5 из 42 маршрутов</span>
-          </div>
-          <div class="pagination__controls">
-            <button class="pagination__btn pagination__btn--prev" id="prev-page-btn">
-              <img src="/src/svg/routes/arrow-left.svg" alt="">
-            </button>
-            <button class="pagination__btn pagination__btn--page pagination__btn--active" data-page="1">1</button>
-            <button class="pagination__btn pagination__btn--page" data-page="2">2</button>
-            <button class="pagination__btn pagination__btn--page" data-page="3">3</button>
-            <span class="pagination__dots">...</span>
-            <button class="pagination__btn pagination__btn--page" data-page="12">12</button>
-            <button class="pagination__btn pagination__btn--next" id="next-page-btn">
-              <img src="/src/svg/routes/arrow-right.svg" alt="">
-            </button>
-          </div>
-        </div>
+      <div class="filter-bar__item">
+        <label class="filter-bar__label">Расстояние</label>
+        <select class="filter-bar__select" id="distance-filter">
+          <option value="any">Любое</option>
+          <option value="0-5">до 5 км</option>
+          <option value="5-10">5-10 км</option>
+          <option value="10-15">10-15 км</option>
+          <option value="15+">более 15 км</option>
+        </select>
       </div>
 
-      <div class="map-container">
-        <div id="routes-map"></div>
+      <div class="filter-bar__item">
+        <label class="filter-bar__label">Длительность</label>
+        <select class="filter-bar__select" id="duration-filter">
+          <option value="any">Любая</option>
+          <option value="0-30">до 30 мин</option>
+          <option value="30-60">30-60 мин</option>
+          <option value="60-120">1-2 часа</option>
+          <option value="120+">более 2 часов</option>
+        </select>
       </div>
 
-      <div class="dashboard">
-        <div class="dashboard__card dashboard__card--dist">
-          <div class="dashboard__card-header">
-            <span class="dashboard__card-title">Общее расстояние</span>
-            <img src="/src/svg/routes/dashboard-distance.svg" alt="" class="dashboard__card-icon">
+      <div class="filter-bar__actions">
+        <button class="btn-reset" id="reset-filters-btn">Сброс фильтров</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="routes-table">
+        <thead>
+          <tr>
+            <th class="routes-table__th">#</th>
+            <th class="routes-table__th">ID маршрута</th>
+            <th class="routes-table__th">ID пользователя</th>
+            <th class="routes-table__th">Дата и время</th>
+            <th class="routes-table__th">Расстояние (км)</th>
+            <th class="routes-table__th">Длительность</th>
+            <th class="routes-table__th">Новые тайлы</th>
+            <th class="routes-table__th">Интересные места</th>
+            <th class="routes-table__th">Действия</th>
+          </tr>
+        </thead>
+        <tbody id="routes-table-body">
+        </tbody>
+      </table>
+
+      <div class="pagination">
+        <div class="pagination__info">
+          <div class="pagination__per-page">
+            <span>Записей на экране</span>
+            <select class="pagination__select" id="per-page-select">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="15">15</option>
+              <option value="20">25</option>
+              <option value="50">50</option>
+            </select>
           </div>
-          <div class="dashboard__card-value">
-            <span class="dashboard__card-number">1,842.5</span>
-            <span class="dashboard__card-unit">км</span>
-          </div>
+          <span class="pagination__range" id="pagination-range">Показано 1-5 из 42 маршрутов</span>
         </div>
-        <div class="dashboard__card dashboard__card--time">
-          <div class="dashboard__card-header">
-            <span class="dashboard__card-title">Среднее время / маршрут</span>
-            <img src="/src/svg/routes/dashboard-time.svg" alt="" class="dashboard__card-icon">
-          </div>
-          <div class="dashboard__card-value">
-            <span class="dashboard__card-number">42мин 15с</span>
-          </div>
-          <!--
+        <div class="pagination__controls">
+          <button class="pagination__btn pagination__btn--prev" id="prev-page-btn">
+            <img src="/src/svg/routes/arrow-left.svg" alt="">
+          </button>
+          <button class="pagination__btn pagination__btn--page pagination__btn--active" data-page="1">1</button>
+          <button class="pagination__btn pagination__btn--page" data-page="2">2</button>
+          <button class="pagination__btn pagination__btn--page" data-page="3">3</button>
+          <span class="pagination__dots">...</span>
+          <button class="pagination__btn pagination__btn--page" data-page="12">12</button>
+          <button class="pagination__btn pagination__btn--next" id="next-page-btn">
+            <img src="/src/svg/routes/arrow-right.svg" alt="">
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="map-container">
+      <div id="routes-map"></div>
+    </div>
+
+    <div class="dashboard">
+      <div class="dashboard__card dashboard__card--dist">
+        <div class="dashboard__card-header">
+          <span class="dashboard__card-title">Общее расстояние</span>
+          <img src="/src/svg/routes/dashboard-distance.svg" alt="" class="dashboard__card-icon">
+        </div>
+        <div class="dashboard__card-value">
+          <span class="dashboard__card-number">1,842.5</span>
+          <span class="dashboard__card-unit">км</span>
+        </div>
+      </div>
+      <div class="dashboard__card dashboard__card--time">
+        <div class="dashboard__card-header">
+          <span class="dashboard__card-title">Среднее время / маршрут</span>
+          <img src="/src/svg/routes/dashboard-time.svg" alt="" class="dashboard__card-icon">
+        </div>
+        <div class="dashboard__card-value">
+          <span class="dashboard__card-number">42мин 15с</span>
+        </div>
+        <!--
           <div class="dashboard__card-trend">
             <img src="/src/svg/routes/trend-up.svg" alt="" class="dashboard__trend-icon">
             <span class="dashboard__trend-text">+5% с прошлого месяца</span>
           </div>
           -->
+      </div>
+    </div>
+  </main>
+  <div class="route-modal hidden" id="route-modal">
+    <div class="route-modal__overlay"></div>
+
+    <div class="route-modal__content">
+      <button class="route-modal__close" id="route-modal-close">
+        ✕
+      </button>
+
+      <div class="route-modal__header">
+        <h2 id="route-modal-title">Маршрут</h2>
+      </div>
+
+      <div class="route-modal__body">
+        <div class="route-modal__map" id="route-preview-map"></div>
+
+        <div class="route-modal__form">
+          <div class="modal__row">
+            <span class="modal__key">Дистанция</span>
+            <input class="modal__input" type="number" id="route-target-distance" min="0" />
+          </div>
+          <div class="modal__row">
+            <span class="modal__key">Приоритет</span>
+            <input class="modal__input" type="number" id="route-priority" value="0.5" max="1" min="0">
+          </div>
         </div>
       </div>
-    </main>
 
-    <script type="module" src="/src/js/pages/routesPage.js"></script>
-  </body>
+      <div class="route-modal__footer">
+        <button id="route-save-btn" class="primary-btn">
+          Сохранить изменения
+        </button>
+        <button id="route-delete-btn" class="danger-btn">
+          Удалить
+        </button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/js/pages/routesPage.js"></script>
+</body>
+
 </html>

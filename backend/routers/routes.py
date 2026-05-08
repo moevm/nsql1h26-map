@@ -22,10 +22,17 @@ class RouteRequest(BaseModel):
     priority: float = Field(DEFAULT_PRIORITY, ge=0.0, le=1.0)
 
 
+class UpdateRouteNode(BaseModel):
+    osmId: int | None = None
+    lat: float
+    lon: float
+    order: int
+
+
 class UpdateRouteRequest(BaseModel):
     priority: float | None = Field(None, ge=0.0, le=1.0)
     targetDistance: float | None = None
-
+    nodes: list[UpdateRouteNode] | None = None
 
 class LineRouteRequest(BaseModel):
     userId: str
@@ -371,7 +378,7 @@ async def create_line_route(body: LineRouteRequest, session=Depends(get_session)
     
     direct_distance = haversine(body.startLat, body.startLon, body.endLat, body.endLon)
 
-    search_radius = max(direct_distance * 0.6 + 500, 1500.0)
+    search_radius = max(direct_distance * 0.6 + 500, 12500.0)
 
     mid_lat = (body.startLat + body.endLat) / 2
     mid_lon = (body.startLon + body.endLon) / 2
@@ -638,34 +645,154 @@ async def get_route(routeId: str, session=Depends(get_session)):
 
 
 @router.put("/{routeId}")
-async def update_route(routeId: str, body: UpdateRouteRequest, session=Depends(get_session)):
-    result = await session.run("MATCH (r:Route {id: $id}) RETURN r", id=routeId)
-    if not await result.single():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
+async def update_route(
+    routeId: str,
+    body: UpdateRouteRequest,
+    session=Depends(get_session),
+):
+    route_result = await session.run(
+        """
+        MATCH (r:Route {id: $id})
+        RETURN r
+        """,
+        id=routeId,
+    )
+
+    if not await route_result.single():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Route not found",
+        )
+
+    updates = []
+    params = {"id": routeId}
 
     if body.priority is not None:
-        await session.run(
-            "MATCH (r:Route {id: $id}) SET r.priority = $v", id=routeId, v=body.priority
-        )
+        updates.append("r.priority = $priority")
+        params["priority"] = body.priority
+
     if body.targetDistance is not None:
+        updates.append("r.targetDistance = $targetDistance")
+        params["targetDistance"] = body.targetDistance
+
+    if updates:
         await session.run(
-            "MATCH (r:Route {id: $id}) SET r.targetDistance = $v", id=routeId, v=body.targetDistance
+            f"""
+            MATCH (r:Route {{id: $id}})
+            SET {", ".join(updates)}
+            """,
+            **params,
+        )
+
+    if body.nodes is not None:
+
+        total_distance = 0.0
+        route_tiles = set()
+
+        for i in range(len(body.nodes) - 1):
+            a = body.nodes[i]
+            b = body.nodes[i + 1]
+
+            segment_distance = (
+                (
+                    (a.lat - b.lat) ** 2 +
+                    (a.lon - b.lon) ** 2
+                ) ** 0.5
+            ) * 111000
+
+            total_distance += segment_distance
+
+            segment_tiles = tiles_on_segment(
+                a.lat,
+                a.lon,
+                b.lat,
+                b.lon,
+            )
+
+            route_tiles |= segment_tiles
+
+        estimated_minutes = int(total_distance / 80)
+
+        new_tiles = sorted(route_tiles)
+
+        await session.run(
+            """
+            MATCH (r:Route {id: $id})-[pt:PASSES_THROUGH]->()
+            DELETE pt
+            """,
+            id=routeId,
+        )
+
+        for node in body.nodes:
+
+            node_osm_id = node.osmId
+
+            if node_osm_id is None:
+                node_osm_id = int(uuid.uuid4().int % 1000000000)
+
+                await session.run(
+                    """
+                    CREATE (mn:MapNode {
+                        osmId: $osmId,
+                        lat: $lat,
+                        lon: $lon
+                    })
+                    """,
+                    osmId=node_osm_id,
+                    lat=node.lat,
+                    lon=node.lon,
+                )
+
+            await session.run(
+                """
+                MATCH (r:Route {id: $routeId})
+                MATCH (mn:MapNode {osmId: $osmId})
+
+                CREATE (r)-[:PASSES_THROUGH {
+                    order: $order
+                }]->(mn)
+                """,
+                routeId=routeId,
+                osmId=node_osm_id,
+                order=node.order,
+            )
+
+        await session.run(
+            """
+            MATCH (r:Route {id: $id})
+
+            SET
+                r.totalDistanceMeters = $distance,
+                r.estimatedMinutes = $minutes,
+                r.allTilesCount = $allTilesCount,
+                r.newTilesX = $newTilesX,
+                r.newTilesY = $newTilesY
+            """,
+            id=routeId,
+            distance=round(total_distance, 1),
+            minutes=estimated_minutes,
+            allTilesCount=len(route_tiles),
+            newTilesX=[t[0] for t in new_tiles],
+            newTilesY=[t[1] for t in new_tiles],
         )
 
     result = await session.run(
         """
         MATCH (r:Route {id: $id})
-        RETURN r.id AS id, toString(r.createdAt) AS createdAt,
-               r.totalDistanceMeters AS totalDistanceMeters,
-               r.estimatedMinutes AS estimatedMinutes,
-               r.priority AS priority,
-               r.targetDistance AS targetDistance,
-               r.allTilesCount AS allTilesCount
+
+        RETURN
+            r.id AS id,
+            toString(r.createdAt) AS createdAt,
+            r.totalDistanceMeters AS totalDistanceMeters,
+            r.estimatedMinutes AS estimatedMinutes,
+            r.priority AS priority,
+            r.targetDistance AS targetDistance,
+            r.allTilesCount AS allTilesCount
         """,
         id=routeId,
     )
-    return (await result.single()).data()
 
+    return (await result.single()).data()
 
 @router.delete("/{routeId}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_route(routeId: str, session=Depends(get_session)):

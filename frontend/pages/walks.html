@@ -141,11 +141,6 @@
           </select>
         </div>
 
-        <div class="filter-bar__item filter-bar__item--user-id">
-          <label class="filter-bar__label">ID пользователя</label>
-          <input type="text" class="filter-bar__control filter-bar__user-id-input" id="user-id-filter" placeholder="Введите ID пользователя">
-        </div>
-
         <div class="filter-bar__actions">
           <button class="btn-reset" id="reset-filters-btn">Сброс фильтров</button>
           <button class="btn btn--primary" id="new-walk-btn">
@@ -232,7 +227,51 @@
         </div>
       </div>
     </main>
+<div id="walk-modal" class="route-modal hidden">
+  <div class="walk-modal__overlay"></div>
+  <div class="route-modal__content">
 
+    <div class="route-modal__header">
+      <h2 class="route-modal__title" id="walk-modal-title">Прогулка</h2>
+      <button class="route-modal__close" id="walk-modal-close">&times;</button>
+    </div>
+
+    <div class="route-modal__body">
+
+      <div class="route-modal__stats">
+        <div class="route-modal__stat">
+          <span class="route-modal__stat-label">Начало</span>
+          <span class="route-modal__stat-value" id="walk-started-at">—</span>
+        </div>
+        <div class="route-modal__stat">
+          <span class="route-modal__stat-label">Конец</span>
+          <span class="route-modal__stat-value" id="walk-finished-at">—</span>
+        </div>
+        <div class="route-modal__stat">
+          <span class="route-modal__stat-label">Дистанция</span>
+          <span class="route-modal__stat-value" id="walk-distance">—</span>
+        </div>
+        <div class="route-modal__stat">
+          <span class="route-modal__stat-label">Длительность</span>
+          <span class="route-modal__stat-value" id="walk-duration">—</span>
+        </div>
+      </div>
+
+      <div id="walk-preview-map" class="route-modal__map"></div>
+
+    </div>
+
+    <div class="route-modal__footer">
+      <button class="route-modal__btn route-modal__btn--save primary-btn" id="walk-save-btn">
+        Сохранить
+      </button>
+      <button class="route-modal__btn route-modal__btn--delete danger-btn" id="walk-delete-btn">
+        Удалить
+      </button>
+    </div>
+
+  </div>
+</div>
     <script type="module" src="/src/js/pages/walksPage.js"></script>
   </body>
 </html>

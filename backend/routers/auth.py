@@ -115,6 +115,6 @@ async def me(user=Depends(get_current_user)):
         username=user["username"],
         email=user["email"],
         avatarUrl=user.get("avatarUrl", ""),
-        createdAt=created_at.isoformat() if created_at else None,
-        updatedAt=updated_at.isoformat() if updated_at else None,
+        createdAt=str(created_at) if created_at else None,
+        updatedAt=str(updated_at) if updated_at else None,
     )

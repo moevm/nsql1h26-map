@@ -266,12 +266,16 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 
   editProfileBtn.addEventListener('click', () => {
-    console.log('edit');
     modal.classList.add('modal--active');
     modalOverlay.classList.add('modal-overlay--active');
   })
 
   closeModalBtn.addEventListener('click', () => {
+    modal.classList.remove('modal--active');
+    modalOverlay.classList.remove('modal-overlay--active');
+  })
+
+  modalOverlay.addEventListener('click', () => {
     modal.classList.remove('modal--active');
     modalOverlay.classList.remove('modal-overlay--active');
   })
@@ -360,8 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   getUserInfo()
     .then((userData) => {
-
-      console.log(userData);
 
       const avatarUrl = userData.avatarUrl ? userData.avatarUrl : '/src/img/user-logo.png';
       const userName = userData.username;
