@@ -105,7 +105,9 @@ async def run_seed(driver):
         await session.run(
             """
             MERGE (u:User {username: 'testuser'})
-            ON CREATE SET u.id = $id, u.password = 'test123', u.email = 'testuser@example.com', u.avatarUrl = '', u.createdAt = datetime(), u.updatedAt = datetime()
+            ON CREATE SET u.id = $id, u.password = 'test123', u.email = 'testuser@example.com', u.avatarUrl = '',
+                          u.createdAt = datetime() + duration({hours: 3}),
+                          u.updatedAt = datetime() + duration({hours: 3})
             """,
             id=user_id,
         )
@@ -113,7 +115,7 @@ async def run_seed(driver):
         record = await result.single()
         print(f"[seed] Debug user: email=testuser@example.com  password=test123  id={record['id']}")
         print("[seed] Done.")
-        
+
         user_id = record["id"]
 
         START_POINTS = [
@@ -151,7 +153,7 @@ async def run_seed(driver):
         LAT_MIN, LAT_MAX = 59.95, 59.98
         LON_MIN, LON_MAX = 30.28, 30.34
         NUM_WALKS = 10
-        POINTS_PER_WALK = random.randrange(400,700)
+        POINTS_PER_WALK = random.randrange(400, 700)
         DAYS_BACK = 10
 
         def _gen_points(num_points):
@@ -167,7 +169,7 @@ async def run_seed(driver):
         print("[seed] Creating seed walks...")
         success = 0
         for i in range(NUM_WALKS):
-            started_at = datetime.now(timezone.utc) - timedelta(
+            started_at = datetime.now(timezone.utc) + timedelta(hours=3) - timedelta(
                 days=random.randint(0, DAYS_BACK),
                 hours=random.randint(0, 23),
                 minutes=random.randint(0, 59),
