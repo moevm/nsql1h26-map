@@ -31,6 +31,8 @@ class UpdateWalkPoint(BaseModel):
 class UpdateWalkRequest(BaseModel):
     distanceMeters: float | None = None
     durationSeconds: int | None = None
+    startedAt: datetime | None = None
+    finishedAt: datetime | None = None
     points: list[UpdateWalkPoint] | None = None
 
 async def _create_walk(session, user_id: str, points: list[WalkPoint]) -> dict:
@@ -447,7 +449,11 @@ async def update_walk(
     if body.points is not None:
         pts = sorted(body.points, key=lambda p: p.order)
 
-        distance_meters = sum(
+        started_at = body.startedAt if body.startedAt is not None else min(p.timestamp for p in pts)
+        finished_at = body.finishedAt if body.finishedAt is not None else max(p.timestamp for p in pts)
+        duration_seconds = body.durationSeconds if body.durationSeconds is not None else int((finished_at - started_at).total_seconds())
+
+        distance_meters = body.distanceMeters if body.distanceMeters is not None else sum(
             haversine(
                 pts[i].lat,
                 pts[i].lon,
@@ -455,13 +461,6 @@ async def update_walk(
                 pts[i + 1].lon,
             )
             for i in range(len(pts) - 1)
-        )
-
-        started_at = min(p.timestamp for p in pts)
-        finished_at = max(p.timestamp for p in pts)
-
-        duration_seconds = int(
-            (finished_at - started_at).total_seconds()
         )
 
         tiles = list({
@@ -490,16 +489,13 @@ async def update_walk(
         await session.run(
             """
             MATCH (w:Walk {id: $walkId})
-
             UNWIND $points AS p
-
             CREATE (wp:WalkPoint {
                 lat: p.lat,
                 lon: p.lon,
                 timestamp: datetime(p.timestamp),
                 order: p.order
             })
-
             CREATE (w)-[:HAS_POINT]->(wp)
             """,
             walkId=walkId,
@@ -529,7 +525,6 @@ async def update_walk(
         await session.run(
             """
             MATCH (w:Walk {id: $id})
-
             SET
                 w.distanceMeters = $distance,
                 w.durationSeconds = $duration,
@@ -545,10 +540,32 @@ async def update_walk(
             allTilesCount=len(tiles),
         )
 
+    else:
+        set_clauses = []
+        params = {"id": walkId}
+
+        if body.distanceMeters is not None:
+            set_clauses.append("w.distanceMeters = $distanceMeters")
+            params["distanceMeters"] = body.distanceMeters
+        if body.durationSeconds is not None:
+            set_clauses.append("w.durationSeconds = $durationSeconds")
+            params["durationSeconds"] = body.durationSeconds
+        if body.startedAt is not None:
+            set_clauses.append("w.startedAt = datetime($startedAt)")
+            params["startedAt"] = body.startedAt.isoformat()
+        if body.finishedAt is not None:
+            set_clauses.append("w.finishedAt = datetime($finishedAt)")
+            params["finishedAt"] = body.finishedAt.isoformat()
+
+        if set_clauses:
+            await session.run(
+                f"MATCH (w:Walk {{id: $id}}) SET {', '.join(set_clauses)}",
+                **params,
+            )
+
     result = await session.run(
         """
         MATCH (w:Walk {id: $id})
-
         RETURN
             w.id AS id,
             toString(w.startedAt) AS startedAt,
