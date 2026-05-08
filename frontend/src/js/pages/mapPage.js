@@ -19,11 +19,11 @@ const LABELS = [
 const MIN_DIST = 1, MAX_DIST = 20, STEP_DIST = 0.5;
 const MIN_PRI  = 0, MAX_PRI  = 1,  STEP_PRI  = 0.1;
 
-function getPinBtn() {
+function getPinBtn(pinName, pinId, pinText) {
   const btn = document.createElement("button");
-  btn.className = "bbox-btn bbox-btn--set-start";
-  btn.id = "set-start-btn";
-  btn.innerHTML = `📍 Начальная точка`;
+  btn.className = `bbox-btn bbox-btn--${pinName}`;
+  btn.id = pinId;
+  btn.innerHTML = pinText;
   return btn;
 }
 
@@ -32,7 +32,9 @@ function getPriorityLabel(val) {
   return entry ? entry[2] : 'Баланс';
 }
 
-function renderStep1({ modalSubTitle, modalContent, modal, modalOverlay, loader, startPoint, map, userManager, getToken }) {
+function renderStep1(ctx) {
+  const { modalSubTitle, modalContent, modal, modalOverlay, loader, map, userManager, getToken } = ctx;
+
   modalSubTitle.textContent = 'Шаг 1';
   modalContent.innerHTML = `
     <section class="distance-control">
@@ -70,10 +72,12 @@ function renderStep1({ modalSubTitle, modalContent, modal, modalOverlay, loader,
     </div>
   `;
 
-  initStep1Controls({ modalSubTitle, modalContent, modal, modalOverlay, loader, startPoint, map, userManager, getToken });
+  initStep1Controls(ctx);
 }
 
-function initStep1Controls({ modalSubTitle, modalContent, modal, modalOverlay, loader, startPoint, map, userManager, getToken }) {
+function initStep1Controls(ctx) {
+  const { modalSubTitle, modalContent, modal, modalOverlay, loader, map, userManager, getToken } = ctx;
+
   const dSlider = modalContent.querySelector('.distance-control__slider');
   const dValue  = modalContent.querySelector('.distance-control__value');
   const dBtns   = modalContent.querySelectorAll('.distance-control__button');
@@ -105,38 +109,73 @@ function initStep1Controls({ modalSubTitle, modalContent, modal, modalOverlay, l
   updatePri(+pSlider.value);
 
   modalContent.querySelector('.modal__button--build').addEventListener('click', async () => {
-    if (!startPoint) {
-      Notify.error('Сначала укажите начальную точку маршрута');
-      return;
-    }
-
     const distance = parseFloat(dSlider.value);
     const priority = parseFloat(pSlider.value);
-    const userId = userManager.get()?.id ?? 'unknown';
+    const userId   = userManager.get()?.id ?? 'unknown';
 
-    showLoader(loader, 'Строим маршрут...');
+    const startPoint = ctx.startPoint;
+    const finishPoint = ctx.finishPoint;
+    const routeType = ctx.routeType;
 
-    try {
-      const token = getToken();
-      const response = await fetch('http://127.0.0.1:10001/api/routes/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          userId,
-          startLat: startPoint.lat,
-          startLon: startPoint.lng,
-          targetDistance: Math.round(distance * 2000),
-          priority,
-        }),
-      });
+    if (routeType === 'circle') {
+      if (!startPoint) {
+        Notify.error('Сначала укажите начальную точку маршрута');
+        return;
+      }
 
-      if (!response.ok) throw new Error(`Ошибка ${response.status}`);
-      const route = await response.json();
-      renderStep2(route, distance, priority, { modalSubTitle, modalContent, modal, modalOverlay, loader, startPoint, map, userManager, getToken });
-    } catch (error) {
-      Notify.error('Не удалось построить маршрут: ' + error.message);
-    } finally {
-      hideLoader(loader);
+      showLoader(loader, 'Строим маршрут...');
+      try {
+        const response = await fetch('http://127.0.0.1:10001/api/routes/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+          body: JSON.stringify({
+            userId,
+            startLat: startPoint.lat,
+            startLon: startPoint.lng,
+            targetDistance: Math.round(distance * 2000),
+            priority,
+          }),
+        });
+
+        if (!response.ok) throw new Error(`Ошибка ${response.status}`);
+        const route = await response.json();
+        renderStep2(route, distance, priority, ctx);
+      } catch (error) {
+        Notify.error('Не удалось построить маршрут: ' + error.message);
+      } finally {
+        hideLoader(loader);
+      }
+
+    } else {
+      if (!startPoint || !finishPoint) {
+        Notify.error('Сначала укажите начальную и конечную точки маршрута');
+        return;
+      }
+
+      showLoader(loader, 'Строим маршрут...');
+      try {
+        const response = await fetch('http://127.0.0.1:10001/api/routes/line', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+          body: JSON.stringify({
+            userId,
+            startLat: startPoint.lat,
+            startLon: startPoint.lng,
+            endLat: finishPoint.lat,
+            endLon: finishPoint.lng,
+            targetDistance: Math.round(distance * 2000),
+            priority,
+          }),
+        });
+
+        if (!response.ok) throw new Error(`Ошибка ${response.status}`);
+        const route = await response.json();
+        renderStep2(route, distance, priority, ctx);
+      } catch (error) {
+        Notify.error('Не удалось построить маршрут: ' + error.message);
+      } finally {
+        hideLoader(loader);
+      }
     }
   });
 
@@ -147,13 +186,13 @@ function initStep1Controls({ modalSubTitle, modalContent, modal, modalOverlay, l
 }
 
 function renderStep2(route, distance, priority, ctx) {
-  const { modalSubTitle, modalContent, modal, modalOverlay, loader, startPoint, map, userManager, getToken } = ctx;
+  const { modalSubTitle, modalContent, modal, modalOverlay, loader, map, userManager, getToken } = ctx;
 
   modalSubTitle.textContent = 'Шаг 2: предварительный просмотр и подтверждение';
 
-  const distanceKm     = (route.totalDistanceMeters / 1000).toFixed(1);
+  const distanceKm      = (route.totalDistanceMeters / 1000).toFixed(1);
   const highlightsCount = route.highlights?.length ?? 0;
-  const priorityLabel  = getPriorityLabel(priority);
+  const priorityLabel   = getPriorityLabel(priority);
 
   modalContent.innerHTML = `
     <div class="route-preview">
@@ -211,28 +250,36 @@ function renderStep2(route, distance, priority, ctx) {
     if (previewMap) { previewMap.remove(); previewMap = null; }
   };
 
-  modalContent.querySelector('.modal__button--rebuild').addEventListener('click', async () => {
-    showLoader(loader, 'Строим альтернативный маршрут...');
-    try {
-      const token = getToken();
-      const response = await fetch(`http://127.0.0.1:10001/api/routes/${route.routeId}/alternative`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
+  const routeType = ctx.routeType;
+  if (routeType === "line") {
+    modalContent.querySelector('.modal__button--rebuild').style.display = "none";
+  }else {
+    modalContent.querySelector('.modal__button--rebuild').style.display = "flex";
 
-      if (!response.ok) throw new Error(`Ошибка ${response.status}`);
-      const altRoute = await response.json();
-      renderStep2(altRoute, distance, priority, ctx);
-    } catch (error) {
-      Notify.error('Не удалось перестроить маршрут: ' + error.message);
-    } finally {
-      hideLoader(loader);
-    }
-  });
+    modalContent.querySelector('.modal__button--rebuild').addEventListener('click', async () => {
+      showLoader(loader, 'Строим альтернативный маршрут...');
+      try {
+        const response = await fetch(`http://127.0.0.1:10001/api/routes/${route.routeId}/alternative`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${getToken()}` },
+        });
+
+        if (!response.ok) throw new Error(`Ошибка ${response.status}`);
+        const altRoute = await response.json();
+        destroyPreviewMap();
+        renderStep2(altRoute, distance, priority, ctx);
+      } catch (error) {
+        Notify.error('Не удалось перестроить маршрут: ' + error.message);
+      } finally {
+        hideLoader(loader);
+      }
+    });
+  }
 
   modalContent.querySelector('.modal__button--start').addEventListener('click', () => {
     modal.classList.remove('modal--active');
     modalOverlay.classList.remove('modal-overlay--active');
+    destroyPreviewMap();
 
     if (route.nodes?.length) {
       const coords = route.nodes
@@ -258,9 +305,15 @@ document.addEventListener('DOMContentLoaded', () => {
   let startMarker = null;
   let isSettingStart = false;
 
-  const loader       = new Loader();
-  const modal        = document.querySelector('.modal');
-  const modalOverlay = document.querySelector('.modal-overlay');
+  let finishPoint  = null;
+  let finishMarker = null;
+  let isSettingFinish = false;
+
+  let routeType = 'circle';
+
+  const loader        = new Loader();
+  const modal         = document.querySelector('.modal');
+  const modalOverlay  = document.querySelector('.modal-overlay');
   const modalSubTitle = document.querySelector('.modal__sub-title');
   const modalContent  = document.querySelector('.modal__content');
 
@@ -268,7 +321,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeModalBtn = document.querySelector('.modal-close');
   const buildBtn      = document.querySelector('.modal__button--build');
 
-  const tileSwitch    = document.querySelector('.map-layer__switch-input');
+  const tileSwitch  = document.querySelector('.map-layer__switch-input--tile');
+  const routeSwitch = document.querySelector('.map-layer__switch-input--route');
+
   const mapLayersBtns = Array.from(document.querySelectorAll('.map-layer-chip'));
 
   const importBtn = document.getElementById('import-btn');
@@ -281,9 +336,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const distanceValue  = document.querySelector('.distance-control__value');
   const distanceBtns   = document.querySelectorAll('.distance-control__button');
 
-  const map         = L.map('map', { zoomControl: true }).setView([59.9676, 30.3129], 14);
+  const map          = L.map('map', { zoomControl: true }).setView([59.9676, 30.3129], 14);
   const mapContainer = map.getContainer();
-  const setStartBtn  = getPinBtn();
+
+  const setStartBtn  = getPinBtn("set-start",  "set-start-btn",  "📍 Начальная точка");
+  const setFinishBtn = getPinBtn("set-finish", "set-finish-btn", "📍 Конечная точка");
+  setFinishBtn.classList.add("bbox-btn-hide");
 
   const coveredLayer     = L.layerGroup().addTo(map);
   const barsLayer        = L.layerGroup().addTo(map);
@@ -310,7 +368,19 @@ document.addEventListener('DOMContentLoaded', () => {
     museum:     { layer: museumsLayer,     color: "indigo"   },
   };
 
-  const ctx = { modalSubTitle, modalContent, modal, modalOverlay, loader, get startPoint() { return startPoint; }, map, userManager, getToken };
+  const ctx = {
+    modalSubTitle,
+    modalContent,
+    modal,
+    modalOverlay,
+    loader,
+    get startPoint()  { return startPoint;  },
+    get finishPoint() { return finishPoint; },
+    get routeType()   { return routeType;   },
+    map,
+    userManager,
+    getToken,
+  };
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '© OpenStreetMap, © CARTO',
@@ -318,11 +388,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }).addTo(map);
 
   mapContainer.appendChild(setStartBtn);
+  mapContainer.appendChild(setFinishBtn);
+
   L.DomEvent.disableClickPropagation(setStartBtn);
+  L.DomEvent.disableClickPropagation(setFinishBtn);
+
   document.body.appendChild(loader);
 
   deleteTrashOnMap();
-
 
   const updateDistance = (val) => {
     val = Math.min(MAX_DIST, Math.max(MIN_DIST, Math.round(val / STEP_DIST) * STEP_DIST));
@@ -340,29 +413,51 @@ document.addEventListener('DOMContentLoaded', () => {
   updateDistance(+distanceSlider.value);
   updatePriority(+prioritySlider.value);
 
-
   setStartBtn.addEventListener('click', () => {
     isSettingStart = !isSettingStart;
+    if (isSettingStart) isSettingFinish = false;
     setStartBtn.classList.toggle('map-control-btn--active', isSettingStart);
+    setFinishBtn.classList.toggle('map-control-btn--active', false);
     mapContainer.style.cursor = isSettingStart ? 'url(/src/img/pin.png), crosshair' : '';
   });
 
+  setFinishBtn.addEventListener('click', () => {
+    isSettingFinish = !isSettingFinish;
+    if (isSettingFinish) isSettingStart = false;
+    setFinishBtn.classList.toggle('map-control-btn--active', isSettingFinish);
+    setStartBtn.classList.toggle('map-control-btn--active', false);
+    mapContainer.style.cursor = isSettingFinish ? 'url(/src/img/pin.png), crosshair' : '';
+  });
+
   map.on('click', (e) => {
-    if (!isSettingStart) return;
-    startPoint = e.latlng;
+    if (isSettingStart) {
+      startPoint = e.latlng;
+      if (startMarker) startMarker.remove();
+      startMarker = L.marker(startPoint, {
+        icon: L.divIcon({
+          className: '',
+          html: `<div style="width:30px;height:30px;background:url(/src/img/pin.png);background-size:cover;"></div>`,
+          iconAnchor: [7, 7],
+        }),
+      }).addTo(map).bindPopup(`Начальная точка`).openPopup();
+      isSettingStart = false;
+      setStartBtn.classList.remove('map-control-btn--active');
+      mapContainer.style.cursor = '';
 
-    if (startMarker) startMarker.remove();
-    startMarker = L.marker(startPoint, {
-      icon: L.divIcon({
-        className: '',
-        html: `<div style="width:30px;height:30px;background:url(/src/img/pin.png);background-size:cover;"></div>`,
-        iconAnchor: [7, 7],
-      }),
-    }).addTo(map).bindPopup(`Начальная точка ${startPoint}`).openPopup();
-
-    isSettingStart = false;
-    setStartBtn.classList.remove('map-control-btn--active');
-    mapContainer.style.cursor = '';
+    } else if (isSettingFinish) {
+      finishPoint = e.latlng;
+      if (finishMarker) finishMarker.remove();
+      finishMarker = L.marker(finishPoint, {
+        icon: L.divIcon({
+          className: '',
+          html: `<div style="width:30px;height:30px;background:url(/src/img/pin.png);background-size:cover;"></div>`,
+          iconAnchor: [7, 7],
+        }),
+      }).addTo(map).bindPopup(`Конечная точка`).openPopup();
+      isSettingFinish = false;
+      setFinishBtn.classList.remove('map-control-btn--active');
+      mapContainer.style.cursor = '';
+    }
   });
 
   distanceBtns[0].addEventListener('click', () => updateDistance(+distanceSlider.value - STEP_DIST));
@@ -374,9 +469,17 @@ document.addEventListener('DOMContentLoaded', () => {
   prioritySlider.addEventListener('input', () => updatePriority(+prioritySlider.value));
 
   openModalBtn.addEventListener('click', () => {
-    if (!startPoint) { Notify.error('Сначала укажите начальную точку маршрута'); return; }
+    if (routeType === 'circle' && !startPoint) {
+      Notify.error('Сначала укажите начальную точку маршрута');
+      return;
+    }
+    if (routeType === 'line' && (!startPoint || !finishPoint)) {
+      Notify.error('Сначала укажите начальную и конечную точки маршрута');
+      return;
+    }
     modal.classList.add('modal--active');
     modalOverlay.classList.add('modal-overlay--active');
+    renderStep1(ctx);
   });
 
   closeModalBtn.addEventListener('click', () => {
@@ -384,35 +487,19 @@ document.addEventListener('DOMContentLoaded', () => {
     modalOverlay.classList.remove('modal-overlay--active');
   });
 
-  buildBtn.addEventListener('click', async () => {
-    if (!startPoint) { Notify.error('Сначала укажите начальную точку маршрута'); return; }
+  routeSwitch.addEventListener('change', () => {
+    if (routeSwitch.checked) {
+      routeType = "line";
+      setFinishBtn.classList.remove("bbox-btn-hide");
+    } else {
+      routeType = "circle";
+      setFinishBtn.classList.add("bbox-btn-hide");
 
-    const distance = parseFloat(distanceSlider.value);
-    const priority = parseFloat(prioritySlider.value);
-    const userId   = userManager.get()?.id ?? 'unknown';
-
-    showLoader(loader, 'Строим маршрут...');
-    try {
-      const token    = getToken();
-      const response = await fetch('http://127.0.0.1:10001/api/routes/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          userId,
-          startLat: startPoint.lat,
-          startLon: startPoint.lng,
-          targetDistance: Math.round(distance * 2000),
-          priority,
-        }),
-      });
-
-      if (!response.ok) throw new Error(`Ошибка ${response.status}`);
-      const route = await response.json();
-      renderStep2(route, distance, priority, ctx);
-    } catch (error) {
-      Notify.error('Не удалось построить маршрут: ' + error.message);
-    } finally {
-      hideLoader(loader);
+      if (finishMarker) {
+        finishMarker.remove();
+        finishMarker = null;
+      }
+      finishPoint = null;
     }
   });
 
@@ -428,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   for (const layerBtn of mapLayersBtns) {
     layerBtn.addEventListener('click', (evt) => {
-      const btn      = evt.currentTarget;
+      const btn       = evt.currentTarget;
       const layerName = btn.dataset.layer;
       const { layer, color: poiColor } = layersMap[layerName];
 

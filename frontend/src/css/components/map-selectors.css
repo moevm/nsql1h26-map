@@ -72,4 +72,14 @@
 
 .bbox-btn--set-start {
   bottom: 50px !important;  
+  width: 150px;
+}
+
+.bbox-btn-hide {
+  display: none;
+}
+
+.bbox-btn--set-finish {
+  bottom: 120px !important;
+  width: 150px;
 }
