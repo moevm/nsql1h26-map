@@ -27,6 +27,16 @@ class UpdateRouteRequest(BaseModel):
     targetDistance: float | None = None
 
 
+class LineRouteRequest(BaseModel):
+    userId: str
+    startLat: float
+    startLon: float
+    endLat: float
+    endLon: float
+    targetDistance: float = DEFAULT_TARGET_DISTANCE
+    targetDuration: int | None = None
+    priority: float = Field(DEFAULT_PRIORITY, ge=0.0, le=1.0)
+
 async def _load_subgraph(session, start_lat: float, start_lon: float, search_radius: float):
     result = await session.run(
         """
@@ -355,6 +365,121 @@ async def create_route(body: RouteRequest, session=Depends(get_session)):
         priority=body.priority,
     )
 
+@router.post("/line", status_code=status.HTTP_201_CREATED)
+async def create_line_route(body: LineRouteRequest, session=Depends(get_session)):
+    from utils import haversine
+    
+    direct_distance = haversine(body.startLat, body.startLon, body.endLat, body.endLon)
+
+    search_radius = max(direct_distance * 0.6 + 500, 1500.0)
+
+    mid_lat = (body.startLat + body.endLat) / 2
+    mid_lon = (body.startLon + body.endLon) / 2
+
+    nodes, graph = await _load_subgraph(session, mid_lat, mid_lon, search_radius)
+    if not nodes:
+        raise HTTPException(status_code=404, detail="No MapNodes found in search radius")
+
+    start_node = _find_nearest_node(nodes, body.startLat, body.startLon)
+    end_node = _find_nearest_node(nodes, body.endLat, body.endLon)
+
+    if start_node is None or end_node is None:
+        raise HTTPException(status_code=404, detail="Cannot snap start/end to graph")
+
+    path, path_distance = _dijkstra(graph, start_node, end_node)
+    if not path:
+        raise HTTPException(status_code=404, detail="No path found between start and end points")
+
+    covered = await _load_covered_tiles(session, body.userId)
+    pois_per_node = await _load_pois_per_node(session, list(nodes.keys()))
+
+    edge_tiles_cache: dict = {}
+    route_tiles: set = set()
+    for prev_id, next_id in zip(path, path[1:]):
+        route_tiles |= _edge_tiles(nodes, prev_id, next_id, edge_tiles_cache)
+    for osm_id in path:
+        route_tiles.add((nodes[osm_id]["tileX"], nodes[osm_id]["tileY"]))
+
+    new_tiles_set = route_tiles - covered
+    new_tiles = sorted(new_tiles_set)
+
+    seen_poi_ids = set()
+    highlights = []
+    for osm_id in path:
+        for poi in pois_per_node.get(osm_id, []):
+            if poi["osmId"] in seen_poi_ids:
+                continue
+            seen_poi_ids.add(poi["osmId"])
+            highlights.append(poi)
+
+    route_id = str(uuid.uuid4())
+    estimated_minutes = body.targetDuration if body.targetDuration is not None else int(path_distance / 80)
+
+    await session.run(
+        """
+        MATCH (u:User {id: $userId})
+        CREATE (r:Route {
+            id: $routeId,
+            createdAt: datetime() + duration({hours: 3}),
+            totalDistanceMeters: $distance,
+            estimatedMinutes: $minutes,
+            priority: $priority,
+            targetDistance: $targetDistance,
+            newTilesX: $newTilesX,
+            newTilesY: $newTilesY,
+            allTilesCount: $allTilesCount,
+            routeType: 'line',
+            endLat: $endLat,
+            endLon: $endLon
+        })
+        CREATE (u)-[:REQUESTED_ROUTE]->(r)
+        WITH r
+        UNWIND $nodeIds AS nd
+        MATCH (mn:MapNode {osmId: nd.osmId})
+        CREATE (r)-[:PASSES_THROUGH {order: nd.order}]->(mn)
+        """,
+        userId=body.userId,
+        routeId=route_id,
+        distance=round(path_distance, 1),
+        minutes=estimated_minutes,
+        priority=body.priority,
+        targetDistance=body.targetDistance,
+        newTilesX=[t[0] for t in new_tiles],
+        newTilesY=[t[1] for t in new_tiles],
+        allTilesCount=len(route_tiles),
+        nodeIds=[{"osmId": osm_id, "order": i} for i, osm_id in enumerate(path)],
+        endLat=body.endLat,
+        endLon=body.endLon,
+    )
+
+    if highlights:
+        await session.run(
+            """
+            MATCH (r:Route {id: $routeId})
+            UNWIND $poiIds AS pid
+            MATCH (p:POI {osmId: pid})
+            CREATE (r)-[:HIGHLIGHTS]->(p)
+            """,
+            routeId=route_id,
+            poiIds=[h["osmId"] for h in highlights],
+        )
+
+    return {
+        "routeId": route_id,
+        "totalDistanceMeters": round(path_distance, 1),
+        "estimatedMinutes": estimated_minutes,
+        "targetDistance": body.targetDistance,
+        "targetDuration": body.targetDuration,
+        "routeType": "line",
+        "newTiles": [{"tileX": x, "tileY": y} for x, y in new_tiles],
+        "allTilesCount": len(route_tiles),
+        "highlights": highlights,
+        "priority": body.priority,
+        "nodes": [
+            {"osmId": osm_id, "lat": nodes[osm_id]["lat"], "lon": nodes[osm_id]["lon"], "order": i}
+            for i, osm_id in enumerate(path)
+        ],
+    }
 
 @router.post("/{routeId}/alternative", status_code=status.HTTP_201_CREATED)
 async def create_alternative_route(routeId: str, session=Depends(get_session)):
