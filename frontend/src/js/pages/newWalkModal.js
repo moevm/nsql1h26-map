@@ -1,5 +1,7 @@
 // Модальное окно для создания новой прогулки
 
+import { Notify } from "../utils/notify";
+
 let map = null;
 let points = [];
 let polyline = null;
@@ -139,7 +141,7 @@ export function showNewWalkModal(userId, tokenGetter, onSuccess) {
         <div class="modal-body">
           <div class="modal-field">
             <label class="modal-field__label">Дата и время начала</label>
-            <input type="datetime-local" class="modal-field__input" id="walk-started-at">
+            <input type="datetime-local" class="modal-field__input" id="walk-started-at-time">
           </div>
           
           <div class="modal-field">
@@ -189,14 +191,19 @@ export function showNewWalkModal(userId, tokenGetter, onSuccess) {
     });
 
     document.getElementById('save-walk-btn')?.addEventListener('click', async () => {
-      const startedAt = document.getElementById('walk-started-at')?.value;
-      
-      if (!startedAt) {
-        alert('Пожалуйста, укажите дату и время начала прогулки');
+      const startedAtInput = document.getElementById('walk-started-at-time');
+
+      console.log(startedAtInput);
+      console.log(startedAtInput?.value);
+
+      const startedAt = startedAtInput?.value?.trim();
+
+      if (!startedAt || startedAt.length === 0) {
+        Notify.error('Пожалуйста, укажите дату и время начала прогулки');
         return;
       }
       if (points.length < 2) {
-        alert('Пожалуйста, добавьте хотя бы 2 точки маршрута');
+        Notify.error('Пожалуйста, добавьте хотя бы 2 точки маршрута');
         return;
       }
       
@@ -229,15 +236,15 @@ export function showNewWalkModal(userId, tokenGetter, onSuccess) {
         
         if (response.ok) {
           const data = await response.json();
-          alert(`Прогулка успешно создана!\nID: ${data.walkId}\nДистанция: ${data.distanceMeters} м\nДлительность: ${data.durationSeconds} сек`);
+          Notify.success(`Прогулка успешно создана!\nID: ${data.walkId}\nДистанция: ${data.distanceMeters} м\nДлительность: ${data.durationSeconds} сек`);
           closeModal();
           if (onSuccess) onSuccess();
         } else {
           const error = await response.text();
-          alert(`Ошибка создания прогулки: ${error}`);
+          Notify.error(`Ошибка создания прогулки: ${error}`);
         }
       } catch (error) {
-        alert(`Ошибка: ${error.message}`);
+        Notify.error(`Ошибка: ${error.message}`);
       } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Сохранить';
