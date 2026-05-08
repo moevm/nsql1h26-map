@@ -91,8 +91,8 @@ async def create_user(body: CreateUserRequest, session=Depends(get_session)):
         CREATE (u:User {
             id: $id, username: $username, email: $email,
             password: $password, token: $token, avatarUrl: '',
-            createdAt: datetime(),
-            updatedAt: datetime()
+            createdAt: datetime() + duration({hours: 3}),
+            updatedAt: datetime() + duration({hours: 3})
         })
         """,
         id=user_id, username=body.username, email=body.email,
@@ -109,15 +109,15 @@ async def update_user(userId: str, body: UpdateUserRequest, session=Depends(get_
 
     if body.email is not None:
         await session.run(
-            "MATCH (u:User {id: $id}) SET u.email = $email, u.updatedAt = datetime()", id=userId, email=body.email
+            "MATCH (u:User {id: $id}) SET u.email = $email, u.updatedAt = datetime() + duration({hours: 3})", id=userId, email=body.email
         )
     if body.username is not None:
         await session.run(
-            "MATCH (u:User {id: $id}) SET u.username = $username, u.updatedAt = datetime()", id=userId, username=body.username
+            "MATCH (u:User {id: $id}) SET u.username = $username, u.updatedAt = datetime() + duration({hours: 3})", id=userId, username=body.username
         )
     if body.avatarUrl is not None:
         await session.run(
-            "MATCH (u:User {id: $id}) SET u.avatarUrl = $avatarUrl, u.updatedAt = datetime()", id=userId, avatarUrl=body.avatarUrl
+            "MATCH (u:User {id: $id}) SET u.avatarUrl = $avatarUrl, u.updatedAt = datetime() + duration({hours: 3})", id=userId, avatarUrl=body.avatarUrl
         )
 
     result = await session.run(
