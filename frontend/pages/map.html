@@ -115,15 +115,28 @@
         </div>
 
         <div class="map-layers">
+          <p class="map-layers__title">Машрут Кольцевой/Линейный</p>
+          <div class="map-layers__grid">
+            <input
+              class="map-layer__switch-input map-layer__switch-input--route"
+              type="checkbox"
+              name="switch"
+              id="switch-route"
+            />
+            <label class="map-layer__switch-label" for="switch-route"></label>
+          </div>
+        </div>
+
+        <div class="map-layers">
           <p class="map-layers__title">Покрытые тайлы</p>
           <div class="map-layers__grid">
             <input
-              class="map-layer__switch-input"
+              class="map-layer__switch-input map-layer__switch-input--tile"
               type="checkbox"
               name="switch"
-              id="switch"
+              id="switch-tile"
             />
-            <label class="map-layer__switch-label" for="switch"></label>
+            <label class="map-layer__switch-label" for="switch-tile"></label>
           </div>
         </div>
 
