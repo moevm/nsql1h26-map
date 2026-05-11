@@ -16,9 +16,7 @@
 
 ## Инструкция по запуску
 - склонируйте репозиторий: ```git clone https://github.com/moevm/nsql1h26-map/```
-- соберите приложение ```docker compose up -d```
+- соберите приложение ```docker compose up -d``` 
 - приложение доступно по адресу: ```127.0.0.1:5678/index.html```
 -   тестовый пользователь для входа: login: ```testuser@example.com``` password: ```test123```
-- заполнить тестовыми данными(testuser@example.com):
--   ```docker compose exec backend python -m scripts.seed_routes```
--   ```docker compose exec backend python -m scripts.seed_walks```
+-   тестовые данные заполняются при первоначальной сборке (docker compose down -v && docker compose up -d --build)
