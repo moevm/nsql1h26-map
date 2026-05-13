@@ -33,15 +33,15 @@ export const drawPOI = (layer, points, iconColor = "blue") => {
   });
 };
 
-export const drawTiles = (layer, tiles) => {
+export const drawTiles = (layer, tiles, color = '#00e6c3', fillOpacity = 0.25) => {
   layer.clearLayers();
   (tiles || []).forEach((t) => {
     L.rectangle(tileBounds(t.tileX, t.tileY), {
-      color: "#00e6c3",
+      color,
       weight: 0.5,
-      opacity: 0.25,
-      fillColor: "#00e6c3",
-      fillOpacity: 0.25,
+      opacity: fillOpacity,
+      fillColor: color,
+      fillOpacity,
       interactive: false,
     }).addTo(layer);
   });

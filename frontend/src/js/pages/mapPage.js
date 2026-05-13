@@ -193,6 +193,8 @@ function renderStep2(route, distance, priority, ctx) {
   const distanceKm      = (route.totalDistanceMeters / 1000).toFixed(1);
   const highlightsCount = route.highlights?.length ?? 0;
   const priorityLabel   = getPriorityLabel(priority);
+  const newTilesCount   = route.newTiles?.length ?? 0;
+  const allTilesCount   = route.allTilesCount ?? 0;
 
   modalContent.innerHTML = `
     <div class="route-preview">
@@ -217,6 +219,12 @@ function renderStep2(route, distance, priority, ctx) {
       <div class="route-preview__stat">
         <span>Количество интересных мест: ${highlightsCount}</span>
       </div>
+      <div class="route-preview__stat">
+        <span>Новых тайлов: ${newTilesCount}</span>
+      </div>
+      <div class="route-preview__stat">
+        <span>Всего тайлов по маршруту: ${allTilesCount}</span>
+      </div>
     </div>
 
     <div class="button-group">
@@ -232,7 +240,7 @@ function renderStep2(route, distance, priority, ctx) {
     subdomains: 'abcd', maxZoom: 19,
   }).addTo(previewMap);
 
-  setTimeout(() => {
+  setTimeout(async () => {
     previewMap.invalidateSize();
 
     if (route.nodes?.length) {
@@ -243,6 +251,26 @@ function renderStep2(route, distance, priority, ctx) {
       const polyline = L.polyline(coords, { color: '#00e6c3', weight: 3, opacity: 0.9, smoothFactor: 0 }).addTo(previewMap);
       previewMap.fitBounds(polyline.getBounds(), { padding: [16, 16] });
       L.circleMarker(coords[0], { radius: 7, color: '#00e6c3', fillColor: '#00e6c3', fillOpacity: 1 }).addTo(previewMap);
+
+      // Уже исследованные тайлы — зелёный фон
+      const coveredLayer = L.layerGroup().addTo(previewMap);
+      try {
+        const userId = userManager.get()?.id;
+        const resp = await fetch(
+          `http://127.0.0.1:10001/api/tiles/?userId=${userId}&limit=10000`,
+          { headers: { Authorization: `Bearer ${getToken()}` } },
+        );
+        if (resp.ok) {
+          const data = await resp.json();
+          drawTiles(coveredLayer, data.items || []);
+        }
+      } catch (_) { /* некритично — тайлы не загрузились */ }
+
+      // Новые тайлы — оранжевый, все без исключения
+      if (route.newTiles?.length) {
+        const newTilesLayer = L.layerGroup().addTo(previewMap);
+        drawTiles(newTilesLayer, route.newTiles, '#ff9f1c', 0.45);
+      }
     }
   }, 0);
 
