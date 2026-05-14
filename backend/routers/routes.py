@@ -543,29 +543,57 @@ async def list_routes(
     userId: str | None = Query(None),
     createdFrom: str | None = Query(None),
     createdTo: str | None = Query(None),
+    # distance
     distanceMin: float | None = Query(None),
     distanceMax: float | None = Query(None),
-    estimatedMin: int | None = Query(None),
-    estimatedMax: int | None = Query(None),
+    # duration (estimatedMinutes)
+    durationMin: int | None = Query(None),
+    durationMax: int | None = Query(None),
+    # new tiles count
+    tilesMin: int | None = Query(None),
+    tilesMax: int | None = Query(None),
+    # poi count
+    poiMin: int | None = Query(None),
+    poiMax: int | None = Query(None),
+    # конкретный маршрут
+    routeId: str | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     session=Depends(get_session),
 ):
-    match = "MATCH (u:User)-[:REQUESTED_ROUTE]->(r:Route)"
+    match = """
+        MATCH (u:User)-[:REQUESTED_ROUTE]->(r:Route)
+        WITH u, r,
+             size(r.newTilesX)                          AS newTilesCount,
+             size([(r)-[:HIGHLIGHTS]->(p) | p])         AS poiCount
+    """
     where = """
         WHERE ($userId       IS NULL OR u.id = $userId)
+          AND ($routeId      IS NULL OR r.id = $routeId)
           AND ($createdFrom  IS NULL OR r.createdAt >= datetime($createdFrom))
           AND ($createdTo    IS NULL OR r.createdAt <= datetime($createdTo))
           AND ($distanceMin  IS NULL OR r.totalDistanceMeters >= $distanceMin)
           AND ($distanceMax  IS NULL OR r.totalDistanceMeters <= $distanceMax)
-          AND ($estimatedMin IS NULL OR r.estimatedMinutes >= $estimatedMin)
-          AND ($estimatedMax IS NULL OR r.estimatedMinutes <= $estimatedMax)
+          AND ($durationMin  IS NULL OR r.estimatedMinutes >= $durationMin)
+          AND ($durationMax  IS NULL OR r.estimatedMinutes <= $durationMax)
+          AND ($tilesMin     IS NULL OR newTilesCount >= $tilesMin)
+          AND ($tilesMax     IS NULL OR newTilesCount <= $tilesMax)
+          AND ($poiMin       IS NULL OR poiCount >= $poiMin)
+          AND ($poiMax       IS NULL OR poiCount <= $poiMax)
     """
     params = dict(
         userId=userId,
-        createdFrom=createdFrom, createdTo=createdTo,
-        distanceMin=distanceMin, distanceMax=distanceMax,
-        estimatedMin=estimatedMin, estimatedMax=estimatedMax,
+        routeId=routeId,
+        createdFrom=createdFrom,
+        createdTo=createdTo,
+        distanceMin=distanceMin,
+        distanceMax=distanceMax,
+        durationMin=durationMin,
+        durationMax=durationMax,
+        tilesMin=tilesMin,
+        tilesMax=tilesMax,
+        poiMin=poiMin,
+        poiMax=poiMax,
     )
 
     count_result = await session.run(
@@ -577,13 +605,13 @@ async def list_routes(
         f"""
         {match} {where}
         RETURN u.id AS userId,
-               r.id AS id, 
+               r.id AS id,
                toString(r.createdAt) AS createdAt,
                r.totalDistanceMeters AS totalDistanceMeters,
                r.estimatedMinutes AS estimatedMinutes,
-               size(r.newTilesX) AS newTilesCount,
+               newTilesCount,
                r.allTilesCount AS allTilesCount,
-               size([(r)-[:HIGHLIGHTS]->(p) | p]) AS poiCount,
+               poiCount,
                [(r)-[:HIGHLIGHTS]->(p) | {{osmId: p.osmId, name: p.name, category: p.category}}][..5] AS poiPreview
         ORDER BY r.createdAt DESC
         SKIP $offset LIMIT $limit
@@ -592,7 +620,6 @@ async def list_routes(
     )
     items = [r.data() async for r in result]
     return make_page(items, total, offset, limit)
-
 
 @router.get("/{routeId}")
 async def get_route(routeId: str, session=Depends(get_session)):

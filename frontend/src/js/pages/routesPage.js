@@ -503,7 +503,7 @@ async function loadAndDrawAllFilteredRoutes() {
       drawAllRoutesOnMap(routesWithNodes);
     }
   } catch (error) {
-    Notify.error("Ошибка загрузки отфильтрованных маршрутов:", error);
+    // Notify.error("Ошибка загрузки отфильтрованных маршрутов:", error);
   }
 }
 
