@@ -297,36 +297,49 @@ async def create_walk(body: CreateWalkRequest, session=Depends(get_session)):
 @router.get("/")
 async def list_walks(
     userId: str | None = Query(None),
+    walkId: str | None = Query(None),
     startedAtFrom: str | None = Query(None),
     startedAtTo: str | None = Query(None),
     distanceMin: float | None = Query(None),
     distanceMax: float | None = Query(None),
     durationMin: int | None = Query(None),
     durationMax: int | None = Query(None),
+    tilesMin: int | None = Query(None),
+    tilesMax: int | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     session=Depends(get_session),
 ):
-    match = "MATCH (u:User)-[:PERFORMED]->(w:Walk)"
+    match = """
+        MATCH (u:User)-[:PERFORMED]->(w:Walk)
+        WITH u, w,
+             size([(w)-[:FIRST_COVERED]->(ct) | ct]) AS newTilesCount
+    """
 
     where = """
-        WHERE ($userId IS NULL OR u.id = $userId)
+        WHERE ($userId        IS NULL OR u.id = $userId)
+          AND ($walkId        IS NULL OR w.id = $walkId)
           AND ($startedAtFrom IS NULL OR w.startedAt >= datetime($startedAtFrom))
-          AND ($startedAtTo IS NULL OR w.startedAt <= datetime($startedAtTo))
-          AND ($distanceMin IS NULL OR w.distanceMeters >= $distanceMin)
-          AND ($distanceMax IS NULL OR w.distanceMeters <= $distanceMax)
-          AND ($durationMin IS NULL OR w.durationSeconds >= $durationMin)
-          AND ($durationMax IS NULL OR w.durationSeconds <= $durationMax)
+          AND ($startedAtTo   IS NULL OR w.startedAt <= datetime($startedAtTo))
+          AND ($distanceMin   IS NULL OR w.distanceMeters >= $distanceMin)
+          AND ($distanceMax   IS NULL OR w.distanceMeters <= $distanceMax)
+          AND ($durationMin   IS NULL OR w.durationSeconds >= $durationMin)
+          AND ($durationMax   IS NULL OR w.durationSeconds <= $durationMax)
+          AND ($tilesMin      IS NULL OR newTilesCount >= $tilesMin)
+          AND ($tilesMax      IS NULL OR newTilesCount <= $tilesMax)
     """
 
     params = dict(
         userId=userId,
+        walkId=walkId,
         startedAtFrom=startedAtFrom,
         startedAtTo=startedAtTo,
         distanceMin=distanceMin,
         distanceMax=distanceMax,
         durationMin=durationMin,
         durationMax=durationMax,
+        tilesMin=tilesMin,
+        tilesMax=tilesMax,
     )
 
     count_result = await session.run(
@@ -347,7 +360,7 @@ async def list_walks(
             toString(w.finishedAt) AS finishedAt,
             w.distanceMeters AS distanceMeters,
             w.durationSeconds AS durationSeconds,
-            size([(w)-[:FIRST_COVERED]->(ct) | ct]) AS newTilesCount,
+            newTilesCount,
             w.allTilesCount AS allTilesCount
 
         ORDER BY w.startedAt DESC
@@ -363,7 +376,6 @@ async def list_walks(
     items = [r.data() async for r in result]
 
     return make_page(items, total, offset, limit)
-
 
 @router.get("/{walkId}")
 async def get_walk(walkId: str, session=Depends(get_session)):
