@@ -108,12 +108,18 @@
 }
 
 .filter-bar__input {
-  background: transparent;
-  border: none;
+  background: #0F2320;
+  border: 1px solid #273A37;
+  border-radius: 8px;
+  padding: 9px 30px 9px 12px;
   color: var(--main-text-color);
   font-size: 14px;
-  width: 100%;
+  cursor: pointer;
   outline: none;
+  appearance: none;
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  min-width: 100px;
 }
 
 .filter-bar__input::placeholder {

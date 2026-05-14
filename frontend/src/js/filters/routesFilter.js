@@ -1,118 +1,119 @@
 export let activeFilters = {
-  dateFrom: null,
-  dateTo: null,
+  dateFrom:    null,
+  dateTo:      null,
+  routeId:     null,
   distanceMin: null,
   distanceMax: null,
-  estimatedMin: null,
-  estimatedMax: null,
-  search: null,
-  userId: null
+  durationMin: null,
+  durationMax: null,
+  tilesMin:    null,
+  tilesMax:    null,
+  poiMin:      null,
+  poiMax:      null,
 };
 
 export function initFilters() {
-  const dateFromInput = document.getElementById('date-from');
-  const dateToInput = document.getElementById('date-to');
-  const distanceFilter = document.getElementById('distance-filter');
-  const durationFilter = document.getElementById('duration-filter');
-  const userIdInput = document.getElementById('user-id-filter');
-  const resetBtn = document.getElementById('reset-filters-btn');
+  const dateFromInput    = document.getElementById('date-from');
+  const dateToInput      = document.getElementById('date-to');
+  const routeIdInput     = document.getElementById('id-filter');
+  const distanceMinInput = document.getElementById('distance-from-filter');
+  const distanceMaxInput = document.getElementById('distance-to-filter');
+  const durationMinInput = document.getElementById('duration-from-filter');
+  const durationMaxInput = document.getElementById('duration-to-filter');
+  const tilesMinInput    = document.getElementById('new-tiles-from-filter');
+  const tilesMaxInput    = document.getElementById('new-tiles-to-filter');
+  const poiMinInput      = document.getElementById('interes-place-from-filter');
+  const poiMaxInput      = document.getElementById('interes-place-to-filter');
+  const resetBtn         = document.getElementById('reset-filters-btn');
+
+  const parseFloat_ = (el) => {
+    const v = parseFloat(el?.value);
+    return isNaN(v) ? null : v;
+  };
+
+  const parseInt_ = (el) => {
+    const v = parseInt(el?.value);
+    return isNaN(v) ? null : v;
+  };
+
+  const parseDate = (el) => {
+    const v = el?.value;
+    if (!v) return null;
+    return new Date(v).toISOString();
+  };
 
   const applyFilters = () => {
-    let dateFrom = dateFromInput?.value || null;
-    let dateTo = dateToInput?.value || null;
-
-    if (dateFrom) {
-      const date = new Date(dateFrom);
-      dateFrom = date.toISOString();
-    }
-    
-    if (dateTo) {
-      const date = new Date(dateTo);
-      dateTo = date.toISOString();
-    }
-
-    let distanceMin = null;
-    let distanceMax = null;
-    const distanceValue = distanceFilter?.value;
-    if (distanceValue && distanceValue !== 'any') {
-      const [min, max] = distanceValue.split('-');
-      if (max) {
-        distanceMin = parseFloat(min) * 1000;
-        distanceMax = parseFloat(max) * 1000;
-      } else if (distanceValue === '15+') {
-        distanceMin = 15000;
-        distanceMax = null;
-      }
-    }
-
-    let estimatedMin = null;
-    let estimatedMax = null;
-    const durationValue = durationFilter?.value;
-    if (durationValue && durationValue !== 'any') {
-      const [min, max] = durationValue.split('-');
-      if (max) {
-        estimatedMin = parseInt(min);
-        estimatedMax = parseInt(max);
-      } else if (durationValue === '120+') {
-        estimatedMin = 120;
-        estimatedMax = null;
-      }
-    }
-
     activeFilters = {
-      dateFrom,
-      dateTo,
-      distanceMin,
-      distanceMax,
-      estimatedMin,
-      estimatedMax,
-      search: null,
-      userId: userIdInput?.value || null
+      dateFrom:    parseDate(dateFromInput),
+      dateTo:      parseDate(dateToInput),
+      routeId:     routeIdInput?.value.trim()  || null,
+      distanceMin: parseFloat_(distanceMinInput),
+      distanceMax: parseFloat_(distanceMaxInput),
+      durationMin: parseInt_(durationMinInput),
+      durationMax: parseInt_(durationMaxInput),
+      tilesMin:    parseInt_(tilesMinInput),
+      tilesMax:    parseInt_(tilesMaxInput),
+      poiMin:      parseInt_(poiMinInput),
+      poiMax:      parseInt_(poiMaxInput),
     };
 
     window.dispatchEvent(new CustomEvent('filters-updated'));
   };
 
   const resetFilters = () => {
-    if (dateFromInput) dateFromInput.value = '';
-    if (dateToInput) dateToInput.value = '';
-    if (distanceFilter) distanceFilter.value = 'any';
-    if (durationFilter) durationFilter.value = 'any';
-    if (userIdInput) userIdInput.value = '';
+    [
+      dateFromInput, dateToInput, routeIdInput,
+      distanceMinInput, distanceMaxInput,
+      durationMinInput, durationMaxInput,
+      tilesMinInput, tilesMaxInput,
+      poiMinInput, poiMaxInput,
+    ].forEach((el) => { if (el) el.value = ''; });
 
     activeFilters = {
-      dateFrom: null,
-      dateTo: null,
+      dateFrom:    null,
+      dateTo:      null,
+      routeId:     null,
       distanceMin: null,
       distanceMax: null,
-      estimatedMin: null,
-      estimatedMax: null,
-      search: null,
-      userId: null
+      durationMin: null,
+      durationMax: null,
+      tilesMin:    null,
+      tilesMax:    null,
+      poiMin:      null,
+      poiMax:      null,
     };
 
     window.dispatchEvent(new CustomEvent('filters-updated'));
   };
 
-  if (dateFromInput) dateFromInput.addEventListener('change', applyFilters);
-  if (dateToInput) dateToInput.addEventListener('change', applyFilters);
-  if (distanceFilter) distanceFilter.addEventListener('change', applyFilters);
-  if (durationFilter) durationFilter.addEventListener('change', applyFilters);
-  if (userIdInput) userIdInput.addEventListener('input', applyFilters);
-  if (resetBtn) resetBtn.addEventListener('click', resetFilters);
+  dateFromInput   ?.addEventListener('change', applyFilters);
+  dateToInput     ?.addEventListener('change', applyFilters);
+  routeIdInput    ?.addEventListener('input',  applyFilters);
+  distanceMinInput?.addEventListener('input',  applyFilters);
+  distanceMaxInput?.addEventListener('input',  applyFilters);
+  durationMinInput?.addEventListener('input',  applyFilters);
+  durationMaxInput?.addEventListener('input',  applyFilters);
+  tilesMinInput   ?.addEventListener('input',  applyFilters);
+  tilesMaxInput   ?.addEventListener('input',  applyFilters);
+  poiMinInput     ?.addEventListener('input',  applyFilters);
+  poiMaxInput     ?.addEventListener('input',  applyFilters);
+  resetBtn        ?.addEventListener('click',  resetFilters);
 }
 
 export function buildFilterParams() {
   const params = new URLSearchParams();
-  
-  if (activeFilters.userId) params.append('userId', activeFilters.userId);
-  if (activeFilters.dateFrom) params.append('createdFrom', activeFilters.dateFrom);
-  if (activeFilters.dateTo) params.append('createdTo', activeFilters.dateTo);
-  if (activeFilters.distanceMin !== null) params.append('distanceMin', activeFilters.distanceMin);
-  if (activeFilters.distanceMax !== null) params.append('distanceMax', activeFilters.distanceMax);
-  if (activeFilters.estimatedMin !== null) params.append('estimatedMin', activeFilters.estimatedMin);
-  if (activeFilters.estimatedMax !== null) params.append('estimatedMax', activeFilters.estimatedMax);
-  if (activeFilters.search) params.append('search', activeFilters.search);
-  
+
+  if (activeFilters.dateFrom)              params.append('createdFrom',  activeFilters.dateFrom);
+  if (activeFilters.dateTo)                params.append('createdTo',    activeFilters.dateTo);
+  if (activeFilters.routeId)               params.append('routeId',      activeFilters.routeId);
+  if (activeFilters.distanceMin !== null)  params.append('distanceMin',  activeFilters.distanceMin);
+  if (activeFilters.distanceMax !== null)  params.append('distanceMax',  activeFilters.distanceMax);
+  if (activeFilters.durationMin !== null)  params.append('durationMin',  activeFilters.durationMin);
+  if (activeFilters.durationMax !== null)  params.append('durationMax',  activeFilters.durationMax);
+  if (activeFilters.tilesMin    !== null)  params.append('tilesMin',     activeFilters.tilesMin);
+  if (activeFilters.tilesMax    !== null)  params.append('tilesMax',     activeFilters.tilesMax);
+  if (activeFilters.poiMin      !== null)  params.append('poiMin',       activeFilters.poiMin);
+  if (activeFilters.poiMax      !== null)  params.append('poiMax',       activeFilters.poiMax);
+
   return params.toString();
 }

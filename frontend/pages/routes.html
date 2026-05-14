@@ -47,6 +47,7 @@
     </div>
 
     <div class="filter-bar">
+
       <div class="filter-bar__item filter-bar__item--date">
         <label class="filter-bar__label">Дата</label>
         <div class="filter-bar__control">
@@ -57,25 +58,48 @@
       </div>
 
       <div class="filter-bar__item">
-        <label class="filter-bar__label">Расстояние</label>
-        <select class="filter-bar__select" id="distance-filter">
-          <option value="any">Любое</option>
-          <option value="0-5">до 5 км</option>
-          <option value="5-10">5-10 км</option>
-          <option value="10-15">10-15 км</option>
-          <option value="15+">более 15 км</option>
-        </select>
+        <label class="filter-bar__label">ID маршрута</label>
+        <input type="text" class="filter-bar__input" id="id-filter" placeholder="..."></input>
       </div>
 
       <div class="filter-bar__item">
-        <label class="filter-bar__label">Длительность</label>
-        <select class="filter-bar__select" id="duration-filter">
-          <option value="any">Любая</option>
-          <option value="0-30">до 30 мин</option>
-          <option value="30-60">30-60 мин</option>
-          <option value="60-120">1-2 часа</option>
-          <option value="120+">более 2 часов</option>
-        </select>
+        <label class="filter-bar__label">Расстояние(мин) м</label>
+        <input type="text" class="filter-bar__input" id="distance-from-filter" placeholder="..."></input>
+      </div>
+
+      <div class="filter-bar__item">
+        <label class="filter-bar__label">Расстояние(макс) м</label>
+        <input type="text" class="filter-bar__input" id="distance-to-filter" placeholder="..."></input>
+      </div>
+
+      <div class="filter-bar__item">
+        <label class="filter-bar__label">Длительность(мин) мин</label>
+        <input type="text" class="filter-bar__input" id="duration-from-filter" placeholder="..."></input>
+      </div>
+
+      <div class="filter-bar__item">
+        <label class="filter-bar__label">Длительность(макс) мин</label>
+        <input type="text" class="filter-bar__input" id="duration-to-filter" placeholder="..."></input>
+      </div>
+
+      <div class="filter-bar__item">
+        <label class="filter-bar__label">Новые тайлы(мин) шт</label>
+        <input type="text" class="filter-bar__input" id="new-tiles-from-filter" placeholder="..."></input>
+      </div>
+
+      <div class="filter-bar__item">
+        <label class="filter-bar__label">Новые тайлы(макс) шт</label>
+        <input type="text" class="filter-bar__input" id="new-tiles-to-filter" placeholder="..."></input>
+      </div>
+
+      <div class="filter-bar__item">
+        <label class="filter-bar__label">Интересные места(мин) шт</label>
+        <input type="text" class="filter-bar__input" id="interes-place-from-filter" placeholder="..."></input>
+      </div>
+
+      <div class="filter-bar__item">
+        <label class="filter-bar__label">Интересные места(макс) шт</label>
+        <input type="text" class="filter-bar__input" id="interes-place-to-filter" placeholder="..."></input>
       </div>
 
       <div class="filter-bar__actions">
