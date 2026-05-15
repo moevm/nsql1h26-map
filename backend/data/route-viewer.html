@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Route Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --panel: #111318;
+    --border: #1e222b;
+    --accent: #00e5a0;
+    --accent2: #4f8eff;
+    --tile: #ffd166;
+    --poi: #ff8fa3;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --danger: #ff4d6d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text); }
+
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+  .badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: rgba(0,229,160,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0,229,160,0.25);
+  }
+
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  .sidebar {
+    width: 360px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-top { padding: 18px 20px; border-bottom: 1px solid var(--border); }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .request-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .request-row { display: flex; gap: 8px; align-items: center; }
+  .request-row label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    width: 100px;
+    flex-shrink: 0;
+  }
+
+  .request-row input,
+  .request-row select {
+    flex: 1;
+    background: #1a1e28;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 5px 8px;
+    outline: none;
+    transition: border-color .2s;
+    min-width: 0;
+  }
+  .request-row input:focus,
+  .request-row select:focus { border-color: var(--accent); }
+
+  .request-row .hint {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* priority slider */
+  .priority-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .priority-wrap input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .priority-marks {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .priority-marks .left { color: var(--tile); }
+  .priority-marks .right { color: var(--poi); }
+  .priority-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    text-align: center;
+  }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 4px; }
+
+  .btn {
+    flex: 1;
+    padding: 10px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: opacity .2s, transform .1s;
+  }
+  .btn:hover:not(:disabled) { opacity: .85; }
+  .btn:active:not(:disabled) { transform: scale(.98); }
+  .btn:disabled { opacity: .35; cursor: default; }
+  .btn.alt { background: var(--accent2); }
+  .btn.save { background: var(--tile); }
+
+  /* stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity .4s, transform .4s;
+  }
+  .stat-card.visible { opacity: 1; transform: none; }
+
+  .stat-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-value.blue { color: var(--accent2); }
+  .stat-value.yellow { color: var(--tile); }
+  .stat-value.pink { color: var(--poi); }
+
+  .stat-sub { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); }
+
+  /* tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 12px 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 8px 14px 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .list-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 20px 20px;
+  }
+  .list-wrap::-webkit-scrollbar { width: 4px; }
+  .list-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .list-pane { display: none; flex-direction: column; gap: 4px; }
+  .list-pane.active { display: flex; }
+
+  .node-item, .poi-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background .15s, border-color .15s;
+  }
+  .node-item:hover, .poi-item:hover {
+    background: rgba(255,255,255,.04);
+    border-color: var(--border);
+  }
+  .node-item.active { background: rgba(0,229,160,.07); border-color: rgba(0,229,160,.3); }
+  .poi-item.active { background: rgba(255,143,163,.07); border-color: rgba(255,143,163,.3); }
+
+  .node-order {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    width: 24px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .node-dot, .poi-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .node-dot { background: var(--muted); }
+  .node-item.active .node-dot { background: var(--accent); }
+  .node-item:first-child .node-dot { background: var(--accent); }
+  .poi-dot { background: var(--poi); }
+
+  .node-coords {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .node-osm, .poi-cat {
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .poi-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 12px;
+    color: var(--muted);
+    padding: 24px;
+    text-align: center;
+  }
+  .empty-icon { font-size: 36px; opacity: .4; }
+  .empty-text { font-size: 12px; line-height: 1.6; }
+
+  #map { flex: 1; background: #0d1117; cursor: crosshair; }
+
+  .status-bar {
+    padding: 8px 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .pulse {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .4; transform: scale(.7); }
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .tile-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: rgba(79,142,255,.12);
+    color: var(--accent2);
+    border: 1px solid rgba(79,142,255,.2);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ROUTE<span>VIEWER</span></div>
+  <div class="tile-badge" style="background:rgba(255,209,102,.12);color:var(--tile);border-color:rgba(255,209,102,.25)">▍ new tiles</div>
+  <div class="tile-badge">▍ covered</div>
+  <div class="header-right">
+    <span class="badge" id="routeIdBadge">no route</span>
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+
+    <div class="sidebar-top">
+      <div class="section-label">Request Parameters</div>
+      <div class="request-box">
+
+        <div class="request-row">
+          <label>API base</label>
+          <input id="apiBase" value="http://127.0.0.1:10001">
+        </div>
+
+        <div class="request-row">
+          <label>user</label>
+          <select id="userId"><option value="">— loading… —</option></select>
+        </div>
+
+        <div class="request-row">
+          <label>start lat/lon</label>
+          <input id="startLat" value="59.9676" placeholder="lat" style="width:90px;flex:none">
+          <input id="startLon" value="30.3129" placeholder="lon">
+        </div>
+
+        <div class="request-row">
+          <label>target dist</label>
+          <input id="targetDistance" value="3000">
+          <span class="hint">m</span>
+        </div>
+
+        <div class="request-row priority-wrap">
+          <label style="width:auto">priority</label>
+          <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+            <input id="priority" type="range" min="0" max="1" step="0.05" value="0.5">
+            <div class="priority-marks">
+              <span class="left">0 — tiles</span>
+              <span class="priority-value" id="priorityValue">0.50</span>
+              <span class="right">1 — POIs</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn" id="fetchBtn" onclick="fetchRoute()">▶ Build Route</button>
+          <button class="btn alt" id="altBtn" onclick="fetchAlternative()" disabled>↻ Alternative</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn save" id="saveBtn" onclick="saveTiles()" disabled>✓ Mark tiles discovered</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card" id="sc1">
+        <div class="stat-label">Distance</div>
+        <div class="stat-value" id="svDist">—</div>
+        <div class="stat-sub">meters</div>
+      </div>
+      <div class="stat-card" id="sc2">
+        <div class="stat-label">Time</div>
+        <div class="stat-value blue" id="svTime">—</div>
+        <div class="stat-sub">minutes (walk)</div>
+      </div>
+      <div class="stat-card" id="sc3">
+        <div class="stat-label">New Tiles</div>
+        <div class="stat-value yellow" id="svTiles">—</div>
+        <div class="stat-sub">discovered</div>
+      </div>
+      <div class="stat-card" id="sc4">
+        <div class="stat-label">Highlights</div>
+        <div class="stat-value pink" id="svPois">—</div>
+        <div class="stat-sub">POIs along path</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-pane="nodes">Waypoints</div>
+      <div class="tab" data-pane="pois">Highlights</div>
+    </div>
+
+    <div class="list-wrap">
+      <div class="list-pane active" id="paneNodes">
+        <div class="empty-state">
+          <div class="empty-icon">🗺</div>
+          <div class="empty-text">Click on the map to set start, then press «Build Route»</div>
+        </div>
+      </div>
+      <div class="list-pane" id="panePois">
+        <div class="empty-state">
+          <div class="empty-icon">★</div>
+          <div class="empty-text">POIs along the route will appear here</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar" id="statusBar">
+      <div class="pulse"></div>
+      <span>Ready</span>
+    </div>
+
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<script>
+  const TILE_ZOOM = 19;
+
+  const map = L.map('map', { zoomControl: true }).setView([59.9676, 30.3129], 15);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap, © CARTO',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(map);
+
+  let routeLayer = null;
+  let routeGlowLayer = null;
+  let endpointMarkers = null;
+  // Порядок добавления = z-order (последний — выше). Covered внизу, потом новые тайлы, потом POI.
+  let coveredLayer = L.layerGroup().addTo(map);
+  let tileLayer = L.layerGroup().addTo(map);
+  let poiLayer = L.layerGroup().addTo(map);
+  let startMarker = null;
+
+  let currentNodes = [];
+  let currentPois = [];
+  let currentRouteId = null;
+  let lastNewTiles = [];           // последний newTiles из ответа маршрута
+  let coveredKeys = new Set();     // "x,y" — уже покрытые тайлы выбранного юзера
+
+  const startIcon = L.divIcon({
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:#00e5a0;border:3px solid #fff;box-shadow:0 0 10px #00e5a080"></div>`,
+    className: '', iconAnchor: [7,7]
+  });
+  const poiIcon = L.divIcon({
+    html: `<div style="width:12px;height:12px;border-radius:50%;background:#ff8fa3;border:2px solid #fff;box-shadow:0 0 8px #ff8fa380"></div>`,
+    className: '', iconAnchor: [6,6]
+  });
+
+  function tileBoundsLatLng(x, y) {
+    const n = Math.pow(2, TILE_ZOOM);
+    const lon1 = x / n * 360 - 180;
+    const lon2 = (x + 1) / n * 360 - 180;
+    const lat1 = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n))) * 180 / Math.PI;
+    const lat2 = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 1) / n))) * 180 / Math.PI;
+    return [[lat1, lon1], [lat2, lon2]];
+  }
+
+  function setStatus(msg, loading = false) {
+    const bar = document.getElementById('statusBar');
+    bar.innerHTML = loading
+      ? `<div class="loading-spinner"></div><span>${msg}</span>`
+      : `<div class="pulse"></div><span>${msg}</span>`;
+  }
+
+  function setStartMarker(lat, lon) {
+    if (startMarker) map.removeLayer(startMarker);
+    startMarker = L.marker([lat, lon], { icon: startIcon })
+      .bindTooltip('Start', { direction: 'top' })
+      .addTo(map);
+  }
+
+  map.on('click', e => {
+    document.getElementById('startLat').value = e.latlng.lat.toFixed(6);
+    document.getElementById('startLon').value = e.latlng.lng.toFixed(6);
+    setStartMarker(e.latlng.lat, e.latlng.lng);
+    setStatus(`Start: ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
+  });
+
+  document.getElementById('priority').addEventListener('input', e => {
+    document.getElementById('priorityValue').textContent = parseFloat(e.target.value).toFixed(2);
+  });
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.list-pane').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      const pane = tab.dataset.pane === 'nodes' ? 'paneNodes' : 'panePois';
+      document.getElementById(pane).classList.add('active');
+    });
+  });
+
+  function showStats(data) {
+    document.getElementById('svDist').textContent = data.totalDistanceMeters.toFixed(0);
+    document.getElementById('svTime').textContent = data.estimatedMinutes;
+    document.getElementById('svTiles').textContent = (data.newTiles || []).length;
+    document.getElementById('svPois').textContent = (data.highlights || []).length;
+
+    ['sc1','sc2','sc3','sc4'].forEach((id, i) => {
+      setTimeout(() => document.getElementById(id).classList.add('visible'), i * 80);
+    });
+
+    document.getElementById('routeIdBadge').textContent = data.routeId.slice(0,8) + '…';
+  }
+
+  function buildNodeList(nodes) {
+    const list = document.getElementById('paneNodes');
+    list.innerHTML = '';
+    if (!nodes.length) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">∅</div><div class="empty-text">No waypoints</div></div>`;
+      return;
+    }
+    nodes.forEach((n, i) => {
+      const item = document.createElement('div');
+      item.className = 'node-item' + (i === 0 ? ' active' : '');
+      item.innerHTML = `
+        <div class="node-order">#${n.order}</div>
+        <div class="node-dot"></div>
+        <div>
+          <div class="node-coords">${n.lat.toFixed(6)}, ${n.lon.toFixed(6)}</div>
+          <div class="node-osm">OSM: ${n.osmId}</div>
+        </div>`;
+      item.addEventListener('click', () => focusNode(i));
+      list.appendChild(item);
+    });
+  }
+
+  function buildPoiList(pois) {
+    const list = document.getElementById('panePois');
+    list.innerHTML = '';
+    if (!pois.length) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">★</div><div class="empty-text">No POIs along this route</div></div>`;
+      return;
+    }
+    pois.forEach((p, i) => {
+      const item = document.createElement('div');
+      item.className = 'poi-item';
+      item.innerHTML = `
+        <div class="poi-dot"></div>
+        <div>
+          <div class="poi-name">${p.name || '(unnamed)'}</div>
+          <div class="poi-cat">${p.category || '—'} · ${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</div>
+        </div>`;
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.poi-item').forEach(el => el.classList.remove('active'));
+        item.classList.add('active');
+        map.flyTo([p.lat, p.lon], 18, { duration: .6 });
+      });
+      list.appendChild(item);
+    });
+  }
+
+  function focusNode(idx) {
+    const items = document.querySelectorAll('.node-item');
+    items.forEach((el, i) => el.classList.toggle('active', i === idx));
+    const n = currentNodes[idx];
+    map.flyTo([n.lat, n.lon], 18, { duration: .6 });
+  }
+
+  function clearMap() {
+    if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+    if (routeGlowLayer) { map.removeLayer(routeGlowLayer); routeGlowLayer = null; }
+    if (endpointMarkers) { map.removeLayer(endpointMarkers); endpointMarkers = null; }
+    poiLayer.clearLayers();
+    tileLayer.clearLayers();
+  }
+
+  function tileKey(x, y) { return `${x},${y}`; }
+
+  function drawTiles(tiles) {
+    lastNewTiles = tiles || [];
+    refilterTileLayer();
+  }
+
+  // Жёлтый слой — только тайлы, которые ещё не покрыты текущим юзером.
+  // Уже покрытые автоматически переходят в синий covered-слой.
+  function refilterTileLayer() {
+    tileLayer.clearLayers();
+    lastNewTiles.forEach(t => {
+      if (coveredKeys.has(tileKey(t.tileX, t.tileY))) return;
+      L.rectangle(tileBoundsLatLng(t.tileX, t.tileY), {
+        color: '#ffd166',
+        weight: 0.6,
+        opacity: 0.55,
+        fillColor: '#ffd166',
+        fillOpacity: 0.18,
+        interactive: false
+      }).addTo(tileLayer);
+    });
+  }
+
+  function drawCovered(tiles) {
+    coveredLayer.clearLayers();
+    coveredKeys = new Set();
+    (tiles || []).forEach(t => {
+      coveredKeys.add(tileKey(t.tileX, t.tileY));
+      L.rectangle(tileBoundsLatLng(t.tileX, t.tileY), {
+        color: '#4f8eff',
+        weight: 0.4,
+        opacity: 0.45,
+        fillColor: '#4f8eff',
+        fillOpacity: 0.20,
+        interactive: false
+      }).addTo(coveredLayer);
+    });
+    refilterTileLayer();
+  }
+
+  async function loadCovered() {
+    const base = document.getElementById('apiBase').value.trim();
+    const userId = document.getElementById('userId').value;
+    if (!userId) {
+      drawCovered([]);
+      return;
+    }
+    try {
+      const res = await fetch(`${base}/api/tiles/${userId}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const tiles = await res.json();
+      drawCovered(tiles);
+    } catch (e) {
+      drawCovered([]);
+      setStatus(`Covered load failed: ${e.message}`);
+    }
+  }
+
+  function drawPois(pois) {
+    poiLayer.clearLayers();
+    (pois || []).forEach(p => {
+      L.marker([p.lat, p.lon], { icon: poiIcon })
+        .bindTooltip(`${p.name || '(unnamed)'} · ${p.category || ''}`, { direction: 'top' })
+        .addTo(poiLayer);
+    });
+  }
+
+  function drawRoute(nodes) {
+    if (routeLayer) map.removeLayer(routeLayer);
+    if (routeGlowLayer) map.removeLayer(routeGlowLayer);
+    if (endpointMarkers) map.removeLayer(endpointMarkers);
+
+    const latlngs = nodes.map(n => [n.lat, n.lon]);
+
+    routeGlowLayer = L.polyline(latlngs, { color: '#00e5a0', weight: 10, opacity: .12 }).addTo(map);
+    routeLayer = L.polyline(latlngs, {
+      color: '#00e5a0', weight: 4, opacity: .85,
+      lineJoin: 'round', lineCap: 'round'
+    }).addTo(map);
+
+    setStartMarker(nodes[0].lat, nodes[0].lon);
+    map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+  }
+
+  function renderRoute(data) {
+    currentNodes = (data.nodes || []).slice().sort((a, b) => a.order - b.order);
+    currentPois = data.highlights || [];
+    currentRouteId = data.routeId;
+
+    showStats(data);
+    buildNodeList(currentNodes);
+    buildPoiList(currentPois);
+    drawRoute(currentNodes);
+    drawPois(currentPois);
+    drawTiles(data.newTiles);
+    document.getElementById('altBtn').disabled = false;
+    document.getElementById('saveBtn').disabled = !(data.newTiles && data.newTiles.length);
+  }
+
+  async function saveTiles() {
+    const base = document.getElementById('apiBase').value.trim();
+    const userId = document.getElementById('userId').value;
+    // Сохраняем только тайлы, которые ещё не покрыты у этого юзера —
+    // covered fetch произошёл при выборе юзера, фильтруем по coveredKeys.
+    const toSave = lastNewTiles.filter(t => !coveredKeys.has(tileKey(t.tileX, t.tileY)));
+    if (!userId || !toSave.length) return;
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+    setStatus(`Saving ${toSave.length} tile(s)…`, true);
+
+    try {
+      const results = await Promise.allSettled(toSave.map(t =>
+        fetch(`${base}/api/tiles/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, tileX: t.tileX, tileY: t.tileY })
+        }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
+      ));
+      const failed = results.filter(r => r.status === 'rejected').length;
+      await loadCovered();  // обновляет coveredKeys и перерисовывает синий слой; жёлтый авто-фильтрует
+      if (failed) setStatus(`Saved ${toSave.length - failed} of ${toSave.length} (${failed} failed)`);
+      else setStatus(`Saved ${toSave.length} tile(s) to user`);
+    } catch (e) {
+      setStatus(`Save failed: ${e.message}`);
+    } finally {
+      // После сохранения toSave опустеет на следующем фильтре, но если ничего не осталось — диcейблим.
+      const remaining = lastNewTiles.filter(t => !coveredKeys.has(tileKey(t.tileX, t.tileY)));
+      saveBtn.disabled = remaining.length === 0;
+    }
+  }
+
+  async function loadUsers() {
+    const base = document.getElementById('apiBase').value.trim();
+    try {
+      const res = await fetch(`${base}/api/users/?limit=100`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const items = data.items || [];
+      const select = document.getElementById('userId');
+      select.innerHTML = '';
+      if (!items.length) {
+        select.innerHTML = '<option value="">— no users —</option>';
+        return;
+      }
+      items.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.id;
+        opt.textContent = `${u.username || u.email || u.id.slice(0,8)} (${u.id.slice(0,8)})`;
+        select.appendChild(opt);
+      });
+      setStatus(`Loaded ${items.length} user(s)`);
+      await loadCovered();
+    } catch (e) {
+      const select = document.getElementById('userId');
+      select.innerHTML = '<option value="">— failed to load —</option>';
+      setStatus(`Users load failed: ${e.message}`);
+    }
+  }
+
+  async function fetchRoute() {
+    const btn = document.getElementById('fetchBtn');
+    const altBtn = document.getElementById('altBtn');
+    btn.disabled = true; altBtn.disabled = true;
+    setStatus('Building route…', true);
+
+    const base = document.getElementById('apiBase').value.trim();
+    const body = {
+      userId:         document.getElementById('userId').value,
+      startLat:       parseFloat(document.getElementById('startLat').value),
+      startLon:       parseFloat(document.getElementById('startLon').value),
+      targetDistance: parseFloat(document.getElementById('targetDistance').value),
+      priority:       parseFloat(document.getElementById('priority').value),
+    };
+
+    if (!body.userId) {
+      setStatus('Pick a user first');
+      btn.disabled = false;
+      return;
+    }
+
+    try {
+      const res = await fetch(`${base}/api/routes/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`HTTP ${res.status}: ${text}`);
+      }
+      const data = await res.json();
+      renderRoute(data);
+      setStatus(`Route ${data.routeId.slice(0,8)}… · ${data.nodes.length} nodes · ${(data.newTiles||[]).length} new tiles · ${(data.highlights||[]).length} POIs`);
+    } catch (e) {
+      clearMap();
+      setStatus(`Error: ${e.message}`);
+      document.getElementById('paneNodes').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">⚠️</div>
+          <div class="empty-text" style="color:#ff4d6d">${e.message}</div>
+        </div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function fetchAlternative() {
+    if (!currentRouteId) return;
+    const btn = document.getElementById('fetchBtn');
+    const altBtn = document.getElementById('altBtn');
+    btn.disabled = true; altBtn.disabled = true;
+    setStatus('Building alternative…', true);
+
+    const base = document.getElementById('apiBase').value.trim();
+    try {
+      const res = await fetch(`${base}/api/routes/${currentRouteId}/alternative`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`HTTP ${res.status}: ${text}`);
+      }
+      const data = await res.json();
+      renderRoute(data);
+      setStatus(`Alternative ${data.routeId.slice(0,8)}… · ${data.nodes.length} nodes`);
+    } catch (e) {
+      setStatus(`Error: ${e.message}`);
+    } finally {
+      btn.disabled = false;
+      altBtn.disabled = !currentRouteId;
+    }
+  }
+
+  // initial load
+  setStartMarker(59.9676, 30.3129);
+  loadUsers();
+  document.getElementById('apiBase').addEventListener('change', loadUsers);
+  document.getElementById('userId').addEventListener('change', loadCovered);
+</script>
+</body>
+</html>

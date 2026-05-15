@@ -20,3 +20,4 @@
 - приложение доступно по адресу: ```127.0.0.1:5678/index.html```
 -   тестовый пользователь для входа: login: ```testuser@example.com``` password: ```test123```
 -   тестовые данные заполняются при первоначальной сборке (```docker compose down -v && docker compose up -d --build```)
+

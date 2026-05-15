@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Walk Import Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --panel: #111318;
+    --border: #1e222b;
+    --accent: #00e5a0;
+    --accent2: #4f8eff;
+    --tile: #ffd166;
+    --walk: #ff8fa3;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --danger: #ff4d6d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 100;
+  }
+
+  .logo { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: var(--accent); }
+  .logo span { color: var(--text); }
+
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+  .tile-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: rgba(79,142,255,.12);
+    color: var(--accent2);
+    border: 1px solid rgba(79,142,255,.2);
+  }
+
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  .sidebar {
+    width: 380px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-section {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .field-row:last-child { margin-bottom: 0; }
+  .field-row label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    width: 90px;
+    flex-shrink: 0;
+  }
+  .field-row input,
+  .field-row select {
+    flex: 1;
+    background: #1a1e28;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 5px 8px;
+    outline: none;
+    transition: border-color .2s;
+    min-width: 0;
+  }
+  .field-row input:focus,
+  .field-row select:focus { border-color: var(--accent); }
+
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .file-row:last-of-type { margin-bottom: 0; }
+  .file-row label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    width: 90px;
+    flex-shrink: 0;
+  }
+  .file-row .file-name {
+    flex: 1;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 5px 8px;
+    background: #1a1e28;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color .2s;
+  }
+  .file-row .file-name:hover { border-color: var(--accent); }
+  .file-row .file-name.has-file { color: var(--accent); border-color: rgba(0,229,160,.35); }
+  .file-row input[type="file"] { display: none; }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+  .btn {
+    flex: 1;
+    padding: 9px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: opacity .2s, transform .1s;
+  }
+  .btn:hover:not(:disabled) { opacity: .85; }
+  .btn:active:not(:disabled) { transform: scale(.98); }
+  .btn:disabled { opacity: .35; cursor: default; }
+  .btn.secondary { background: #1a1e28; color: var(--text); border: 1px solid var(--border); }
+  .btn.secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+
+  .import-result {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(0,229,160,.07);
+    border: 1px solid rgba(0,229,160,.2);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    display: none;
+  }
+  .import-result.error {
+    background: rgba(255,77,109,.07);
+    border-color: rgba(255,77,109,.2);
+    color: var(--danger);
+  }
+
+  /* walk list */
+  .walk-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px 8px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .walk-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .walk-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 10px;
+  }
+  .walk-list::-webkit-scrollbar { width: 4px; }
+  .walk-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .walk-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background .15s, border-color .15s;
+    margin-bottom: 2px;
+  }
+  .walk-item:hover { background: rgba(255,255,255,.04); border-color: var(--border); }
+  .walk-item.active { background: rgba(255,143,163,.07); border-color: rgba(255,143,163,.3); }
+
+  .walk-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .walk-item.active .walk-dot { background: var(--walk); }
+
+  .walk-info { flex: 1; min-width: 0; }
+  .walk-date {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .walk-meta {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .walk-id {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    opacity: .6;
+    margin-top: 2px;
+  }
+
+  .walk-tiles-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(255,209,102,.1);
+    color: var(--tile);
+    border: 1px solid rgba(255,209,102,.2);
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 120px;
+    gap: 10px;
+    color: var(--muted);
+    text-align: center;
+  }
+  .empty-icon { font-size: 28px; opacity: .4; }
+  .empty-text { font-size: 11px; line-height: 1.6; }
+
+  #map { flex: 1; background: #0d1117; }
+
+  .status-bar {
+    padding: 8px 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .pulse {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .4; transform: scale(.7); }
+  }
+  .loading-spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .walk-detail {
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    display: none;
+    flex-shrink: 0;
+  }
+  .walk-detail.visible { display: block; }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+  .detail-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+  }
+  .detail-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .detail-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.2;
+    margin-top: 2px;
+  }
+  .detail-value.pink { color: var(--walk); }
+  .detail-value.yellow { color: var(--tile); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">WALK<span>IMPORT</span></div>
+  <div class="tile-badge" style="background:rgba(79,142,255,.12);color:var(--accent2);border-color:rgba(79,142,255,.2)">▍ covered tiles</div>
+  <div class="tile-badge" style="background:rgba(255,209,102,.12);color:var(--tile);border-color:rgba(255,209,102,.25)">▍ walk tiles</div>
+  <div class="tile-badge" style="background:rgba(255,143,163,.12);color:var(--walk);border-color:rgba(255,143,163,.25)">▍ walkpoints</div>
+  <div class="header-right">
+    <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted)" id="totalTilesBadge">— tiles covered</span>
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+
+    <!-- Connection + User -->
+    <div class="sidebar-section">
+      <div class="section-label">Connection</div>
+      <div class="field-row">
+        <label>API base</label>
+        <input id="apiBase" value="http://127.0.0.1:10001">
+      </div>
+      <div class="field-row">
+        <label>user</label>
+        <select id="userId"><option value="">— loading… —</option></select>
+      </div>
+    </div>
+
+    <!-- Import -->
+    <div class="sidebar-section">
+      <div class="section-label">Import Walks</div>
+
+      <div class="file-row">
+        <label>walks.csv</label>
+        <div class="file-name" id="walksFileName" onclick="document.getElementById('walksFileInput').click()">click to select</div>
+        <input type="file" id="walksFileInput" accept=".csv" onchange="onFileChange('walks')">
+      </div>
+      <div class="file-row">
+        <label>walkpoints.csv</label>
+        <div class="file-name" id="walkpointsFileName" onclick="document.getElementById('walkpointsFileInput').click()">click to select</div>
+        <input type="file" id="walkpointsFileInput" accept=".csv" onchange="onFileChange('walkpoints')">
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" id="importBtn" onclick="doImport()" disabled>↑ Import</button>
+        <button class="btn secondary" onclick="refreshAll()">↻ Refresh</button>
+      </div>
+      <div class="import-result" id="importResult"></div>
+    </div>
+
+    <!-- Selected walk detail -->
+    <div class="walk-detail" id="walkDetail">
+      <div class="section-label">Selected Walk</div>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <div class="detail-label">Distance</div>
+          <div class="detail-value" id="detailDist">—</div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-label">Duration</div>
+          <div class="detail-value pink" id="detailDur">—</div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-label">Walk Tiles</div>
+          <div class="detail-value yellow" id="detailTiles">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Walk list -->
+    <div class="walk-list-header">
+      <div class="section-label" style="margin:0">Walks</div>
+      <div class="walk-count" id="walkCount">—</div>
+    </div>
+
+    <div class="walk-list" id="walkList">
+      <div class="empty-state">
+        <div class="empty-icon">🚶</div>
+        <div class="empty-text">Select a user to see walks</div>
+      </div>
+    </div>
+
+    <div class="status-bar" id="statusBar">
+      <div class="pulse"></div>
+      <span>Ready</span>
+    </div>
+
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<script>
+  const TILE_ZOOM = 19;
+
+  // ── Map setup ──────────────────────────────────────────────────────────────
+  const map = L.map('map', { zoomControl: true }).setView([59.9676, 30.3129], 14);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap, © CARTO',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(map);
+
+  // Layer order: covered → walk tiles → walkpoints
+  const coveredLayer   = L.layerGroup().addTo(map);
+  const walkTileLayer  = L.layerGroup().addTo(map);
+  const walkpointLayer = L.layerGroup().addTo(map);
+
+  let currentWalks = [];
+  let selectedWalkId = null;
+
+  // ── Tile math (mirrors Python utils.py) ────────────────────────────────────
+  function latLonToTileFloat(lat, lon) {
+    const n = Math.pow(2, TILE_ZOOM);
+    const tx = (lon + 180) / 360 * n;
+    const ty = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n;
+    return [tx, ty];
+  }
+
+  function latLonToTile(lat, lon) {
+    const [fx, fy] = latLonToTileFloat(lat, lon);
+    return [Math.floor(fx), Math.floor(fy)];
+  }
+
+  function tilesOnSegment(lat1, lon1, lat2, lon2) {
+    const [x1, y1] = latLonToTileFloat(lat1, lon1);
+    const [x2, y2] = latLonToTileFloat(lat2, lon2);
+    const dx = x2 - x1, dy = y2 - y1;
+    const span = Math.max(Math.abs(dx), Math.abs(dy));
+    const steps = Math.max(Math.floor(span / 0.4) + 1, 1);
+    const seen = new Map();
+    const add = (fx, fy) => { const k = `${Math.floor(fx)},${Math.floor(fy)}`; seen.set(k, [Math.floor(fx), Math.floor(fy)]); };
+    add(x1, y1); add(x2, y2);
+    for (let i = 1; i < steps; i++) { const t = i / steps; add(x1 + dx * t, y1 + dy * t); }
+    return [...seen.values()];
+  }
+
+  function tilesForWalkpoints(wps) {
+    const tileMap = new Map();
+    for (let i = 0; i < wps.length; i++) {
+      const [tx, ty] = latLonToTile(wps[i].lat, wps[i].lon);
+      tileMap.set(`${tx},${ty}`, [tx, ty]);
+      if (i + 1 < wps.length) {
+        for (const [sx, sy] of tilesOnSegment(wps[i].lat, wps[i].lon, wps[i+1].lat, wps[i+1].lon)) {
+          tileMap.set(`${sx},${sy}`, [sx, sy]);
+        }
+      }
+    }
+    return [...tileMap.values()];
+  }
+
+  // ── Tile rendering ─────────────────────────────────────────────────────────
+  function tileBounds(x, y) {
+    const n = Math.pow(2, TILE_ZOOM);
+    const lon1 = x / n * 360 - 180;
+    const lon2 = (x + 1) / n * 360 - 180;
+    const lat1 = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n))) * 180 / Math.PI;
+    const lat2 = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 1) / n))) * 180 / Math.PI;
+    return [[lat1, lon1], [lat2, lon2]];
+  }
+
+  function drawCoveredTiles(tiles) {
+    coveredLayer.clearLayers();
+    (tiles || []).forEach(t => {
+      L.rectangle(tileBounds(t.tileX, t.tileY), {
+        color: '#4f8eff', weight: 0.4, opacity: 0.5,
+        fillColor: '#4f8eff', fillOpacity: 0.18, interactive: false
+      }).addTo(coveredLayer);
+    });
+    document.getElementById('totalTilesBadge').textContent = `${(tiles || []).length} tiles covered`;
+  }
+
+  function drawWalkTiles(tiles) {
+    walkTileLayer.clearLayers();
+    tiles.forEach(([tx, ty]) => {
+      L.rectangle(tileBounds(tx, ty), {
+        color: '#ffd166', weight: 0.8, opacity: 0.7,
+        fillColor: '#ffd166', fillOpacity: 0.22, interactive: false
+      }).addTo(walkTileLayer);
+    });
+  }
+
+  const wpIcon = L.divIcon({
+    html: `<div style="width:8px;height:8px;border-radius:50%;background:#ff8fa3;border:2px solid rgba(255,143,163,.5)"></div>`,
+    className: '', iconAnchor: [4, 4]
+  });
+  const wpStartIcon = L.divIcon({
+    html: `<div style="width:12px;height:12px;border-radius:50%;background:#00e5a0;border:3px solid #fff;box-shadow:0 0 10px #00e5a080"></div>`,
+    className: '', iconAnchor: [6, 6]
+  });
+
+  function drawWalkpoints(wps) {
+    walkpointLayer.clearLayers();
+    if (!wps.length) return;
+
+    const sorted = wps.slice().sort((a, b) => a.order - b.order);
+    const latlngs = sorted.map(p => [p.lat, p.lon]);
+
+    // Glow + line
+    L.polyline(latlngs, { color: '#ff8fa3', weight: 8, opacity: .1 }).addTo(walkpointLayer);
+    L.polyline(latlngs, { color: '#ff8fa3', weight: 2.5, opacity: .8, lineJoin: 'round', lineCap: 'round' }).addTo(walkpointLayer);
+
+    sorted.forEach((p, i) => {
+      const icon = i === 0 ? wpStartIcon : wpIcon;
+      L.marker([p.lat, p.lon], { icon })
+        .bindTooltip(`#${p.order} · ${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}<br>${p.timestamp}`, { direction: 'top' })
+        .addTo(walkpointLayer);
+    });
+
+    map.fitBounds(L.polyline(latlngs).getBounds(), { padding: [40, 40] });
+  }
+
+  // ── Status ─────────────────────────────────────────────────────────────────
+  function setStatus(msg, loading = false) {
+    document.getElementById('statusBar').innerHTML = loading
+      ? `<div class="loading-spinner"></div><span>${msg}</span>`
+      : `<div class="pulse"></div><span>${msg}</span>`;
+  }
+
+  // ── API helpers ────────────────────────────────────────────────────────────
+  function base() { return document.getElementById('apiBase').value.trim(); }
+  function userId() { return document.getElementById('userId').value; }
+
+  async function fetchJSON(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  // ── Load users ─────────────────────────────────────────────────────────────
+  async function loadUsers() {
+    try {
+      const data = await fetchJSON(`${base()}/api/users/?limit=100`);
+      const items = data.items || [];
+      const sel = document.getElementById('userId');
+      sel.innerHTML = '';
+      if (!items.length) { sel.innerHTML = '<option value="">— no users —</option>'; return; }
+      items.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.id;
+        opt.textContent = `${u.username || u.email || u.id.slice(0, 8)} (${u.id.slice(0, 8)})`;
+        sel.appendChild(opt);
+      });
+      setStatus(`Loaded ${items.length} user(s)`);
+      await refreshAll();
+    } catch (e) {
+      document.getElementById('userId').innerHTML = '<option value="">— failed —</option>';
+      setStatus(`Users load failed: ${e.message}`);
+    }
+  }
+
+  // ── Refresh tiles + walks ──────────────────────────────────────────────────
+  async function refreshAll() {
+    const uid = userId();
+    if (!uid) return;
+    setStatus('Loading…', true);
+    clearWalkSelection();
+    try {
+      const [tiles, walksData] = await Promise.all([
+        fetchJSON(`${base()}/api/tiles/${uid}`),
+        fetchJSON(`${base()}/api/walks/?userId=${uid}&limit=100`),
+      ]);
+      drawCoveredTiles(tiles);
+      renderWalkList(walksData.items || []);
+      setStatus(`${(tiles || []).length} covered tiles · ${(walksData.items || []).length} walks`);
+    } catch (e) {
+      setStatus(`Refresh failed: ${e.message}`);
+    }
+  }
+
+  // ── Walk list ──────────────────────────────────────────────────────────────
+  function renderWalkList(walks) {
+    currentWalks = walks;
+    const list = document.getElementById('walkList');
+    document.getElementById('walkCount').textContent = `${walks.length} walk${walks.length !== 1 ? 's' : ''}`;
+    if (!walks.length) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">🚶</div><div class="empty-text">No walks found for this user</div></div>`;
+      return;
+    }
+    list.innerHTML = '';
+    walks.forEach(w => {
+      const item = document.createElement('div');
+      item.className = 'walk-item';
+      item.dataset.id = w.id;
+
+      const dateStr = w.startedAt ? w.startedAt.replace('T', ' ').slice(0, 16) : '—';
+      const dist = w.distanceMeters != null ? `${Math.round(w.distanceMeters)} m` : '—';
+      const dur = w.durationSeconds != null ? `${Math.floor(w.durationSeconds / 60)} min` : '—';
+
+      item.innerHTML = `
+        <div class="walk-dot"></div>
+        <div class="walk-info">
+          <div class="walk-date">${dateStr}</div>
+          <div class="walk-meta">${dist} · ${dur}</div>
+          <div class="walk-id">${w.id}</div>
+        </div>
+        <div class="walk-tiles-badge" id="badge-${w.id}">…</div>`;
+
+      item.addEventListener('click', () => selectWalk(w.id));
+      list.appendChild(item);
+    });
+  }
+
+  function clearWalkSelection() {
+    selectedWalkId = null;
+    walkTileLayer.clearLayers();
+    walkpointLayer.clearLayers();
+    document.querySelectorAll('.walk-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('walkDetail').classList.remove('visible');
+  }
+
+  async function selectWalk(walkId) {
+    if (selectedWalkId === walkId) { clearWalkSelection(); return; }
+    selectedWalkId = walkId;
+
+    document.querySelectorAll('.walk-item').forEach(el =>
+      el.classList.toggle('active', el.dataset.id === walkId)
+    );
+
+    setStatus(`Loading walkpoints for ${walkId.slice(0, 8)}…`, true);
+    walkTileLayer.clearLayers();
+    walkpointLayer.clearLayers();
+
+    try {
+      const data = await fetchJSON(`${base()}/api/walkpoints/${walkId}`);
+      const wps = data.walkPoints || data.walkpoints || data || [];
+
+      // Compute tiles from walkpoints (mirrors backend logic)
+      const tiles = tilesForWalkpoints(wps);
+
+      drawWalkpoints(wps);
+      drawWalkTiles(tiles);
+
+      // Update badge
+      const badge = document.getElementById(`badge-${walkId}`);
+      if (badge) badge.textContent = `${tiles.length} tiles`;
+
+      // Walk detail panel
+      const walk = currentWalks.find(w => w.id === walkId);
+      if (walk) {
+        document.getElementById('detailDist').textContent =
+          walk.distanceMeters != null ? `${Math.round(walk.distanceMeters)} m` : '—';
+        document.getElementById('detailDur').textContent =
+          walk.durationSeconds != null ? `${Math.floor(walk.durationSeconds / 60)} min` : '—';
+        document.getElementById('detailTiles').textContent = tiles.length;
+        document.getElementById('walkDetail').classList.add('visible');
+      }
+
+      setStatus(`Walk ${walkId.slice(0, 8)}… · ${wps.length} points · ${tiles.length} tiles`);
+    } catch (e) {
+      setStatus(`Failed to load walkpoints: ${e.message}`);
+    }
+  }
+
+  // ── File picker ────────────────────────────────────────────────────────────
+  function onFileChange(type) {
+    const input = document.getElementById(`${type}FileInput`);
+    const label = document.getElementById(`${type}FileName`);
+    if (input.files.length) {
+      label.textContent = input.files[0].name;
+      label.classList.add('has-file');
+    } else {
+      label.textContent = 'click to select';
+      label.classList.remove('has-file');
+    }
+    updateImportBtn();
+  }
+
+  function updateImportBtn() {
+    const hasWalks = document.getElementById('walksFileInput').files.length > 0;
+    const hasWalkpoints = document.getElementById('walkpointsFileInput').files.length > 0;
+    document.getElementById('importBtn').disabled = !(hasWalks && hasWalkpoints && userId());
+  }
+
+  // ── Import ─────────────────────────────────────────────────────────────────
+  async function doImport() {
+    const uid = userId();
+    if (!uid) return;
+
+    const walksFile = document.getElementById('walksFileInput').files[0];
+    const walkpointsFile = document.getElementById('walkpointsFileInput').files[0];
+    if (!walksFile || !walkpointsFile) return;
+
+    const resultEl = document.getElementById('importResult');
+    const importBtn = document.getElementById('importBtn');
+    importBtn.disabled = true;
+    resultEl.style.display = 'none';
+    setStatus('Importing…', true);
+
+    const fd = new FormData();
+    fd.append('walks_file', walksFile);
+    fd.append('walkpoints_file', walkpointsFile);
+
+    try {
+      const res = await fetch(`${base()}/api/data/import/walks?userId=${encodeURIComponent(uid)}`, {
+        method: 'POST',
+        body: fd,
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        resultEl.className = 'import-result error';
+        resultEl.textContent = `Error: ${json.detail || res.status}`;
+      } else {
+        resultEl.className = 'import-result';
+        resultEl.textContent =
+          `imported: ${json.imported}  ·  skipped: ${json.skipped}  ·  new tiles: ${json.newTiles}`;
+      }
+      resultEl.style.display = 'block';
+
+      if (res.ok) {
+        setStatus(`Import done — refreshing…`, true);
+        await refreshAll();
+      } else {
+        setStatus(`Import failed`);
+      }
+    } catch (e) {
+      resultEl.className = 'import-result error';
+      resultEl.textContent = `Network error: ${e.message}`;
+      resultEl.style.display = 'block';
+      setStatus(`Import error: ${e.message}`);
+    } finally {
+      importBtn.disabled = false;
+    }
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  document.getElementById('apiBase').addEventListener('change', loadUsers);
+  document.getElementById('userId').addEventListener('change', refreshAll);
+
+  loadUsers();
+</script>
+</body>
+</html>
