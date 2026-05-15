@@ -188,6 +188,10 @@ function renderTable() {
       const durationText = formatDuration(walk.durationSeconds);
       const formattedDate = formatDate(walk.startedAt);
       const formattedTime = formatTime(walk.startedAt);
+
+      const formattedUpdatedDate = formatDate(walk.updatedAt);
+      const formattedUpdatedTime = formatTime(walk.updatedAt); 
+
       const distanceKm = walk.distanceMeters
         ? (walk.distanceMeters / 1000).toFixed(1)
         : "—";
@@ -205,6 +209,7 @@ function renderTable() {
         <td class="walk-id">${walk.id}</td>
         <td class="walk-user-id">${walkUserId}</td>
         <td class="walk-date-time">${formattedDate} · ${formattedTime}</td>
+        <td class="walk-date-time">${formattedUpdatedDate} · ${formattedUpdatedTime}</td>
         <td class="walk-dist">${distanceKm}</td>
         <td class="walk-duration">${durationText}</td>
         <td class="walk-new-tiles">${newTiles}</td>
@@ -752,6 +757,13 @@ function fillWalkModal(walk) {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
+  function toDatetimeLocalModalInput(isoString) {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    date.setHours(date.getHours() + 3);
+    return date.toISOString().slice(0, 19);
+  }
+
   document.getElementById("walk-started-at").innerHTML = `
     <input type="datetime-local" class="route-modal__input" id="walk-started-at-input" value="${toLocalInput(walk.startedAt)}" />
   `;
@@ -770,6 +782,12 @@ function fillWalkModal(walk) {
   document.getElementById("walk-duration").innerHTML = `
     <input type="number" class="route-modal__input" id="walk-duration-input" value="${totalMinutes}" step="1" min="0" /> мин
   `;
+
+  document.getElementById("modal-walk-date-created").value =
+    toDatetimeLocalModalInput(walk.createdAt);
+
+  document.getElementById("modal-walk-date-updated").value =
+    toDatetimeLocalModalInput(walk.updatedAt);
 }
 
 function initWalkPreviewMap(walk) {

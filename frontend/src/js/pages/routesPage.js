@@ -183,6 +183,10 @@ function renderTable() {
       const durationText = formatDuration(route.estimatedMinutes);
       const formattedDate = formatDate(route.createdAt);
       const formattedTime = formatTime(route.createdAt);
+
+      const formattedUpdatedDate = formatDate(route.updatedAt);
+      const formattedUpdatedTime = formatTime(route.updatedAt);
+
       const distanceKm = route.totalDistanceMeters
         ? (route.totalDistanceMeters / 1000).toFixed(1)
         : "—";
@@ -198,6 +202,7 @@ function renderTable() {
         <td class="route-id">${route.id}</td>
         <td class="route-user-id">${routeUserId}</td>
         <td class="route-date-time">${formattedDate} · ${formattedTime}</td>
+        <td class="route-date-time">${formattedUpdatedDate} · ${formattedUpdatedTime}</td>
         <td class="route-dist">${distanceKm}</td>
         <td class="route-duration">${durationText}</td>
         <td class="route-new-tiles">${newTiles}</td>
@@ -606,6 +611,13 @@ async function openRouteModal(routeId) {
 }
 
 function fillModal(route) {
+  function toDatetimeLocalModalInput(isoString) {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    date.setHours(date.getHours() + 3);
+    return date.toISOString().slice(0, 19);
+  }
+  
   document.getElementById("route-modal-title").textContent =
     `Маршрут #${route.id}`;
 
@@ -613,6 +625,12 @@ function fillModal(route) {
 
   document.getElementById("route-target-distance").value =
     route.targetDistance || 0;
+
+    document.getElementById("modal-route-date-created").value =
+    toDatetimeLocalModalInput(route.createdAt);
+
+  document.getElementById("modal-route-date-updated").value =
+    toDatetimeLocalModalInput(route.updatedAt);
 }
 
 function initRoutePreviewMap(route) {

@@ -48,7 +48,7 @@
   padding: 4px 0;
   outline: none;
   cursor: pointer;
-  width: 110px;
+  width: 160px;
 }
 
 .filter-bar__date-input::-webkit-calendar-picker-indicator {

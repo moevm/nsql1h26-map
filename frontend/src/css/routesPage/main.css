@@ -63,7 +63,7 @@
 }
 
 .route-modal__form {
-  width: 260px;
+  min-width: 260px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -102,7 +102,12 @@
   flex: 1;
   font-size: 16px;
   outline: none;
-  width: 40%;
+  width: 100%;
+  cursor:pointer;
+}
+
+.modal__input--time {
+  cursor: default;
 }
 
 .modal__input:focus {

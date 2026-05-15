@@ -49,11 +49,20 @@
     <div class="filter-bar">
 
       <div class="filter-bar__item filter-bar__item--date">
-        <label class="filter-bar__label">Дата</label>
+        <label class="filter-bar__label">Дата создания</label>
         <div class="filter-bar__control">
           <input type="datetime-local" class="filter-bar__date-input" id="date-from" placeholder="дд.мм.гггг чч:мм">
           <span class="filter-bar__date-separator">—</span>
           <input type="datetime-local" class="filter-bar__date-input" id="date-to" placeholder="дд.мм.гггг чч:мм">
+        </div>
+      </div>
+
+      <div class="filter-bar__item filter-bar__item--date">
+        <label class="filter-bar__label">Дата обновления</label>
+        <div class="filter-bar__control">
+          <input type="datetime-local" class="filter-bar__date-input" id="date-updated-from" placeholder="дд.мм.гггг чч:мм">
+          <span class="filter-bar__date-separator">—</span>
+          <input type="datetime-local" class="filter-bar__date-input" id="date-updated-to" placeholder="дд.мм.гггг чч:мм">
         </div>
       </div>
 
@@ -114,7 +123,8 @@
             <th class="routes-table__th">#</th>
             <th class="routes-table__th">ID маршрута</th>
             <th class="routes-table__th">ID пользователя</th>
-            <th class="routes-table__th">Дата и время</th>
+            <th class="routes-table__th">Дата и время создания</th>
+            <th class="routes-table__th">Дата и время обновления</th>
             <th class="routes-table__th">Расстояние (км)</th>
             <th class="routes-table__th">Длительность</th>
             <th class="routes-table__th">Новые тайлы</th>
@@ -179,12 +189,6 @@
         <div class="dashboard__card-value">
           <span class="dashboard__card-number">42мин 15с</span>
         </div>
-        <!--
-          <div class="dashboard__card-trend">
-            <img src="/src/svg/routes/trend-up.svg" alt="" class="dashboard__trend-icon">
-            <span class="dashboard__trend-text">+5% с прошлого месяца</span>
-          </div>
-          -->
       </div>
     </div>
   </main>
@@ -211,6 +215,14 @@
           <div class="modal__row">
             <span class="modal__key">Приоритет</span>
             <input class="modal__input" type="number" id="route-priority" value="0.5" max="1" min="0">
+          </div>
+          <div class="modal__row">
+            <span class="modal__key">Время создания</span>
+            <input class="modal__input modal__input--time" type="datetime-local" disabled id="modal-route-date-created">
+          </div>
+          <div class="modal__row">
+            <span class="modal__key">Время обновления</span>
+            <input class="modal__input modal__input--time" type="datetime-local" disabled id="modal-route-date-updated">
           </div>
         </div>
       </div>
