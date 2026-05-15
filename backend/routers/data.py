@@ -2,6 +2,7 @@ import csv
 import io
 import json
 from collections import defaultdict
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from fastapi.responses import JSONResponse
@@ -68,8 +69,9 @@ async def db_import(file: UploadFile = File(...), session=Depends(get_session)):
 
     # 2. Все узлы
     datetime_fields = {
-        "Walk":      ["startedAt", "finishedAt"],
-        "Route":     ["createdAt"],
+        "User":      ["createdAt", "updatedAt"],
+        "Walk":      ["startedAt", "finishedAt", "createdAt", "updatedAt"],
+        "Route":     ["createdAt", "updatedAt"],
         "TrackFile": ["uploadedAt"],
     }
     for label in ("User", "Walk", "Route", "TrackFile", "District", "MapNode", "POI"):
@@ -274,6 +276,8 @@ async def import_walks(
 
         distance = float(walk_row["distanceMeters"]) if walk_row.get("distanceMeters") else None
         duration = int(walk_row["durationSeconds"]) if walk_row.get("durationSeconds") else None
+        import_now = datetime.now(timezone.utc).isoformat()
+        created_at = walk_row.get("createdAt") or import_now
 
         await session.run(
             """
@@ -283,7 +287,9 @@ async def import_walks(
                 startedAt: datetime($startedAt),
                 finishedAt: datetime($finishedAt),
                 distanceMeters: $distanceMeters,
-                durationSeconds: $durationSeconds
+                durationSeconds: $durationSeconds,
+                createdAt: datetime($createdAt),
+                updatedAt: datetime($updatedAt)
             })
             CREATE (u)-[:PERFORMED]->(w)
             """,
@@ -293,6 +299,8 @@ async def import_walks(
             finishedAt=walk_row["finishedAt"],
             distanceMeters=distance,
             durationSeconds=duration,
+            createdAt=created_at,
+            updatedAt=import_now,
         )
 
         if wps:
@@ -403,15 +411,23 @@ async def export_walks(
         MATCH (u:User {{id: $userId}})-[:PERFORMED]->(w:Walk)
         {where}
         RETURN w.id AS id, toString(w.startedAt) AS startedAt, toString(w.finishedAt) AS finishedAt,
-               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds
+               w.distanceMeters AS distanceMeters, w.durationSeconds AS durationSeconds,
+               toString(w.createdAt) AS createdAt, toString(w.updatedAt) AS updatedAt
         ORDER BY w.startedAt
         """,
         userId=userId,
         walkIds=ids,
     )
-    rows = [[r["id"], r["startedAt"], r["finishedAt"], r["distanceMeters"], r["durationSeconds"]]
-            async for r in result]
-    return make_csv_response(rows, ["id", "startedAt", "finishedAt", "distanceMeters", "durationSeconds"], "walks.csv")
+    rows = [
+        [r["id"], r["startedAt"], r["finishedAt"], r["distanceMeters"], r["durationSeconds"],
+         r["createdAt"], r["updatedAt"]]
+        async for r in result
+    ]
+    return make_csv_response(
+        rows,
+        ["id", "startedAt", "finishedAt", "distanceMeters", "durationSeconds", "createdAt", "updatedAt"],
+        "walks.csv",
+    )
 
 
 @router.get("/export/walkpoints")

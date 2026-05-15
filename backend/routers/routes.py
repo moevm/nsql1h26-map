@@ -1,6 +1,7 @@
 import heapq
 import uuid
 from collections import defaultdict
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
@@ -300,13 +301,15 @@ async def _build_and_save_route(
 
     route_id = str(uuid.uuid4())
     estimated_minutes = int(path_distance / 80)  # ~80 м/мин пешком
+    now = datetime.now(timezone.utc).isoformat()
 
     await session.run(
         """
         MATCH (u:User {id: $userId})
         CREATE (r:Route {
             id: $routeId,
-            createdAt: datetime(),
+            createdAt: datetime($now),
+            updatedAt: datetime($now),
             totalDistanceMeters: $distance,
             estimatedMinutes: $minutes,
             priority: $priority,
@@ -331,6 +334,7 @@ async def _build_and_save_route(
         newTilesY=[t[1] for t in new_tiles],
         allTilesCount=len(route_tiles),
         nodeIds=[{"osmId": osm_id, "order": i} for i, osm_id in enumerate(path)],
+        now=now,
     )
 
     if highlights:
@@ -347,6 +351,7 @@ async def _build_and_save_route(
 
     return {
         "routeId": route_id,
+        "createdAt": now,
         "totalDistanceMeters": round(path_distance, 1),
         "estimatedMinutes": estimated_minutes,
         "priority": priority,
@@ -421,13 +426,15 @@ async def create_line_route(body: LineRouteRequest, session=Depends(get_session)
 
     route_id = str(uuid.uuid4())
     estimated_minutes = body.targetDuration if body.targetDuration is not None else int(path_distance / 80)
+    now = datetime.now(timezone.utc).isoformat()
 
     await session.run(
         """
         MATCH (u:User {id: $userId})
         CREATE (r:Route {
             id: $routeId,
-            createdAt: datetime() + duration({hours: 3}),
+            createdAt: datetime($now),
+            updatedAt: datetime($now),
             totalDistanceMeters: $distance,
             estimatedMinutes: $minutes,
             priority: $priority,
@@ -457,6 +464,7 @@ async def create_line_route(body: LineRouteRequest, session=Depends(get_session)
         nodeIds=[{"osmId": osm_id, "order": i} for i, osm_id in enumerate(path)],
         endLat=body.endLat,
         endLon=body.endLon,
+        now=now,
     )
 
     if highlights:
@@ -473,6 +481,7 @@ async def create_line_route(body: LineRouteRequest, session=Depends(get_session)
 
     return {
         "routeId": route_id,
+        "createdAt": now,
         "totalDistanceMeters": round(path_distance, 1),
         "estimatedMinutes": estimated_minutes,
         "targetDistance": body.targetDistance,
@@ -543,6 +552,8 @@ async def list_routes(
     userId: str | None = Query(None),
     createdFrom: str | None = Query(None),
     createdTo: str | None = Query(None),
+    updatedAtFrom: str | None = Query(None),
+    updatedAtTo: str | None = Query(None),
     # distance
     distanceMin: float | None = Query(None),
     distanceMax: float | None = Query(None),
@@ -568,24 +579,28 @@ async def list_routes(
              size([(r)-[:HIGHLIGHTS]->(p) | p])         AS poiCount
     """
     where = """
-        WHERE ($userId       IS NULL OR u.id = $userId)
-          AND ($routeId      IS NULL OR r.id = $routeId)
-          AND ($createdFrom  IS NULL OR r.createdAt >= datetime($createdFrom))
-          AND ($createdTo    IS NULL OR r.createdAt <= datetime($createdTo))
-          AND ($distanceMin  IS NULL OR r.totalDistanceMeters >= $distanceMin)
-          AND ($distanceMax  IS NULL OR r.totalDistanceMeters <= $distanceMax)
-          AND ($durationMin  IS NULL OR r.estimatedMinutes >= $durationMin)
-          AND ($durationMax  IS NULL OR r.estimatedMinutes <= $durationMax)
-          AND ($tilesMin     IS NULL OR newTilesCount >= $tilesMin)
-          AND ($tilesMax     IS NULL OR newTilesCount <= $tilesMax)
-          AND ($poiMin       IS NULL OR poiCount >= $poiMin)
-          AND ($poiMax       IS NULL OR poiCount <= $poiMax)
+        WHERE ($userId        IS NULL OR u.id = $userId)
+          AND ($routeId       IS NULL OR r.id = $routeId)
+          AND ($createdFrom   IS NULL OR r.createdAt >= datetime($createdFrom))
+          AND ($createdTo     IS NULL OR r.createdAt <= datetime($createdTo))
+          AND ($updatedAtFrom IS NULL OR r.updatedAt >= datetime($updatedAtFrom))
+          AND ($updatedAtTo   IS NULL OR r.updatedAt <= datetime($updatedAtTo))
+          AND ($distanceMin   IS NULL OR r.totalDistanceMeters >= $distanceMin)
+          AND ($distanceMax   IS NULL OR r.totalDistanceMeters <= $distanceMax)
+          AND ($durationMin   IS NULL OR r.estimatedMinutes >= $durationMin)
+          AND ($durationMax   IS NULL OR r.estimatedMinutes <= $durationMax)
+          AND ($tilesMin      IS NULL OR newTilesCount >= $tilesMin)
+          AND ($tilesMax      IS NULL OR newTilesCount <= $tilesMax)
+          AND ($poiMin        IS NULL OR poiCount >= $poiMin)
+          AND ($poiMax        IS NULL OR poiCount <= $poiMax)
     """
     params = dict(
         userId=userId,
         routeId=routeId,
         createdFrom=createdFrom,
         createdTo=createdTo,
+        updatedAtFrom=updatedAtFrom,
+        updatedAtTo=updatedAtTo,
         distanceMin=distanceMin,
         distanceMax=distanceMax,
         durationMin=durationMin,
@@ -607,6 +622,7 @@ async def list_routes(
         RETURN u.id AS userId,
                r.id AS id,
                toString(r.createdAt) AS createdAt,
+               toString(r.updatedAt) AS updatedAt,
                r.totalDistanceMeters AS totalDistanceMeters,
                r.estimatedMinutes AS estimatedMinutes,
                newTilesCount,
@@ -627,6 +643,7 @@ async def get_route(routeId: str, session=Depends(get_session)):
         """
         MATCH (r:Route {id: $id})
         RETURN r.id AS id, toString(r.createdAt) AS createdAt,
+               toString(r.updatedAt) AS updatedAt,
                r.totalDistanceMeters AS totalDistanceMeters,
                r.estimatedMinutes AS estimatedMinutes,
                r.priority AS priority,
@@ -703,6 +720,8 @@ async def update_route(
         params["targetDistance"] = body.targetDistance
 
     if updates:
+        updates.append("r.updatedAt = datetime($now)")
+        params["now"] = datetime.now(timezone.utc).isoformat()
         await session.run(
             f"""
             MATCH (r:Route {{id: $id}})
@@ -793,7 +812,8 @@ async def update_route(
                 r.estimatedMinutes = $minutes,
                 r.allTilesCount = $allTilesCount,
                 r.newTilesX = $newTilesX,
-                r.newTilesY = $newTilesY
+                r.newTilesY = $newTilesY,
+                r.updatedAt = datetime($now)
             """,
             id=routeId,
             distance=round(total_distance, 1),
@@ -801,6 +821,7 @@ async def update_route(
             allTilesCount=len(route_tiles),
             newTilesX=[t[0] for t in new_tiles],
             newTilesY=[t[1] for t in new_tiles],
+            now=datetime.now(timezone.utc).isoformat(),
         )
 
     result = await session.run(
@@ -810,6 +831,7 @@ async def update_route(
         RETURN
             r.id AS id,
             toString(r.createdAt) AS createdAt,
+            toString(r.updatedAt) AS updatedAt,
             r.totalDistanceMeters AS totalDistanceMeters,
             r.estimatedMinutes AS estimatedMinutes,
             r.priority AS priority,

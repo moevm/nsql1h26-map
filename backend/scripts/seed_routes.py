@@ -101,8 +101,9 @@ def main():
                 print(f"     Создан маршрут: {data.get('routeId', 'unknown')[:8]}...")
                 print(f"      - Дистанция: {data.get('totalDistanceMeters', 0)} м")
                 print(f"      - Время: {data.get('estimatedMinutes', 0)} мин")
-                print(f"      - Новых тайлов: {data.get('newTilesCount', 0)}")
+                print(f"      - Новых тайлов: {len(data.get('newTiles', []))}")
                 print(f"      - POI: {len(data.get('highlights', []))}")
+                print(f"      - Создан: {data.get('createdAt', 'unknown')}")
             else:
                 print(f"     Ошибка HTTP {response.status_code}")
                 print(f"        {response.text[:150]}")
