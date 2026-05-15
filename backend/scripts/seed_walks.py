@@ -139,6 +139,7 @@ def main():
                 print(f"        Дистанция: {data.get('distanceMeters', 0):.0f} м")
                 print(f"        Длительность: {data.get('durationSeconds', 0) // 60} мин")
                 print(f"        Новых тайлов: {data.get('tilesCount', 0)}")
+                print(f"        Создана: {data.get('createdAt', 'unknown')}")
             else:
                 failed_count += 1
                 print(f"        Ошибка HTTP {response.status_code}")
