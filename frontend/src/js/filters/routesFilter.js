@@ -1,20 +1,24 @@
 export let activeFilters = {
-  dateFrom:    null,
-  dateTo:      null,
-  routeId:     null,
-  distanceMin: null,
-  distanceMax: null,
-  durationMin: null,
-  durationMax: null,
-  tilesMin:    null,
-  tilesMax:    null,
-  poiMin:      null,
-  poiMax:      null,
+  dateFrom:      null,
+  dateTo:        null,
+  updatedAtFrom: null,
+  updatedAtTo:   null,
+  routeId:       null,
+  distanceMin:   null,
+  distanceMax:   null,
+  durationMin:   null,
+  durationMax:   null,
+  tilesMin:      null,
+  tilesMax:      null,
+  poiMin:        null,
+  poiMax:        null,
 };
 
 export function initFilters() {
   const dateFromInput    = document.getElementById('date-from');
   const dateToInput      = document.getElementById('date-to');
+  const dateUpdatedFromInput = document.getElementById('date-updated-from');
+  const dateUpdatedToInput   = document.getElementById('date-updated-to');
   const routeIdInput     = document.getElementById('id-filter');
   const distanceMinInput = document.getElementById('distance-from-filter');
   const distanceMaxInput = document.getElementById('distance-to-filter');
@@ -46,6 +50,8 @@ export function initFilters() {
     activeFilters = {
       dateFrom:    parseDate(dateFromInput),
       dateTo:      parseDate(dateToInput),
+      updatedAtFrom: parseDate(dateUpdatedFromInput),
+      updatedAtTo:   parseDate(dateUpdatedToInput),
       routeId:     routeIdInput?.value.trim()  || null,
       distanceMin: parseFloat_(distanceMinInput),
       distanceMax: parseFloat_(distanceMaxInput),
@@ -66,7 +72,8 @@ export function initFilters() {
       distanceMinInput, distanceMaxInput,
       durationMinInput, durationMaxInput,
       tilesMinInput, tilesMaxInput,
-      poiMinInput, poiMaxInput,
+      poiMinInput, poiMaxInput, 
+      dateUpdatedFromInput, dateUpdatedToInput
     ].forEach((el) => { if (el) el.value = ''; });
 
     activeFilters = {
@@ -81,6 +88,8 @@ export function initFilters() {
       tilesMax:    null,
       poiMin:      null,
       poiMax:      null,
+      updatedAtFrom: null,
+      updatedAtTo:   null,
     };
 
     window.dispatchEvent(new CustomEvent('filters-updated'));
@@ -88,6 +97,8 @@ export function initFilters() {
 
   dateFromInput   ?.addEventListener('change', applyFilters);
   dateToInput     ?.addEventListener('change', applyFilters);
+  dateUpdatedFromInput?.addEventListener('change', applyFilters);
+  dateUpdatedToInput  ?.addEventListener('change', applyFilters);
   routeIdInput    ?.addEventListener('input',  applyFilters);
   distanceMinInput?.addEventListener('input',  applyFilters);
   distanceMaxInput?.addEventListener('input',  applyFilters);
@@ -114,6 +125,8 @@ export function buildFilterParams() {
   if (activeFilters.tilesMax    !== null)  params.append('tilesMax',     activeFilters.tilesMax);
   if (activeFilters.poiMin      !== null)  params.append('poiMin',       activeFilters.poiMin);
   if (activeFilters.poiMax      !== null)  params.append('poiMax',       activeFilters.poiMax);
+  if (activeFilters.updatedAtFrom) params.append('updatedAtFrom', activeFilters.updatedAtFrom);
+  if (activeFilters.updatedAtTo)   params.append('updatedAtTo',   activeFilters.updatedAtTo);
 
   return params.toString();
 }

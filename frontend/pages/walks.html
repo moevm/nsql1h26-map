@@ -119,6 +119,15 @@
           </div>
         </div>
 
+      <div class="filter-bar__item filter-bar__item--date">
+        <label class="filter-bar__label">Дата обновления</label>
+        <div class="filter-bar__control">
+          <input type="datetime-local" class="filter-bar__date-input" id="date-updated-from" placeholder="дд.мм.гггг чч:мм">
+          <span class="filter-bar__date-separator">—</span>
+          <input type="datetime-local" class="filter-bar__date-input" id="date-updated-to" placeholder="дд.мм.гггг чч:мм">
+        </div>
+      </div>
+
         <div class="filter-bar__item">
           <label class="filter-bar__label">ID маршрута</label>
           <input type="text" class="filter-bar__input" id="id-filter" placeholder="..."></input>
@@ -173,7 +182,8 @@
               <th class="walks-table__th">#</th>
               <th class="walks-table__th">ID прогулки</th>
               <th class="walks-table__th">ID пользователя</th>
-              <th class="walks-table__th">Дата и время</th>
+              <th class="walks-table__th">Дата и время создания</th>
+              <th class="walks-table__th">Дата и время обновления</th>
               <th class="walks-table__th">Расстояние (км)</th>
               <th class="walks-table__th">Длительность</th>
               <th class="walks-table__th">Новые тайлы</th>
@@ -267,6 +277,14 @@
         <div class="route-modal__stat">
           <span class="route-modal__stat-label">Длительность</span>
           <span class="route-modal__stat-value" id="walk-duration">—</span>
+        </div>
+        <div class="route-modal__stat">
+          <span class="modal__key">Время создания</span>
+          <input class="modal__input modal__input--time" type="datetime-local" disabled id="modal-walk-date-created">
+        </div>
+        <div class="route-modal__stat">
+          <span class="modal__key">Время обновления</span>
+          <input class="modal__input modal__input--time" type="datetime-local" disabled id="modal-walk-date-updated">
         </div>
       </div>
 
