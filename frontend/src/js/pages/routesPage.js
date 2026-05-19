@@ -26,6 +26,42 @@ let currentModalRoute = null;
 
 let allRoutes = [];
 
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+const handleUnauthorized = () => {
+  document.cookie = 'token=; Path=/; SameSite=Strict; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+  userManager.delete();
+  relocateToLogin();
+};
+
+const fetchWithAuth = async (url, options = {}) => {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${getToken()}`,
+      ...options.headers,
+    },
+    credentials: 'include',
+  }).catch(() => {
+    Notify.error("Ошибка сервера");
+    return null;
+  });
+
+  if (!response) return null;
+
+  if (response.status === 401) {
+    const data = await response.json().catch(() => ({}));
+    if (data?.detail === "Invalid token") {
+      handleUnauthorized();
+      return null;
+    }
+  }
+
+  return response;
+};
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+
 document.addEventListener("DOMContentLoaded", async () => {
   relocateToLogin();
   initMap();
@@ -44,12 +80,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   initSelectAll();
 });
 
+// ─── Data loading ─────────────────────────────────────────────────────────────
+
 async function loadAllRoutesForStats() {
   const url = `${API_BASE}/routes/?userId=${userId}&offset=0&limit=100`;
 
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
+  const response = await fetchWithAuth(url);
+  if (!response) return;
 
   const data = await response.json();
   allRoutes = data.items || [];
@@ -66,9 +103,8 @@ async function loadRoutes() {
     url += `&${filterParams}`;
   }
 
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
+  const response = await fetchWithAuth(url);
+  if (!response) return;
 
   const data = await response.json();
   routes = data.items || [];
@@ -79,6 +115,8 @@ async function loadRoutes() {
 
   await loadAndDrawAllFilteredRoutes();
 }
+
+// ─── Dashboard ───────────────────────────────────────────────────────────────
 
 function updateDashboardStats() {
   if (!allRoutes || allRoutes.length === 0) {
@@ -128,6 +166,8 @@ function updateDashboardStats() {
   if (timeElement) timeElement.textContent = formattedTime;
 }
 
+// ─── Formatters ───────────────────────────────────────────────────────────────
+
 function formatDuration(estimatedMinutes) {
   if (!estimatedMinutes && estimatedMinutes !== 0) return "—";
   if (estimatedMinutes >= 60) {
@@ -142,18 +182,8 @@ function formatDate(dateStr) {
   if (!dateStr) return "—";
   const date = new Date(dateStr);
   const months = [
-    "Янв",
-    "Фев",
-    "Мар",
-    "Апр",
-    "Май",
-    "Июн",
-    "Июл",
-    "Авг",
-    "Сен",
-    "Окт",
-    "Ноя",
-    "Дек",
+    "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+    "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
   ];
   return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 }
@@ -163,6 +193,8 @@ function formatTime(dateStr) {
   const date = new Date(dateStr);
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
+
+// ─── Table ────────────────────────────────────────────────────────────────────
 
 function renderTable() {
   const tbody = document.getElementById("routes-table-body");
@@ -183,16 +215,12 @@ function renderTable() {
       const durationText = formatDuration(route.estimatedMinutes);
       const formattedDate = formatDate(route.createdAt);
       const formattedTime = formatTime(route.createdAt);
-
       const formattedUpdatedDate = formatDate(route.updatedAt);
       const formattedUpdatedTime = formatTime(route.updatedAt);
-
       const distanceKm = route.totalDistanceMeters
         ? (route.totalDistanceMeters / 1000).toFixed(1)
         : "—";
-
-      const newTiles =
-        route.newTilesCount !== undefined ? route.newTilesCount : "—";
+      const newTiles = route.newTilesCount !== undefined ? route.newTilesCount : "—";
       const poisCount = route.poiCount !== undefined ? route.poiCount : "-";
       const routeUserId = route.userId || "—";
 
@@ -252,11 +280,10 @@ function handleCheckboxChange(e) {
 async function handleDeleteClick(e) {
   const id = e.currentTarget.dataset.id;
   if (confirm(`Удалить маршрут ${id}?`)) {
-    const response = await fetch(`${API_BASE}/routes/${id}`, {
+    const response = await fetchWithAuth(`${API_BASE}/routes/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${getToken()}` },
     });
-    if (response.ok) {
+    if (response?.ok) {
       window.location.reload();
     }
   }
@@ -272,6 +299,8 @@ function updateSelectAllCheckbox() {
     selectAll.checked = allSelected;
   }
 }
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
 
 function updatePaginationInfo() {
   const total = totalRoutes;
@@ -310,25 +339,9 @@ function renderPaginationControls(total) {
     if (currentPage <= 4) {
       pages = [1, 2, 3, 4, 5, "...", maxPage];
     } else if (currentPage >= maxPage - 3) {
-      pages = [
-        1,
-        "...",
-        maxPage - 4,
-        maxPage - 3,
-        maxPage - 2,
-        maxPage - 1,
-        maxPage,
-      ];
+      pages = [1, "...", maxPage - 4, maxPage - 3, maxPage - 2, maxPage - 1, maxPage];
     } else {
-      pages = [
-        1,
-        "...",
-        currentPage - 1,
-        currentPage,
-        currentPage + 1,
-        "...",
-        maxPage,
-      ];
+      pages = [1, "...", currentPage - 1, currentPage, currentPage + 1, "...", maxPage];
     }
   }
 
@@ -416,7 +429,8 @@ function initPerPage() {
   });
 }
 
-// Инициализация карты
+// ─── Map ──────────────────────────────────────────────────────────────────────
+
 let map;
 let allRouteLayers = [];
 let currentHighlightedLayer = null;
@@ -477,9 +491,8 @@ async function loadAndDrawAllFilteredRoutes() {
   }
 
   try {
-    const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${getToken()}` },
-    });
+    const response = await fetchWithAuth(url);
+    if (!response) return;
 
     if (response.ok) {
       const data = await response.json();
@@ -488,13 +501,8 @@ async function loadAndDrawAllFilteredRoutes() {
       const routesWithNodes = [];
       for (const route of allFilteredRoutes) {
         try {
-          const routeDetailResponse = await fetch(
-            `${API_BASE}/routes/${route.id}`,
-            {
-              headers: { Authorization: `Bearer ${getToken()}` },
-            },
-          );
-          if (routeDetailResponse.ok) {
+          const routeDetailResponse = await fetchWithAuth(`${API_BASE}/routes/${route.id}`);
+          if (routeDetailResponse?.ok) {
             const routeDetail = await routeDetailResponse.json();
             if (routeDetail.nodes && routeDetail.nodes.length > 0) {
               routesWithNodes.push(routeDetail);
@@ -530,7 +538,6 @@ function highlightRouteOnMap(routeId) {
         opacity: 0.9,
       });
       currentHighlightedLayer = layer;
-
       map.fitBounds(layer.getBounds(), { padding: [50, 50] });
       break;
     }
@@ -584,20 +591,17 @@ function attachRowClickEvents() {
   });
 }
 
+// ─── Modal ────────────────────────────────────────────────────────────────────
+
 async function openRouteModal(routeId) {
   const modal = document.getElementById("route-modal");
-
   modal.classList.remove("hidden");
 
   try {
-    const response = await fetch(`${API_BASE}/routes/${routeId}`, {
-      headers: {
-        Authorization: `Bearer ${getToken()}`,
-      },
-    });
+    const response = await fetchWithAuth(`${API_BASE}/routes/${routeId}`);
+    if (!response) return;
 
     const route = await response.json();
-
     currentModalRoute = structuredClone(route);
 
     fillModal(route);
@@ -617,20 +621,12 @@ function fillModal(route) {
     date.setHours(date.getHours() + 3);
     return date.toISOString().slice(0, 19);
   }
-  
-  document.getElementById("route-modal-title").textContent =
-    `Маршрут #${route.id}`;
 
+  document.getElementById("route-modal-title").textContent = `Маршрут #${route.id}`;
   document.getElementById("route-priority").value = route.priority || "medium";
-
-  document.getElementById("route-target-distance").value =
-    route.targetDistance || 0;
-
-    document.getElementById("modal-route-date-created").value =
-    toDatetimeLocalModalInput(route.createdAt);
-
-  document.getElementById("modal-route-date-updated").value =
-    toDatetimeLocalModalInput(route.updatedAt);
+  document.getElementById("route-target-distance").value = route.targetDistance || 0;
+  document.getElementById("modal-route-date-created").value = toDatetimeLocalModalInput(route.createdAt);
+  document.getElementById("modal-route-date-updated").value = toDatetimeLocalModalInput(route.updatedAt);
 }
 
 function initRoutePreviewMap(route) {
@@ -661,12 +657,9 @@ function initRoutePreviewMap(route) {
 
     marker.on("drag", (e) => {
       const latlng = e.target.getLatLng();
-
       currentModalRoute.nodes[index].lat = latlng.lat;
       currentModalRoute.nodes[index].lon = latlng.lng;
-
       currentModalRoute.nodes[index].osmId = null;
-
       updatePreviewPolyline();
     });
 
@@ -680,100 +673,65 @@ function initRoutePreviewMap(route) {
 
 function updatePreviewPolyline() {
   if (!routeModalLayer) return;
-
   const latlngs = currentModalRoute.nodes.map((n) => [n.lat, n.lon]);
-
   routeModalLayer.setLatLngs(latlngs);
 }
 
-document
-  .getElementById("route-save-btn")
-  .addEventListener("click", async () => {
-    try {
-      currentModalRoute.priority = Number(
-        document.getElementById("route-priority").value,
-      );
+document.getElementById("route-save-btn").addEventListener("click", async () => {
+  try {
+    currentModalRoute.priority = Number(document.getElementById("route-priority").value);
+    currentModalRoute.targetDistance = Number(document.getElementById("route-target-distance").value);
 
-      currentModalRoute.targetDistance = Number(
-        document.getElementById("route-target-distance").value,
-      );
+    const nodes = currentModalRoute.nodes.map((node, index) => ({
+      osmId: node.osmId,
+      lat: node.lat,
+      lon: node.lon,
+      order: index,
+    }));
 
-      const nodes = currentModalRoute.nodes.map((node, index) => ({
-        osmId: node.osmId,
-        lat: node.lat,
-        lon: node.lon,
-        order: index,
-      }));
+    const response = await fetchWithAuth(`${API_BASE}/routes/${currentModalRoute.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        priority: currentModalRoute.priority,
+        targetDistance: currentModalRoute.targetDistance,
+        nodes,
+      }),
+    });
 
-      const response = await fetch(
-        `${API_BASE}/routes/${currentModalRoute.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${getToken()}`,
-          },
-          body: JSON.stringify({
-            priority: currentModalRoute.priority,
-            targetDistance: currentModalRoute.targetDistance,
-            nodes,
-          }),
-        },
-      );
+    if (!response) return;
+    if (!response.ok) throw new Error("Failed to update route");
 
-      if (!response.ok) {
-        throw new Error("Failed to update route");
-      }
+    Notify.success("Маршрут успешно обновлён");
+    closeRouteModal();
+    await loadRoutes();
+    await loadAllRoutesForStats();
+  } catch (e) {
+    Notify.error("Не удалось обновить маршрут");
+  }
+});
 
-      const updatedRoute = await response.json();
+document.getElementById("route-delete-btn").addEventListener("click", async () => {
+  if (!confirm("Удалить маршрут?")) return;
 
-      Notify.success("Маршрут успешно обновлён");
+  try {
+    const response = await fetchWithAuth(`${API_BASE}/routes/${currentModalRoute.id}`, {
+      method: "DELETE",
+    });
 
-      closeRouteModal();
+    if (!response) return;
+    if (!response.ok) throw new Error("Failed to delete route");
 
-      await loadRoutes();
-      await loadAllRoutesForStats();
-    } catch (e) {
-      Notify.error("Не удалось обновить маршрут");
-    }
-  });
-
-document
-  .getElementById("route-delete-btn")
-  .addEventListener("click", async () => {
-    if (!confirm("Удалить маршрут?")) {
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${API_BASE}/routes/${currentModalRoute.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete route");
-      }
-
-      Notify.success("Маршрут удалён");
-
-      closeRouteModal();
-
-      await loadRoutes();
-      await loadAllRoutesForStats();
-
-      clearAllRoutesFromMap();
-
-      await loadAndDrawAllFilteredRoutes();
-    } catch (e) {
-      Notify.error("Удалить маршрут не удалось");
-    }
-  });
+    Notify.success("Маршрут удалён");
+    closeRouteModal();
+    await loadRoutes();
+    await loadAllRoutesForStats();
+    clearAllRoutesFromMap();
+    await loadAndDrawAllFilteredRoutes();
+  } catch (e) {
+    Notify.error("Удалить маршрут не удалось");
+  }
+});
 
 function closeRouteModal() {
   document.getElementById("route-modal").classList.add("hidden");
@@ -784,10 +742,5 @@ function closeRouteModal() {
   }
 }
 
-document
-  .getElementById("route-modal-close")
-  .addEventListener("click", closeRouteModal);
-
-document
-  .querySelector(".route-modal__overlay")
-  .addEventListener("click", closeRouteModal);
+document.getElementById("route-modal-close").addEventListener("click", closeRouteModal);
+document.querySelector(".route-modal__overlay").addEventListener("click", closeRouteModal);

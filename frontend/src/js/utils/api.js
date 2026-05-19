@@ -1,4 +1,4 @@
-import { getToken } from "../auth";
+import { getToken, relocateToLogin } from "../auth";
 import { userManager } from "../localManagers/userManager";
 
 const val = (id) => document.getElementById(id)?.value?.trim() ?? '';
@@ -12,6 +12,38 @@ export const buildQuery = (params) => {
   return q.toString() ? `?${q.toString()}` : '';
 };
 
+const handleUnauthorized = () => {
+  document.cookie = 'token=; Path=/; SameSite=Strict; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+  userManager.delete();
+  relocateToLogin();
+};
+
+const fetchWithAuth = async (url, options = {}) => {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${getToken()}`,
+      ...options.headers,
+    },
+    credentials: 'include',
+  }).catch(() => {
+    Notify.error("Ошибка сервера");
+    return null;
+  });
+
+  if (!response) return null;
+
+  if (response.status === 401) {
+    const data = await response.json().catch(() => ({}));
+    if (data?.detail === "Invalid token") {
+      handleUnauthorized();
+      return null;
+    }
+  }
+
+  return response;
+};
+
 export const getPOIbyCategory = async (category) => {
   const query = buildQuery({
     name: '',
@@ -21,31 +53,23 @@ export const getPOIbyCategory = async (category) => {
     limit: 100,
     offset: '',
   });
-  const response = await fetch(`http://127.0.0.1:10001/api/pois/${query}`, {
-    method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`},
-    credentials: 'include',
-  }).catch(() => { Notify.error("Ошибка сервера: не удалось получить POIs"); return false; });
+  const response = await fetchWithAuth(`http://127.0.0.1:10001/api/pois/${query}`);
+  if (!response) return null;
   return await response.json();
-}
+};
 
 export const importDb = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`http://127.0.0.1:10001/api/data/db/import`, {
+  const response = await fetchWithAuth(`http://127.0.0.1:10001/api/data/db/import`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${getToken()}`
-    },
-    body: formData
-  }).catch((error) => {throw new Error(error)});
-
+    body: formData,
+  });
+  if (!response) return null;
   if (!response.ok) throw new Error("Не удалось импортировать бд");
-
-  const data = await response.json();
-  return data;
-}
+  return await response.json();
+};
 
 export const getPois = async () => {
   const query = buildQuery({
@@ -56,22 +80,16 @@ export const getPois = async () => {
     limit: num('poi-radius-slider'),
     offset: num('poi-offset-slider'),
   });
-  const response = await fetch(`http://127.0.0.1:10001/api/pois/${query}`, {
-    method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`},
-    credentials: 'include',
-  }).catch(() => { Notify.error("Ошибка сервера: не удалось получить POIs"); return false; });
+  const response = await fetchWithAuth(`http://127.0.0.1:10001/api/pois/${query}`);
+  if (!response) return null;
   return await response.json();
-}
+};
 
 export const getPoisCategories = async () => {
-  const response = await fetch(`http://127.0.0.1:10001/api/pois/categories`, {
-    method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`},
-    credentials: 'include',
-  }).catch(() => { Notify.error("Ошибка сервера: не удалось получить категории POIs"); return false; });
+  const response = await fetchWithAuth(`http://127.0.0.1:10001/api/pois/categories`);
+  if (!response) return null;
   return await response.json();
-}
+};
 
 export const getWalkPoints = async () => {
   const query = buildQuery({
@@ -87,28 +105,22 @@ export const getWalkPoints = async () => {
     limit: num('wp-radius-slider'),
     offset: num('wp-offset-slider'),
   });
-  const response = await fetch(`http://127.0.0.1:10001/api/walkpoints/${query}`, {
-    method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`},
-    credentials: 'include',
-  }).catch(() => { Notify.error("Ошибка сервера: не удалось получить WalkPoints"); return false; });
+  const response = await fetchWithAuth(`http://127.0.0.1:10001/api/walkpoints/${query}`);
+  if (!response) return null;
   return await response.json();
-}
+};
 
 export const getAllTiles = async () => {
   const userId = userManager.get().id;
-  const response = await fetch(`http://127.0.0.1:10001/api/map/tiles/?userId=${userId}`, {
-    method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`},
-    credentials: 'include',
-  }).catch(() => { Notify.error("Ошибка сервера: не удалось получить Tiles"); return false; });
+  const response = await fetchWithAuth(`http://127.0.0.1:10001/api/map/tiles/?userId=${userId}`);
+  if (!response) return null;
   return await response.json();
-}
+};
 
 export const getTiles = async () => {
   const userId = userManager.get().id;
   const query = buildQuery({
-    userId: userId, 
+    userId: userId,
     walkId: val('tile-walkId'),
     tileXMin: val('tile-x-min'),
     tileXMax: val('tile-x-max'),
@@ -119,13 +131,10 @@ export const getTiles = async () => {
     limit: num('tile-limit-slider'),
     offset: num('tile-offset-slider'),
   });
-  const response = await fetch(`http://127.0.0.1:10001/api/tiles/${query}`, {
-    method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`},
-    credentials: 'include',
-  }).catch(() => { Notify.error("Ошибка сервера: не удалось получить Tiles"); return false; });
+  const response = await fetchWithAuth(`http://127.0.0.1:10001/api/tiles/${query}`);
+  if (!response) return null;
   return await response.json();
-}
+};
 
 export const getMapNodes = async () => {
   const query = buildQuery({
@@ -136,49 +145,36 @@ export const getMapNodes = async () => {
     limit: num('mn-radius-slider'),
     offset: num('mn-offset-slider'),
   });
-  const response = await fetch(`http://127.0.0.1:10001/api/mapnodes/${query}`, {
-    method: 'GET',
-    headers: { 'Authorization': `Bearer ${getToken()}`},
-    credentials: 'include',
-  }).catch(() => { Notify.error("Ошибка сервера: не удалось получить MapNodes"); return false; });
+  const response = await fetchWithAuth(`http://127.0.0.1:10001/api/mapnodes/${query}`);
+  if (!response) return null;
   return await response.json();
-}
+};
 
 export const fetchEntityData = async (entity) => {
   switch (entity) {
-    case 'pois': {
+    case 'pois':
       return await getPois();
-    }
-    case 'walkpoints': {
+    case 'walkpoints':
       return await getWalkPoints();
-    }
-    case 'mapnodes': {
+    case 'mapnodes':
       return await getMapNodes();
-    }
-    case 'tiles': {
+    case 'tiles':
       return await getTiles();
-    }
     default:
       throw new Error('Выбранная сущность не поддерживается');
   }
 };
 
 export async function downloadFile(url, filename) {
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${getToken()}` },
-      credentials: 'include'
-    });
-    
-    if (!response.ok) throw new Error(`Ошибка загрузки ${filename}: ${response.status}`);
-    
-    const blob = await response.blob();
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    return `${filename} успешно скачан`;
-  } catch (error) { throw new Error(`Ошибка при скачивании ${filename}:`, error) };
+  const response = await fetchWithAuth(url);
+  if (!response) return null;
+  if (!response.ok) throw new Error(`Ошибка загрузки ${filename}: ${response.status}`);
+
+  const blob = await response.blob();
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  return `${filename} успешно скачан`;
 }

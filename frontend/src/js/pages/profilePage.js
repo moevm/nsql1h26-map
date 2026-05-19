@@ -10,6 +10,38 @@ const unlogin = () => {
   document.cookie = 'token=; Path=/; SameSite=Strict; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
 }
 
+const handleUnauthorized = () => {
+  unlogin();
+  relocateToLogin();
+  userManager.delete();
+};
+
+const fetchWithAuth = async (url, options = {}) => {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${getToken()}`,
+      ...options.headers,
+    },
+    credentials: 'include',
+  }).catch(() => {
+    Notify.error("Ошибка сервера");
+    return null;
+  });
+
+  if (!response) return null;
+
+  if (response.status === 401) {
+    const data = await response.json().catch(() => ({}));
+    if (data?.detail === "Invalid token") {
+      handleUnauthorized();
+      return null;
+    }
+  }
+
+  return response;
+};
+
 const setChart = (chartCanvasElement, type, dataMetrics, metricType) => {
   const types = ["bar", "line", "radar"];
   const metricTypeLabels = {
@@ -157,78 +189,41 @@ const createAchievment = (title, image) => {
 
 const getStats = async () => {
   const userId = userManager.get().id;
-
-  const response = await fetch(`http://127.0.0.1:10001/api/stats/?userId=${userId}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${getToken()}`,
-    },
-    credentials: 'include',
-  }).catch((error) => {
-    Notify.error("Ошибка сервера");
-    return false;
-  });
-
-  const data = await response.json();
-  return data;
-}
+  const response = await fetchWithAuth(`http://127.0.0.1:10001/api/stats/?userId=${userId}`);
+  if (!response) return null;
+  return await response.json();
+};
 
 const getStatsByMetric = async (metric, days, startDay) => {
   const userId = userManager.get().id;
-  const response = await fetch(`http://127.0.0.1:10001/api/stats/metrics/?userId=${userId}&metric=${metric}&days=${days}&date=${startDay}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${getToken()}`,
-    },
-    credentials: 'include',
-  }).catch((error) => {
-    Notify.error("Ошибка сервера");
-    return false;
-  });
-
-  const data = await response.json();
-  return data;
-}
+  const response = await fetchWithAuth(
+    `http://127.0.0.1:10001/api/stats/metrics/?userId=${userId}&metric=${metric}&days=${days}&date=${startDay}`
+  );
+  if (!response) return null;
+  return await response.json();
+};
 
 const getUserInfo = async () => {
-  const response = await fetch(`http://127.0.0.1:10001/api/auth/me`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${getToken()}`,
-    },
-    credentials: 'include',
-  }).catch((error) => {
-    Notify.error("Ошибка сервера");
-    return false;
-  });
-
-  const data = await response.json();
-  return data;
-}
+  const response = await fetchWithAuth(`http://127.0.0.1:10001/api/auth/me`);
+  if (!response) return null;
+  return await response.json();
+};
 
 const editProfile = async ({ username, avatarUrl, email } = {}) => {
   const userId = userManager.get().id;
-
   const body = {};
   if (username !== undefined) body.username = username;
   if (avatarUrl !== undefined) body.avatarUrl = avatarUrl;
   if (email !== undefined) body.email = email;
 
-  const response = await fetch(`http://127.0.0.1:10001/api/users/${userId}`, {
+  const response = await fetchWithAuth(`http://127.0.0.1:10001/api/users/${userId}`, {
     method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${getToken()}`,
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  }).catch(() => {
-    Notify.error("Ошибка сервера");
-    return null;
   });
-
+  if (!response) return null;
   return await response.json();
-}
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   relocateToLogin();
