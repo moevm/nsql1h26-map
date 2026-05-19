@@ -28,6 +28,42 @@ let tilesFile = null;
 
 let allWalks = [];
 
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+const handleUnauthorized = () => {
+  document.cookie = 'token=; Path=/; SameSite=Strict; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+  userManager.delete();
+  relocateToLogin();
+};
+
+const fetchWithAuth = async (url, options = {}) => {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${getToken()}`,
+      ...options.headers,
+    },
+    credentials: 'include',
+  }).catch(() => {
+    Notify.error("Ошибка сервера");
+    return null;
+  });
+
+  if (!response) return null;
+
+  if (response.status === 401) {
+    const data = await response.json().catch(() => ({}));
+    if (data?.detail === "Invalid token") {
+      handleUnauthorized();
+      return null;
+    }
+  }
+
+  return response;
+};
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+
 document.addEventListener("DOMContentLoaded", async () => {
   relocateToLogin();
   initMap();
@@ -50,12 +86,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   initNewWalkButton();
 });
 
+// ─── Data loading ─────────────────────────────────────────────────────────────
+
 async function loadAllWalksForStats() {
   const url = `${API_BASE}/walks/?userId=${userId}&offset=0&limit=100`;
 
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
+  const response = await fetchWithAuth(url);
+  if (!response) return;
 
   const data = await response.json();
   allWalks = data.items || [];
@@ -72,9 +109,8 @@ async function loadWalks() {
     url += `&${filterParams}`;
   }
 
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
+  const response = await fetchWithAuth(url);
+  if (!response) return;
 
   const data = await response.json();
   walks = data.items || [];
@@ -85,6 +121,8 @@ async function loadWalks() {
 
   await loadAndDrawAllFilteredWalks();
 }
+
+// ─── Dashboard ───────────────────────────────────────────────────────────────
 
 function updateDashboardStats() {
   if (!allWalks || allWalks.length === 0) {
@@ -132,6 +170,8 @@ function updateDashboardStats() {
   if (timeElement) timeElement.textContent = formattedTime;
 }
 
+// ─── Formatters ───────────────────────────────────────────────────────────────
+
 function formatDuration(seconds) {
   if (!seconds && seconds !== 0) return "—";
   const minutes = Math.floor(seconds / 60);
@@ -147,18 +187,8 @@ function formatDate(dateStr) {
   if (!dateStr) return "—";
   const date = new Date(dateStr);
   const months = [
-    "Янв",
-    "Фев",
-    "Мар",
-    "Апр",
-    "Май",
-    "Июн",
-    "Июл",
-    "Авг",
-    "Сен",
-    "Окт",
-    "Ноя",
-    "Дек",
+    "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+    "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
   ];
   return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 }
@@ -168,6 +198,8 @@ function formatTime(dateStr) {
   const date = new Date(dateStr);
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
+
+// ─── Table ────────────────────────────────────────────────────────────────────
 
 function renderTable() {
   const tbody = document.getElementById("walks-table-body");
@@ -188,16 +220,12 @@ function renderTable() {
       const durationText = formatDuration(walk.durationSeconds);
       const formattedDate = formatDate(walk.startedAt);
       const formattedTime = formatTime(walk.startedAt);
-
       const formattedUpdatedDate = formatDate(walk.updatedAt);
-      const formattedUpdatedTime = formatTime(walk.updatedAt); 
-
+      const formattedUpdatedTime = formatTime(walk.updatedAt);
       const distanceKm = walk.distanceMeters
         ? (walk.distanceMeters / 1000).toFixed(1)
         : "—";
-
-      const newTiles =
-        walk.newTilesCount !== undefined ? walk.newTilesCount : "—";
+      const newTiles = walk.newTilesCount !== undefined ? walk.newTilesCount : "—";
       const walkUserId = walk.userId || "—";
 
       return `
@@ -258,11 +286,10 @@ function handleCheckboxChange(e) {
 async function handleDeleteClick(e) {
   const id = e.currentTarget.dataset.id;
   if (confirm(`Удалить прогулку ${id}?`)) {
-    const response = await fetch(`${API_BASE}/walks/${id}`, {
+    const response = await fetchWithAuth(`${API_BASE}/walks/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${getToken()}` },
     });
-    if (response.ok) {
+    if (response?.ok) {
       window.location.reload();
     }
   }
@@ -278,6 +305,8 @@ function updateSelectAllCheckbox() {
     selectAll.checked = allSelected;
   }
 }
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
 
 function updatePaginationInfo() {
   const total = totalWalks;
@@ -316,25 +345,9 @@ function renderPaginationControls(total) {
     if (currentPage <= 4) {
       pages = [1, 2, 3, 4, 5, "...", maxPage];
     } else if (currentPage >= maxPage - 3) {
-      pages = [
-        1,
-        "...",
-        maxPage - 4,
-        maxPage - 3,
-        maxPage - 2,
-        maxPage - 1,
-        maxPage,
-      ];
+      pages = [1, "...", maxPage - 4, maxPage - 3, maxPage - 2, maxPage - 1, maxPage];
     } else {
-      pages = [
-        1,
-        "...",
-        currentPage - 1,
-        currentPage,
-        currentPage + 1,
-        "...",
-        maxPage,
-      ];
+      pages = [1, "...", currentPage - 1, currentPage, currentPage + 1, "...", maxPage];
     }
   }
 
@@ -422,6 +435,8 @@ function initPerPage() {
   });
 }
 
+// ─── Map ──────────────────────────────────────────────────────────────────────
+
 let map;
 let allWalkLayers = [];
 let currentHighlightedLayer = null;
@@ -481,9 +496,8 @@ async function loadAndDrawAllFilteredWalks() {
   }
 
   try {
-    const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${getToken()}` },
-    });
+    const response = await fetchWithAuth(url);
+    if (!response) return;
 
     if (response.ok) {
       const data = await response.json();
@@ -492,13 +506,8 @@ async function loadAndDrawAllFilteredWalks() {
       const walksWithPoints = [];
       for (const walk of allFilteredWalks) {
         try {
-          const walkDetailResponse = await fetch(
-            `${API_BASE}/walks/${walk.id}`,
-            {
-              headers: { Authorization: `Bearer ${getToken()}` },
-            },
-          );
-          if (walkDetailResponse.ok) {
+          const walkDetailResponse = await fetchWithAuth(`${API_BASE}/walks/${walk.id}`);
+          if (walkDetailResponse?.ok) {
             const walkDetail = await walkDetailResponse.json();
             if (walkDetail.points && walkDetail.points.length > 0) {
               walksWithPoints.push(walkDetail);
@@ -534,7 +543,6 @@ function highlightWalkOnMap(walkId) {
         opacity: 0.9,
       });
       currentHighlightedLayer = layer;
-
       map.fitBounds(layer.getBounds(), { padding: [50, 50] });
       break;
     }
@@ -588,6 +596,8 @@ function attachRowClickEvents() {
   });
 }
 
+// ─── Export / Import ──────────────────────────────────────────────────────────
+
 function initExport() {
   const exportBtn = document.getElementById("export-selected-btn");
   if (!exportBtn) return;
@@ -625,12 +635,7 @@ function initImport() {
 
       importBtn.disabled = true;
 
-      const result = await importWalks(
-        userId,
-        walksFile,
-        walkpointsFile,
-        getToken(),
-      );
+      const result = await importWalks(userId, walksFile, walkpointsFile, getToken());
 
       if (result.success) {
         Notify.success(result.message);
@@ -660,9 +665,7 @@ function initTileImportExport() {
   if (exportTilesBtn) {
     exportTilesBtn.addEventListener("click", async () => {
       exportTilesBtn.disabled = true;
-
       await exportTiles(userId, getToken());
-
       exportTilesBtn.disabled = false;
     });
   }
@@ -723,6 +726,8 @@ function initNewWalkButton() {
   }
 }
 
+// ─── Modal ────────────────────────────────────────────────────────────────────
+
 let walkModalMap = null;
 let walkModalLayer = null;
 let editableMarkers = [];
@@ -733,11 +738,10 @@ async function openWalkModal(walkId) {
   modal.classList.remove("hidden");
 
   try {
-    const res = await fetch(`${API_BASE}/walks/${walkId}`, {
-      headers: { Authorization: `Bearer ${getToken()}` },
-    });
-    const walk = await res.json();
+    const res = await fetchWithAuth(`${API_BASE}/walks/${walkId}`);
+    if (!res) return;
 
+    const walk = await res.json();
     currentModalWalk = structuredClone(walk);
     fillWalkModal(walk);
 
@@ -802,14 +806,10 @@ function initWalkPreviewMap(walk) {
 
   const latlngs = walk.points.map((p) => [p.lat, p.lon]);
 
-  walkModalLayer = L.polyline(latlngs, { color: "#00e5a0", weight: 4 }).addTo(
-    walkModalMap,
-  );
+  walkModalLayer = L.polyline(latlngs, { color: "#00e5a0", weight: 4 }).addTo(walkModalMap);
 
   walk.points.forEach((pt, idx) => {
-    const marker = L.marker([pt.lat, pt.lon], { draggable: true }).addTo(
-      walkModalMap,
-    );
+    const marker = L.marker([pt.lat, pt.lon], { draggable: true }).addTo(walkModalMap);
 
     marker.on("drag", (e) => {
       const { lat, lng } = e.target.getLatLng();
@@ -850,15 +850,13 @@ document.getElementById("walk-save-btn").addEventListener("click", async () => {
     if (!isNaN(distanceKm)) body.distanceMeters = distanceKm * 1000;
     if (!isNaN(durationMin)) body.durationSeconds = durationMin * 60;
 
-    const res = await fetch(`${API_BASE}/walks/${currentModalWalk.id}`, {
+    const res = await fetchWithAuth(`${API_BASE}/walks/${currentModalWalk.id}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getToken()}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
+    if (!res) return;
     if (!res.ok) throw new Error("Failed to update walk");
 
     Notify.success("Прогулка обновлена");
@@ -870,29 +868,27 @@ document.getElementById("walk-save-btn").addEventListener("click", async () => {
   }
 });
 
-document
-  .getElementById("walk-delete-btn")
-  .addEventListener("click", async () => {
-    if (!confirm("Удалить прогулку?")) return;
+document.getElementById("walk-delete-btn").addEventListener("click", async () => {
+  if (!confirm("Удалить прогулку?")) return;
 
-    try {
-      const res = await fetch(`${API_BASE}/walks/${currentModalWalk.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/walks/${currentModalWalk.id}`, {
+      method: "DELETE",
+    });
 
-      if (!res.ok) throw new Error("Failed to delete walk");
+    if (!res) return;
+    if (!res.ok) throw new Error("Failed to delete walk");
 
-      Notify.success("Прогулка удалена");
-      closeWalkModal();
-      await loadWalks();
-      await loadAllWalksForStats();
-      clearAllWalksFromMap();
-      await loadAndDrawAllFilteredWalks();
-    } catch (e) {
-      Notify.error("Не удалось удалить прогулку");
-    }
-  });
+    Notify.success("Прогулка удалена");
+    closeWalkModal();
+    await loadWalks();
+    await loadAllWalksForStats();
+    clearAllWalksFromMap();
+    await loadAndDrawAllFilteredWalks();
+  } catch (e) {
+    Notify.error("Не удалось удалить прогулку");
+  }
+});
 
 function closeWalkModal() {
   document.getElementById("walk-modal").classList.add("hidden");
@@ -902,10 +898,5 @@ function closeWalkModal() {
   }
 }
 
-document
-  .getElementById("walk-modal-close")
-  .addEventListener("click", closeWalkModal);
-
-document
-  .querySelector(".walk-modal__overlay")
-  .addEventListener("click", closeWalkModal);
+document.getElementById("walk-modal-close").addEventListener("click", closeWalkModal);
+document.querySelector(".walk-modal__overlay").addEventListener("click", closeWalkModal);
