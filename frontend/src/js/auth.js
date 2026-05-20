@@ -23,6 +23,7 @@ export function relocateToLogin() {
       return;
     }
     window.location.href = '/pages/login.html';
+    return;
   }
 
   if (['/pages/login.html', '/pages/registration.html', '/index.html', '/'].includes(currentLocation)) {
